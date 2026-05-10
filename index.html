@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>時間割</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f0f2f8; --surface: #fff; --border: #e2e8f0;
+      --text: #1a202c; --muted: #718096;
+      --accent: #2C3E6B; --accent2: #4A2D6B;
+      --on-accent: #fff;
+      --today: #f0f6ff; --today-b: #B0C8F0;
+      --shadow: 0 4px 16px rgba(0,0,0,.10);
+    }
+    body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* ── Header ── */
+    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 14px; }
+    .header-top { text-align:center; margin-bottom:12px; }
+    h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
+    .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; }
+    .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .nav-btn:hover { background:rgba(255,255,255,.25); }
+    .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#2C3E6B; border-color:transparent; }
+
+    /* ── Layout ── */
+    .container { max-width:980px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
+    .card { background:var(--surface); border-radius:14px; box-shadow:var(--shadow); }
+
+    /* ── Timetable ── */
+    .tt-wrap { padding:12px; overflow-x:auto; }
+    .timetable { display:grid; grid-template-columns:52px repeat(5,1fr); gap:5px; min-width:460px; }
+
+    .cell-day { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; }
+    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:600; font-family:inherit; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:5px; color:inherit; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
+    .day-sched-sel.is-changed { background:rgba(255,255,255,.7); color:#2C3E6B; font-weight:800; }
+    .cell-day.is-today { background:linear-gradient(135deg,#1a2d5a,#321a5a); color:#fff; box-shadow:0 0 0 2px #4a6aaa; }
+    .day-name { font-size:.78rem; }
+    .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
+
+    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
+    .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
+    .period-time { font-size:.5rem; color:var(--muted); white-space:nowrap; }
+
+    .cell { min-height:70px; border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; }
+    .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
+    .cell.has-entry { border:none; }
+    .cell.has-entry:hover { filter:brightness(1.07); box-shadow:0 4px 14px rgba(0,0,0,.2); }
+    .cell.is-today-col { background:var(--today); border-color:var(--today-b); }
+    .cell.has-entry.is-today-col { background:unset; }
+    .cell.cancelled { background:#f1f5f9 !important; border:2px solid #cbd5e0 !important; }
+    .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
+    .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
+
+    .add-mark { font-size:1.4rem; color:#c8d2e0; transition:color .18s; }
+    .cell:hover .add-mark { color:var(--accent); }
+    .c-class   { font-weight:800; font-size:.82rem; color:rgba(255,255,255,.97); line-height:1.3; }
+    .c-subject { font-size:.65rem; color:rgba(255,255,255,.82); margin-top:2px; font-weight:600; }
+    .c-content { font-size:.58rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
+    .c-cancel  { font-size:.78rem; color:#94a3b8; font-weight:700; }
+    .cell-light .c-class   { color:rgba(0,0,0,.72); }
+    .cell-light .c-subject { color:rgba(0,0,0,.52); }
+    .cell-light .c-content { color:rgba(0,0,0,.42); }
+    .cell-light .c-src { background:rgba(0,0,0,.12); color:rgba(0,0,0,.6); }
+    .cell-dark .c-class   { color:rgba(255,255,255,.95); }
+    .cell-dark .c-subject { color:rgba(255,255,255,.75); }
+    .cell-dark .c-content { color:rgba(255,255,255,.6); }
+    .cell-dark .c-src { background:rgba(255,255,255,.18); color:rgba(255,255,255,.9); }
+    .c-src { position:absolute; bottom:2px; left:3px; font-size:.52rem; font-weight:800; background:rgba(255,255,255,.25); color:#fff; border-radius:3px; padding:0 3px; line-height:1.5; }
+    .cell.is-today-col .c-src { background:rgba(255,255,255,.3); }
+    /* ── Source selector in edit panel ── */
+    .src-row { display:flex; align-items:center; gap:6px; padding:0 16px 12px; flex-wrap:wrap; }
+    .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+    .src-sel { padding:6px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; font-family:inherit; outline:none; background:#fafbfc; cursor:pointer; -webkit-appearance:none; appearance:none; }
+    .src-sel:focus { border-color:var(--accent); }
+    .btn-src-clear { padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:.78rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; }
+    .btn-src-clear:hover { background:#f1f5f9; }
+
+    /* ── Edit Panel ── */
+    .edit-panel { overflow:hidden; }
+    .edit-head { padding:12px 16px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); display:flex; align-items:center; justify-content:space-between; }
+    .edit-head-label { font-size:.95rem; font-weight:700; }
+    .edit-head-sub   { font-size:.75rem; opacity:.7; margin-top:1px; }
+    .edit-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:7px; font-size:.9rem; cursor:pointer; transition:background .15s; display:flex; align-items:center; justify-content:center; }
+    .edit-close:hover { background:rgba(255,255,255,.3); }
+
+    .edit-idle { padding:28px 16px; text-align:center; color:var(--muted); font-size:.88rem; }
+
+    .edit-form { padding:14px 16px; display:grid; grid-template-columns:1fr 1fr 2fr; gap:10px; align-items:end; }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    .form-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .form-select, .form-input {
+      padding:8px 10px; border:1.5px solid var(--border); border-radius:8px;
+      font-size:.9rem; font-family:inherit; outline:none; background:#fafbfc; width:100%;
+      transition:border-color .15s;
+    }
+    .form-select { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; padding-right:24px; cursor:pointer; }
+    .form-select:focus, .form-input:focus { border-color:var(--accent); background:#fff; }
+    .form-select.err { border-color:#e53e3e; }
+
+    .edit-actions { padding:0 16px 14px; display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { padding:9px 18px; border:none; border-radius:8px; font-size:.87rem; font-weight:600; cursor:pointer; font-family:inherit; transition:filter .15s,transform .12s; }
+    .btn:hover { transform:translateY(-1px); }
+    .btn-save    { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); }
+    .btn-save:hover { filter:brightness(1.08); }
+    .btn-holiday { background:#f8fafc; color:#64748b; border:1px solid var(--border); }
+    .btn-holiday:hover { background:#f1f5f9; }
+    .btn-restore { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+    .btn-restore:hover { background:#dcfce7; }
+    .btn-del { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
+    .btn-del:hover { background:#fed7d7; }
+
+    /* ── Holiday ── */
+    .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
+    .day-hol-name { font-size:.55rem; font-weight:700; margin-top:3px; color:rgba(255,120,120,.95); letter-spacing:.02em; }
+    .cell.is-holiday-col { background:#1e2530 !important; border:none !important; cursor:default !important;
+      background-image:repeating-linear-gradient(-45deg,transparent,transparent 5px,rgba(255,255,255,.03) 5px,rgba(255,255,255,.03) 10px) !important; }
+    .cell.is-holiday-col > * { display:none !important; }
+    .hol-form { padding:10px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--border); }
+    .hol-item { display:flex; align-items:center; gap:10px; padding:8px 16px; border-bottom:1px solid #f0f2f6; }
+    .hol-date { font-size:.8rem; font-weight:700; color:var(--accent); min-width:100px; white-space:nowrap; }
+    .hol-name { font-size:.85rem; flex:1; }
+    .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:3px 8px; border-radius:5px; transition:all .15s; }
+    .hol-del:hover { color:#e53e3e; background:#fff5f5; }
+
+    /* ── Progress ── */
+    .list-top { padding:13px 16px 11px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+    .list-title { font-size:.98rem; font-weight:700; }
+    .list-empty { padding:28px; text-align:center; color:var(--muted); font-size:.88rem; }
+
+    /* ── 進捗テーブル ── */
+    .prog-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .prog-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:center; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
+    .prog-table th:first-child { text-align:left; }
+    .prog-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; text-align:center; }
+    .prog-content-cell { text-align:left !important; }
+    .prog-sub { font-size:.68rem; color:var(--muted); }
+    .prog-cnt { font-weight:600; }
+    .prog-done { color:#166534; font-weight:700; line-height:1.4; }
+    .prog-p   { font-size:.65rem; color:var(--muted); font-weight:400; display:block; }
+    .prog-none { color:#d1d9e6; font-size:1rem; }
+
+    @media (max-width:640px) {
+      .edit-form { grid-template-columns:1fr 1fr; }
+      .edit-form .fg-content { grid-column:1/-1; }
+      .cell { min-height:58px; padding:4px; }
+      .c-content { display:none; }
+      .period-time { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top"><h1>時間割</h1></div>
+  <div class="nav-bar">
+    <button class="nav-btn" id="btnPrev">‹ 前の週</button>
+    <div class="week-label" id="weekLabel"></div>
+    <button class="nav-btn today-btn" id="btnToday">今週</button>
+    <button class="nav-btn" id="btnNext">次の週 ›</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card tt-wrap">
+    <div class="timetable" id="timetable"></div>
+  </div>
+
+  <div class="card edit-panel" id="editPanel">
+    <div class="edit-head">
+      <div>
+        <div class="edit-head-label" id="editLabel">授業を選択してください</div>
+        <div class="edit-head-sub"  id="editSub"></div>
+      </div>
+      <button class="edit-close" id="editClose" style="display:none">✕</button>
+    </div>
+    <div id="editBody">
+      <div class="edit-idle">時間割のセルをクリックして授業内容を入力できます</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">祝日・休校日</span>
+      <button class="btn btn-save" id="btnAddHol" style="padding:5px 12px;font-size:.78rem">＋ 追加</button>
+    </div>
+    <div id="holForm" class="hol-form" style="display:none">
+      <input type="date" class="form-input" id="hDate" style="flex:0 0 auto;width:160px">
+      <input type="text" class="form-input" id="hName" placeholder="例: 体育大会、文化祭">
+      <button class="btn btn-save" id="hSave">保存</button>
+      <button class="btn btn-holiday" id="hCancel">キャンセル</button>
+    </div>
+    <div id="holidayList"></div>
+  </div>
+
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">3年生 授業進捗</span>
+    </div>
+    <div id="progressBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">2年生 授業進捗（2-4）</span>
+    </div>
+    <div id="progress2Body"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── 基本時間割（毎週繰り返し） ── */
+// キー: "曜日インデックス(0=月)-時限"
+const BASE = {
+  '0-1':{ name:'3-3',  room:'理科', color:'#C855A0' },
+  '0-2':{ name:'3-4',  room:'理科', color:'#D44545' },
+  '0-3':{ name:'2-4',  room:'理科', color:'#4A90D9' },
+  '0-4':{ name:'3-1',  room:'道徳', color:'#7A65D4' },
+  '0-5':{ name:'3-1',  room:'理科', color:'#3DAE65' },
+  '0-6':{ name:'空き',  room:'',    color:'#37474F' },
+  '1-1':{ name:'2-4',  room:'理科', color:'#4A90D9' },
+  '1-2':{ name:'3-3',  room:'理科', color:'#C855A0' },
+  '1-3':{ name:'3-1',  room:'理科', color:'#3DAE65' },
+  '1-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
+  '1-5':{ name:'3-1',  room:'学活', color:'#2BAABD' },
+  '1-6':{ name:'裁量',  room:'',    color:'#546E7A' },
+  '2-1':{ name:'3-4',  room:'理科', color:'#D44545' },
+  '2-2':{ name:'2-4',  room:'理科', color:'#4A90D9' },
+  '2-3':{ name:'3-3',  room:'理科', color:'#C855A0' },
+  '2-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
+  '2-5':{ name:'3-1',  room:'理科', color:'#3DAE65' },
+  '2-6':{ name:'空き',  room:'',    color:'#37474F' },
+  '3-1':{ name:'空き',  room:'',    color:'#37474F' },
+  '3-2':{ name:'3-3',  room:'理科', color:'#C855A0' },
+  '3-3':{ name:'研究部', room:'',   color:'#4A5568' },
+  '3-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
+  '3-5':{ name:'3-4',  room:'理科', color:'#D44545' },
+  '3-6':{ name:'空き',  room:'',    color:'#37474F' },
+  '4-1':{ name:'空き',  room:'',    color:'#37474F' },
+  '4-2':{ name:'3-4',  room:'理科', color:'#D44545' },
+  '4-3':{ name:'2-4',  room:'理科', color:'#4A90D9' },
+  '4-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
+  '4-5':{ name:'3-1',  room:'理科', color:'#3DAE65' },
+  '4-6':{ name:'3-1',  room:'総合', color:'#E07050' },
+};
+
+const CLASSES = [
+  { name:'2-4',  subjects:[{name:'理科',color:'#4A90D9'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#3DAE65'},{name:'学活',color:'#2BAABD'},{name:'道徳',color:'#7A65D4'},{name:'総合',color:'#E07050'}] },
+  { name:'3-2',  subjects:[{name:'理科',color:'#E8922A'}] },
+  { name:'3-3',  subjects:[{name:'理科',color:'#C855A0'}] },
+  { name:'3-4',  subjects:[{name:'理科',color:'#D44545'}] },
+  { name:'研究部', color:'#4A5568', subjects:[] },
+  { name:'裁量',   color:'#546E7A', subjects:[] },
+];
+
+const DAY_NAMES = ['月','火','水','木','金'];
+const DAY_JP    = ['日','月','火','水','木','金','土'];
+const PERIODS   = [1,2,3,4,5,6];
+const TIMES     = ['8:50〜9:40','9:50〜10:40','10:50〜11:40','13:00〜13:50','14:00〜14:50','15:00〜15:50'];
+
+/* ── 状態 ── */
+let overrides    = {};
+let daySchedules = {};
+let cellSources  = {};
+let holidays     = {}; // { 'YYYY-MM-DD': '祝日名' }
+let weekStart = getMonday(new Date());
+let selKey    = null;
+
+/* ── 永続化 ── */
+function load() {
+  try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
+}
+function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); }
+function loadDaySchedules() {
+  try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1') || '{}'); } catch { daySchedules = {}; }
+}
+function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); }
+function loadCellSources() {
+  try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
+}
+function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); }
+function loadHolidays() {
+  try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
+}
+function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); }
+
+/* ── 日付ユーティリティ ── */
+function getMonday(d) {
+  const r=new Date(d); r.setHours(0,0,0,0);
+  const dw=r.getDay(); r.setDate(r.getDate()+(dw===0?-6:1-dw)); return r;
+}
+function addDays(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n)       { return String(n).padStart(2,'0'); }
+function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function getWeekDates(){ return Array.from({length:5},(_,i)=>addDays(weekStart,i)); }
+function parseDateStr(s){ const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d); }
+function dayIdx(d)     { return d.getDay()-1; } // 0=月 4=金
+
+function formatWeekLabel() {
+  const [s,e]=[getWeekDates()[0],getWeekDates()[4]];
+  return s.getMonth()===e.getMonth()
+    ? `${s.getFullYear()}年${s.getMonth()+1}月${s.getDate()}日 〜 ${e.getDate()}日`
+    : `${s.getFullYear()}年${s.getMonth()+1}月${s.getDate()}日 〜 ${e.getMonth()+1}月${e.getDate()}日`;
+}
+
+/* ── スケジュールロジック ── */
+function baseKey(date, period)     { return `${dayIdx(date)}-${period}`; }
+function overrideKey(dateStr, p)   { return `${dateStr}-${p}`; }
+
+function getEntry(dateStr, period) {
+  const ok = overrideKey(dateStr, period);
+  if (ok in overrides) return overrides[ok];
+  if (ok in cellSources) {
+    const src = cellSources[ok];
+    return BASE[`${src.di}-${src.p}`] || null;
+  }
+  const d  = parseDateStr(dateStr);
+  const di = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
+  if (di < 0 || di > 4) return null;
+  return BASE[`${di}-${period}`] || null;
+}
+
+function getEffectiveSrc(dateStr, period) {
+  const ok = overrideKey(dateStr, period);
+  if (ok in cellSources) return cellSources[ok];
+  const d  = parseDateStr(dateStr);
+  const naturalDi = dayIdx(d);
+  const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+  return { di, p: period };
+}
+
+function isOverride(dateStr, period) {
+  return overrideKey(dateStr, period) in overrides;
+}
+
+function isCancelled(dateStr, period) {
+  const ok = overrideKey(dateStr, period);
+  return (ok in overrides) && overrides[ok] === null;
+}
+
+/* ── 色・クラス ── */
+const DARK_CLASSES = new Set(['研究部','裁量','空き']);
+
+function pastelizeColor(hex) {
+  if (!hex || hex.length < 7) return hex;
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgb(${Math.round(r*.42+255*.58)},${Math.round(g*.42+255*.58)},${Math.round(b*.42+255*.58)})`;
+}
+
+function getColor(name, subject) {
+  const c = CLASSES.find(c=>c.name===name);
+  if (!c) return '#B0BEC5';
+  return c.subjects.find(s=>s.name===subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
+}
+function getSubjects(name) {
+  return CLASSES.find(c=>c.name===name)?.subjects || [];
+}
+
+/* ── 時間割グリッド ── */
+function renderTimetable() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = getWeekDates();
+  document.getElementById('weekLabel').textContent = formatWeekLabel();
+
+  const grid = document.getElementById('timetable');
+  grid.innerHTML = '';
+  grid.appendChild(el('div'));
+
+  dates.forEach((d,i) => {
+    const dateStr = toDateStr(d);
+    const hasSched  = dateStr in daySchedules;
+    const schedDi   = hasSched ? daySchedules[dateStr] : i;
+    const isHoliday = dateStr in holidays;
+
+    const div = el('div','cell-day'+(isSameDay(d,today)?' is-today':'')+(isHoliday?' is-holiday':''));
+    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday?`<div class="day-hol-name">${esc(holidays[dateStr])}</div>`:''}` ;
+
+    const sel = document.createElement('select');
+    sel.className = 'day-sched-sel' + (hasSched ? ' is-changed' : '');
+    sel.innerHTML = `<option value="-1"${!hasSched?' selected':''}>日課</option>` +
+      DAY_NAMES.map((n,j) => `<option value="${j}"${hasSched && schedDi===j?' selected':''}>${n}曜</option>`).join('');
+    sel.addEventListener('change', function(e) {
+      e.stopPropagation();
+      const v = +this.value;
+      if (v < 0) delete daySchedules[dateStr];
+      else daySchedules[dateStr] = v;
+      saveDaySchedules();
+      renderTimetable();
+      renderProgress();
+      renderProgress2();
+    });
+    div.appendChild(sel);
+    grid.appendChild(div);
+  });
+
+  PERIODS.forEach((p,pi) => {
+    const pc = el('div','cell-period');
+    pc.innerHTML = `<span class="period-num">${p}</span>`;
+    grid.appendChild(pc);
+
+    dates.forEach(d => {
+      const isToday   = isSameDay(d,today);
+      const dateStr   = toDateStr(d);
+      const isHoliday = dateStr in holidays;
+      const key       = overrideKey(dateStr, p);
+      const entry     = getEntry(dateStr, p);
+      const ovr       = isOverride(dateStr, p);
+      const cancel    = isCancelled(dateStr, p);
+      const isSel     = key === selKey;
+
+      const isDark = entry && !cancel && DARK_CLASSES.has(entry.name);
+      let cls = 'cell';
+      if (isHoliday) { cls += ' is-holiday-col'; }
+      else if (entry && !cancel) cls += ' has-entry';
+      else if (!cancel) cls += ' cell-empty';
+      if (isToday)  cls += ' is-today-col';
+      if (cancel)   cls += ' cancelled';
+      if (ovr && !cancel) cls += ' modified';
+      if (isSel)    cls += ' selected';
+      if (isDark) cls += ' cell-dark';
+
+      // 参照元バッジ（自然な曜日・時限と異なる場合のみ表示）
+      const naturalDi = dayIdx(d);
+      const src = getEffectiveSrc(dateStr, p);
+      const srcBadge = (!cancel && !(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
+        ? `${DAY_NAMES[src.di]}${src.p}` : '';
+
+      const cell = el('div', cls);
+      if (entry && !cancel) {
+        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(entry.color || '#667eea');
+        cell.style.background = bg;
+        cell.innerHTML = `
+          <div class="c-class">${esc(entry.name)}</div>
+          ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
+          ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
+          ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
+        `;
+      } else if (cancel) {
+        cell.innerHTML = '<span class="c-cancel">休み</span>';
+      } else {
+        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
+      }
+
+      if (!isHoliday) cell.addEventListener('click', () => selectCell(dateStr, p));
+      grid.appendChild(cell);
+    });
+  });
+}
+
+/* ── セル選択・編集パネル ── */
+function selectCell(dateStr, period) {
+  selKey = overrideKey(dateStr, period);
+  const entry  = getEntry(dateStr, period);
+  const ovr    = isOverride(dateStr, period);
+  const cancel = isCancelled(dateStr, period);
+  const d      = parseDateStr(dateStr);
+  const label  = `${d.getMonth()+1}月${d.getDate()}日(${DAY_JP[d.getDay()]}) ${period}限`;
+  const baseEntry = BASE[`${dayIdx(d)}-${period}`];
+
+  document.getElementById('editLabel').textContent = label;
+  document.getElementById('editSub').textContent   = ovr ? (cancel ? '休みに変更中' : '変更中') : (baseEntry ? '基本時間割' : '');
+  document.getElementById('editClose').style.display = '';
+  renderEditForm(entry, ovr, cancel, baseEntry);
+  renderTimetable();
+  renderProgress();
+  renderProgress2();
+  document.getElementById('editPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function clearSelect() {
+  selKey = null;
+  document.getElementById('editLabel').textContent = '授業を選択してください';
+  document.getElementById('editSub').textContent   = '';
+  document.getElementById('editClose').style.display = 'none';
+  document.getElementById('editBody').innerHTML = '<div class="edit-idle">時間割のセルをクリックして授業内容を入力できます</div>';
+  renderTimetable();
+  renderProgress();
+  renderProgress2();
+}
+
+function renderEditForm(entry, isOvr, isCancel, baseEntry) {
+  const pastContents = [...new Set(Object.values(overrides).filter(Boolean).map(v=>v.teacher).filter(Boolean))];
+  const currentClass   = entry?.name    || '';
+  const currentSubject = entry?.room    || '';
+  const currentContent = entry?.teacher || '';
+
+  const classOpts = '<option value="">── 選択 ──</option>' +
+    CLASSES.map(c=>`<option value="${c.name}"${c.name===currentClass?' selected':''}>${c.name}${c.tanin?' ★':''}</option>`).join('');
+  const subjectOpts = getSubjectOptions(currentClass, currentSubject);
+  const datalistHtml = pastContents.map(v=>`<option value="${esc(v)}">`).join('');
+
+  const [srcDateStr, srcPStr] = selKeyParts();
+  const srcPeriod = +srcPStr;
+  const srcDateObj = parseDateStr(srcDateStr);
+  const naturalDi2 = dayIdx(srcDateObj);
+  const existSrc = cellSources[selKey];
+  const curSrcDi = existSrc ? existSrc.di : (srcDateStr in daySchedules ? daySchedules[srcDateStr] : naturalDi2);
+  const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
+  const srcChanged = existSrc || (srcDateStr in daySchedules);
+
+  const daySelOpts = DAY_NAMES.map((n,j)=>`<option value="${j}"${curSrcDi===j?' selected':''}>${n}曜</option>`).join('');
+  const perSelOpts = PERIODS.map(pp=>`<option value="${pp}"${curSrcP===pp?' selected':''}>${pp}限</option>`).join('');
+
+  document.getElementById('editBody').innerHTML = `
+    <div class="edit-form">
+      <div class="form-group">
+        <label class="form-label">クラス</label>
+        <select class="form-select" id="eClass">${classOpts}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">教科</label>
+        <select class="form-select" id="eSubject">${subjectOpts}</select>
+      </div>
+      <div class="form-group fg-content">
+        <label class="form-label">授業内容</label>
+        <input class="form-input" id="eContent" type="text" list="eContentList"
+          placeholder="例: 光合成のまとめ" value="${esc(currentContent)}">
+        <datalist id="eContentList">${datalistHtml}</datalist>
+      </div>
+    </div>
+    <div class="src-row">
+      <span class="src-label">参照元</span>
+      <select class="src-sel" id="eSrcDay">${daySelOpts}</select>
+      <select class="src-sel" id="eSrcPer">${perSelOpts}</select>
+      ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
+    </div>
+    <div class="edit-actions">
+      ${isOvr || isCancel ? '<button class="btn btn-restore" id="eBtnRestore">元に戻す</button>' : ''}
+      ${!isCancel ? '<button class="btn btn-holiday" id="eBtnHoliday">休みにする</button>' : ''}
+    </div>
+  `;
+
+  document.getElementById('eClass').addEventListener('change', function() {
+    document.getElementById('eSubject').innerHTML = getSubjectOptions(this.value, '');
+    autoSave();
+  });
+  document.getElementById('eSubject').addEventListener('change', autoSave);
+  document.getElementById('eContent').addEventListener('input', () => {
+    clearTimeout(contentTimer);
+    contentTimer = setTimeout(autoSave, 500);
+  });
+
+  document.getElementById('eBtnHoliday')?.addEventListener('click', setHoliday);
+  document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
+
+  const saveSrc = () => {
+    const di = +document.getElementById('eSrcDay').value;
+    const p  = +document.getElementById('eSrcPer').value;
+    const [ds] = selKeyParts();
+    const d2  = parseDateStr(ds);
+    const ndi = dayIdx(d2);
+    const dsDi = ds in daySchedules ? daySchedules[ds] : ndi;
+    if (di === dsDi && p === +selKeyParts()[1]) {
+      delete cellSources[selKey]; // 日課と同じなら削除
+    } else {
+      cellSources[selKey] = { di, p };
+    }
+    saveCellSources();
+    renderTimetable(); renderProgress(); renderProgress2();
+  };
+  document.getElementById('eSrcDay')?.addEventListener('change', saveSrc);
+  document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
+  document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
+    delete cellSources[selKey];
+    if (srcDateStr in daySchedules) delete daySchedules[srcDateStr];
+    saveCellSources(); saveDaySchedules();
+    selectCell(...selKeyParts());
+  });
+}
+
+
+function getSubjectOptions(className, currentSubject) {
+  const subs = getSubjects(className);
+  if (!subs.length) return '<option value="">選択</option>';
+  return subs.map(s=>`<option value="${s.name}"${s.name===currentSubject?' selected':''}>${s.name}</option>`).join('');
+}
+
+let contentTimer = null;
+
+function autoSave() {
+  if (!selKey) return;
+  const klass   = document.getElementById('eClass')?.value;
+  const subject = document.getElementById('eSubject')?.value || '';
+  const content = document.getElementById('eContent')?.value.trim() || '';
+  if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
+  document.getElementById('eClass')?.classList.remove('err');
+  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject) };
+  save();
+  renderTimetable();
+  renderProgress();
+  renderProgress2();
+}
+
+function setHoliday() {
+  overrides[selKey] = null;
+  save();
+  selectCell(...selKeyParts());
+}
+
+function restoreBase() {
+  delete overrides[selKey];
+  save();
+  selectCell(...selKeyParts());
+}
+
+function selKeyParts() {
+  const parts = selKey.split('-');
+  return [`${parts[0]}-${parts[1]}-${parts[2]}`, parts[3]];
+}
+
+
+/* ── 3年生進捗テーブル ── */
+const PROG_CLASSES = ['3-1','3-2','3-3','3-4'];
+
+function renderProgress() {
+  const container = document.getElementById('progressBody');
+
+  // 授業内容が入力されているoverridesを (教科|内容) でグループ化
+  const map = {};
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || !entry.teacher) return;
+    const mk = `${entry.room}||${entry.teacher}`;
+    if (!map[mk]) map[mk] = { subject:entry.room, content:entry.teacher, classes:{} };
+    if (!PROG_CLASSES.includes(entry.name)) return;
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    // 同じクラス・同じ内容が複数ある場合は最初の日付
+    if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
+      map[mk].classes[entry.name] = { date, period };
+    }
+  });
+
+  const rows = Object.values(map);
+  if (!rows.length) {
+    container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    return;
+  }
+
+  // 最初に実施した日付順でソート
+  rows.sort((a, b) => {
+    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
+    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
+  });
+
+  const table = document.createElement('table');
+  table.className = 'prog-table';
+  table.innerHTML = `<thead><tr><th>授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+
+  const tbody = document.createElement('tbody');
+  rows.forEach(({ subject, content, classes }) => {
+    const tr = document.createElement('tr');
+    const subHtml = subject ? `<div class="prog-sub">${esc(subject)}</div>` : '';
+    let html = `<td class="prog-content-cell">${subHtml}<div class="prog-cnt">${esc(content)}</div></td>`;
+    PROG_CLASSES.forEach(cls => {
+      const info = classes[cls];
+      if (info) {
+        const d = info.date;
+        html += `<td class="prog-done">${d.getMonth()+1}/${d.getDate()}<span class="prog-p">${info.period}限</span></td>`;
+      } else {
+        html += '<td class="prog-none">─</td>';
+      }
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+}
+
+/* ── 2年生進捗リスト ── */
+function renderProgress2() {
+  const container = document.getElementById('progress2Body');
+
+  const items = Object.entries(overrides)
+    .filter(([, v]) => v && v.teacher && v.name === '2-4')
+    .map(([key, entry]) => {
+      const parts = key.split('-');
+      const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+      const period  = Number(parts[3]);
+      const date    = parseDateStr(dateStr);
+      return { dateStr, period, entry, date };
+    })
+    .sort((a, b) => a.date - b.date || a.period - b.period);
+
+  if (!items.length) {
+    container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'prog-table';
+  table.innerHTML = '<thead><tr><th>日付</th><th>時限</th><th>教科</th><th style="text-align:left">授業内容</th></tr></thead>';
+
+  const tbody = document.createElement('tbody');
+  items.forEach(({ dateStr, period, entry, date }) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="white-space:nowrap">${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})</td>
+      <td>${period}限</td>
+      <td><span style="display:inline-block;background:${entry.color||'#4A90D9'};color:#3d3353;border-radius:8px;padding:1px 7px;font-size:.7rem;font-weight:700">${esc(entry.room||'')}</span></td>
+      <td style="text-align:left" class="prog-cnt">${esc(entry.teacher)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+}
+
+/* ── ユーティリティ ── */
+function el(tag,cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
+function esc(s) { return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── 祝日管理 ── */
+function renderHolidayList() {
+  const list = document.getElementById('holidayList');
+  const entries = Object.entries(holidays).sort(([a],[b]) => a < b ? -1 : 1);
+  if (!entries.length) {
+    list.innerHTML = '<div class="list-empty">祝日・休校日は登録されていません</div>';
+    return;
+  }
+  list.innerHTML = '';
+  entries.forEach(([date, name]) => {
+    const d = parseDateStr(date);
+    const row = el('div','hol-item');
+    row.innerHTML = `
+      <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日(${DAY_JP[d.getDay()]})</span>
+      <span class="hol-name">${esc(name)}</span>
+      <button class="hol-del" data-date="${date}">✕</button>
+    `;
+    row.querySelector('.hol-del').addEventListener('click', () => {
+      delete holidays[date];
+      saveHolidays();
+      renderHolidayList();
+      renderTimetable();
+    });
+    list.appendChild(row);
+  });
+}
+
+/* ── イベント ── */
+document.getElementById('btnPrev').addEventListener('click',  ()=>{ weekStart=addDays(weekStart,-7); renderTimetable(); });
+document.getElementById('btnNext').addEventListener('click',  ()=>{ weekStart=addDays(weekStart, 7); renderTimetable(); });
+document.getElementById('btnToday').addEventListener('click', ()=>{ weekStart=getMonday(new Date()); renderTimetable(); });
+document.getElementById('editClose').addEventListener('click', clearSelect);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') clearSelect(); });
+
+document.getElementById('btnAddHol').addEventListener('click', () => {
+  document.getElementById('holForm').style.display = '';
+});
+document.getElementById('hCancel').addEventListener('click', () => {
+  document.getElementById('holForm').style.display = 'none';
+});
+document.getElementById('hSave').addEventListener('click', () => {
+  const date = document.getElementById('hDate').value;
+  const name = document.getElementById('hName').value.trim();
+  if (!date || !name) return;
+  holidays[date] = name;
+  saveHolidays();
+  document.getElementById('holForm').style.display = 'none';
+  document.getElementById('hDate').value = '';
+  document.getElementById('hName').value = '';
+  renderHolidayList();
+  renderTimetable();
+});
+
+/* ── 起動 ── */
+loadDaySchedules();
+loadCellSources();
+loadHolidays();
+load();
+renderTimetable();
+renderProgress();
+renderProgress2();
+renderHolidayList();
+</script>
+</body>
+</html>
