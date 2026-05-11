@@ -238,6 +238,21 @@
       .hol-span-name { font-size:.7rem; }
     }
 
+    /* ── カレンダー設定ページ ── */
+    .gcal-section { padding:16px; border-bottom:1px solid var(--border); }
+    .gcal-section:last-child { border-bottom:none; }
+    .gcal-section-title { font-size:.85rem; font-weight:700; margin-bottom:10px; color:var(--accent); }
+    .gcal-url-wrap { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+    .gcal-meta { display:flex; gap:20px; flex-wrap:wrap; margin:12px 0 4px; }
+    .gcal-meta-item { display:flex; flex-direction:column; gap:2px; }
+    .gcal-meta-label { font-size:.62rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .gcal-meta-value { font-size:.9rem; font-weight:600; }
+    .gcal-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .gcal-status-msg { font-size:.82rem; padding:7px 12px; border-radius:8px; margin-top:10px; display:none; }
+    .gcal-status-msg.ok      { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; display:block; }
+    .gcal-status-msg.error   { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; display:block; }
+    .gcal-status-msg.loading { background:#f0f4ff; color:#2C3E6B; border:1px solid #c8d2e0; display:block; }
+
     /* ── 同期UI ── */
     .nav-btn.sync-btn { min-width:80px; }
     .sync-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
@@ -261,12 +276,12 @@
     <div class="week-label" id="weekLabel"></div>
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
-    <button class="gcal-btn" id="gcalBtn"><span class="gcal-dot"></span>📅 Googleカレンダー</button>
     <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
+    <button class="tab-btn" data-tab="calendar">📅 カレンダー設定</button>
   </div>
 </header>
 
@@ -339,6 +354,45 @@
   </div>
 </div>
 
+
+<!-- カレンダー設定ページ -->
+<div id="pageCalendar" class="container" style="display:none">
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">Googleカレンダー設定</span>
+    </div>
+    <div class="gcal-section">
+      <div class="gcal-section-title">Apps Script URL</div>
+      <div class="gcal-url-wrap">
+        <div class="form-group" style="flex:1;min-width:200px">
+          <input type="url" class="form-input" id="gcalUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-size:.8rem">
+        </div>
+        <button class="btn btn-save" id="btnGcalSaveUrl">URLを保存</button>
+      </div>
+    </div>
+    <div class="gcal-section">
+      <div class="gcal-section-title">キャッシュ状態</div>
+      <div class="gcal-meta" id="gcalMeta">
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">最終更新</span>
+          <span class="gcal-meta-value" id="gcalLastUpdate">未取得</span>
+        </div>
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">取得済みイベント</span>
+          <span class="gcal-meta-value" id="gcalEventCount">-</span>
+        </div>
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">取得期間</span>
+          <span class="gcal-meta-value" id="gcalDateRange">-</span>
+        </div>
+      </div>
+      <div class="gcal-actions">
+        <button class="btn btn-save" id="btnGcalRefresh">↻ 今すぐ更新</button>
+      </div>
+      <div class="gcal-status-msg" id="gcalStatusMsg"></div>
+    </div>
+  </div>
+</div>
 
 <!-- 同期設定モーダル -->
 <div class="sync-overlay" id="syncModal">
@@ -459,39 +513,89 @@ const JP_HOLIDAYS = {
   '2027-03-21': '春分の日',
 };
 
-/* ── Google Calendar（Apps Script経由） ── */
-const GCAL_GAS_URL = 'https://script.google.com/macros/s/AKfycbxz5VLzGbsnafBfEKiJlLm7XpLfMnRWp-G8uQ63zZ52bTMhadEABDzGGcThcDS5awzlLw/exec';
+/* ── Google Calendar（Apps Script経由・キャッシュ方式） ── */
+const DEFAULT_GCAL_URL = 'https://script.google.com/macros/s/AKfycbxz5VLzGbsnafBfEKiJlLm7XpLfMnRWp-G8uQ63zZ52bTMhadEABDzGGcThcDS5awzlLw/exec';
+const GCAL_URL_KEY     = 'tt_gcal_url_v1';
+const GCAL_CACHE_KEY   = 'tt_gcal_cache_v1';
 let gcalEvents = {};
 
-async function fetchGcalEvents() {
-  const dates   = getWeekDates();
-  const timeMin = dates[0].toISOString();
-  const timeMax = addDays(dates[4], 1).toISOString();
-  const btn = document.getElementById('gcalBtn');
-  if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 取得中…'; btn.disabled = true; }
+function getGcalUrl() {
+  return localStorage.getItem(GCAL_URL_KEY) || DEFAULT_GCAL_URL;
+}
+
+function loadGcalCache() {
   try {
-    const res  = await fetch(`${GCAL_GAS_URL}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
+    const cached = JSON.parse(localStorage.getItem(GCAL_CACHE_KEY) || 'null');
+    if (cached && cached.events) gcalEvents = cached.events;
+  } catch { gcalEvents = {}; }
+}
+
+function saveGcalCache(events, timeMin, timeMax) {
+  localStorage.setItem(GCAL_CACHE_KEY, JSON.stringify({
+    events, timeMin, timeMax, updatedAt: new Date().toISOString()
+  }));
+}
+
+function showGcalStatus(type, msg) {
+  const el = document.getElementById('gcalStatusMsg');
+  if (!el) return;
+  el.className = 'gcal-status-msg ' + type;
+  el.textContent = msg;
+}
+
+async function fetchGcalEvents() {
+  const url = getGcalUrl();
+  if (!url) { showGcalStatus('error', 'URLが設定されていません'); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const timeMin = addDays(today, -8*7).toISOString();
+  const timeMax = addDays(today,  8*7).toISOString();
+  showGcalStatus('loading', '取得中…');
+  try {
+    const res  = await fetch(`${url}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
     const data = await res.json();
     gcalEvents = {};
     data.forEach(ev => {
-      // UTC→JST変換（非終日イベントのみ）
       const d       = ev.allDay ? null : new Date(ev.start);
-      const dateStr = ev.allDay ? ev.start.slice(0, 10)
-                                : toDateStr(d);  // JST日付
-      const time    = ev.allDay ? ''
-                                : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const dateStr = ev.allDay ? ev.start.slice(0, 10) : toDateStr(d);
+      const time    = ev.allDay ? '' : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
       gcalEvents[dateStr].push({ title: ev.title || '(無題)', time, calendar: ev.calendar || '' });
     });
-    if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中'; btn.classList.add('connected'); btn.disabled = false; }
+    saveGcalCache(gcalEvents, timeMin, timeMax);
     renderTimetable();
+    const count = Object.values(gcalEvents).reduce((s, evs) => s + evs.length, 0);
+    showGcalStatus('ok', `更新完了 — ${count}件取得`);
+    renderCalendarPage();
   } catch (e) {
     console.error('GCal fetch error:', e);
-    if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 Googleカレンダー'; btn.classList.remove('connected'); btn.disabled = false; }
+    showGcalStatus('error', '取得に失敗しました。URLを確認してください。');
   }
 }
 
-document.getElementById('gcalBtn').addEventListener('click', fetchGcalEvents);
+function renderCalendarPage() {
+  const urlInput = document.getElementById('gcalUrlInput');
+  if (urlInput) urlInput.value = getGcalUrl();
+  try {
+    const cached = JSON.parse(localStorage.getItem(GCAL_CACHE_KEY) || 'null');
+    if (cached) {
+      const d = new Date(cached.updatedAt);
+      const fmt = d.toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const el = document.getElementById('gcalLastUpdate');
+      if (el) el.textContent = fmt;
+      const countEl = document.getElementById('gcalEventCount');
+      if (countEl) {
+        const cnt = Object.values(cached.events || {}).reduce((s, evs) => s + evs.length, 0);
+        countEl.textContent = cnt + '件';
+      }
+      const rangeEl = document.getElementById('gcalDateRange');
+      if (rangeEl && cached.timeMin && cached.timeMax) {
+        const s = new Date(cached.timeMin);
+        const e = new Date(cached.timeMax);
+        rangeEl.textContent = `${s.getMonth()+1}/${s.getDate()} 〜 ${e.getMonth()+1}/${e.getDate()}`;
+      }
+    }
+  } catch {}
+}
 
 function gcalEventStyle(cal) {
   const c = cal || '';
@@ -1204,16 +1308,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     this.classList.add('active');
 
     const tab = this.dataset.tab;
-    if (tab === 'timetable') {
-      document.getElementById('pageTimetable').style.display = '';
-      document.getElementById('pageHoliday').style.display = 'none';
-      document.getElementById('navBar').style.display = '';
-    } else {
-      document.getElementById('pageTimetable').style.display = 'none';
-      document.getElementById('pageHoliday').style.display = '';
-      document.getElementById('navBar').style.display = 'none';
-      renderHolidayPage();
-    }
+    document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
+    document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
+    document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
+    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
+    if (tab === 'holiday')  renderHolidayPage();
+    if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
   });
 });
 
@@ -1306,9 +1406,9 @@ document.getElementById('eventModalClose').addEventListener('click', closeEventM
 document.getElementById('eventModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEventModal(); });
 
 /* ── 週ナビ ── */
-document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); fetchGcalEvents(); });
-document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); fetchGcalEvents(); });
-document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); fetchGcalEvents(); });
+document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
+document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
+document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
 
 /* ── Google Sheets 同期 ── */
@@ -1427,12 +1527,22 @@ document.getElementById('btnCopyScript').addEventListener('click', function() {
   });
 });
 
+/* ── カレンダー設定ページ イベント ── */
+document.getElementById('btnGcalRefresh').addEventListener('click', fetchGcalEvents);
+document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
+  const val = document.getElementById('gcalUrlInput').value.trim();
+  if (!val) return;
+  localStorage.setItem(GCAL_URL_KEY, val);
+  showGcalStatus('ok', 'URLを保存しました');
+});
+
 /* ── 起動 ── */
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
 loadCalEvents();
 load();
+loadGcalCache();
 renderTimetable();
 renderProgress();
 renderProgress2();
