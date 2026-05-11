@@ -583,7 +583,9 @@ async function fetchGcalEvents() {
   if (!url) { showGcalStatus('error', 'URLが設定されていません'); return; }
   const today = new Date(); today.setHours(0,0,0,0);
   const timeMin = addDays(today, -8*7).toISOString();
-  const timeMax = addDays(today,  8*7).toISOString();
+  // 年度末（3月31日）まで取得
+  const yearEnd = new Date(today.getMonth() >= 3 ? today.getFullYear() + 1 : today.getFullYear(), 2, 31, 23, 59, 59);
+  const timeMax = yearEnd.toISOString();
   showGcalStatus('loading', '取得中…');
   try {
     const res  = await fetch(`${url}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
