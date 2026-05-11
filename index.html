@@ -132,10 +132,17 @@
     /* ── Source selector in edit panel ── */
     .src-row { display:flex; align-items:center; gap:6px; padding:0 16px 12px; flex-wrap:wrap; }
     .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
-    .src-sel { padding:6px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; font-family:inherit; outline:none; background:#fafbfc; cursor:pointer; -webkit-appearance:none; appearance:none; }
-    .src-sel:focus { border-color:var(--accent); }
-    .btn-src-clear { padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:.78rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; }
+    .btn-src-clear { padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.72rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; }
     .btn-src-clear:hover { background:#f1f5f9; }
+    .src-grid-wrap { display:flex; flex-direction:column; gap:3px; }
+    .src-grid-head { display:flex; align-items:center; gap:6px; }
+    .src-grid-title { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; }
+    .src-gh { font-size:.6rem; font-weight:700; text-align:center; color:var(--muted); padding:1px 0; }
+    .src-pr { font-size:.6rem; color:var(--muted); text-align:center; line-height:1; padding-top:5px; }
+    .src-gc { border-radius:4px; padding:4px 2px; font-size:.6rem; font-weight:700; text-align:center; cursor:pointer; border:1.5px solid transparent; transition:all .12s; line-height:1.2; white-space:nowrap; min-width:30px; }
+    .src-gc:hover { filter:brightness(.9); transform:scale(1.06); }
+    .src-gc.src-sel-cell { border-color:var(--accent2) !important; box-shadow:0 0 0 2px rgba(216,120,64,.35); }
 
     /* ── インライン編集行 ── */
     .edit-inline {
@@ -356,8 +363,7 @@
 
   <div class="card">
     <div class="list-top">
-      <span class="list-title">授業変更一覧（今日以降）</span>
-      <button class="chg-add-btn" id="btnOpenChangeModal">＋ 授業変更入力</button>
+      <span class="list-title">授業変更一覧</span>
     </div>
     <div id="changesBody"></div>
   </div>
@@ -597,6 +603,7 @@ const CLASSES = [
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
   { name:'行事',   color:'#C0392B', isEvent:true, subjects:[] },
+  { name:'空き',   color:'#B07D4E', subjects:[] },
 ];
 
 const DAY_NAMES = ['月','火','水','木','金'];
@@ -1039,6 +1046,7 @@ function renderTimetable() {
         <div id="editBody"></div>
       `;
       editRow.querySelector('#editClose').addEventListener('click', clearSelect);
+      editRow.addEventListener('click', e => e.stopPropagation());
       grid.appendChild(editRow);
     }
   });
@@ -1147,6 +1155,18 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   const daySelOpts = DAY_NAMES.map((n,j)=>`<option value="${j}"${curSrcDi===j?' selected':''}>${n}曜</option>`).join('');
   const perSelOpts = PERIODS.map(pp=>`<option value="${pp}"${curSrcP===pp?' selected':''}>${pp}限</option>`).join('');
 
+  const srcGridCells = PERIODS.map(p =>
+    `<div class="src-pr">${p}</div>` +
+    Array.from({length:5}, (_,di) => {
+      const e = BASE[`${di}-${p}`];
+      const isSel = curSrcDi === di && curSrcP === p;
+      const bg = e ? pastelizeColor(e.color || '#999') : '#f0f2f8';
+      const borderColor = e ? (e.color || '#e2e8f0') : '#e2e8f0';
+      const label = e ? e.name.replace('研究部','研').replace('裁量','裁').replace('行事','行') : '─';
+      return `<div class="src-gc${isSel?' src-sel-cell':''}" data-di="${di}" data-p="${p}" style="background:${bg};border-color:${borderColor}">${esc(label)}</div>`;
+    }).join('')
+  ).join('');
+
   document.getElementById('editBody').innerHTML = `
     <div class="edit-form">
       <div class="form-group fg-class">
@@ -1157,9 +1177,8 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
       ${showSubject ? `
       <div class="form-group fg-subject">
         <label class="form-label">${subjectLabel}</label>
-        ${isTanin && !isJikoji && !isKenkyu
-          ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
-          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList"><option value="自習"><option value="理科"></datalist>`}
+        <input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}">
+        <datalist id="eSubjectList">${getSubjects(currentClass).map(s=>`<option value="${esc(s.name)}">`).join('')}<option value="自習"><option value="理科"></datalist>
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
@@ -1168,18 +1187,23 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
           placeholder="例: 光合成のまとめ" value="${esc(currentContent)}">
         <datalist id="eContentList">${datalistHtml}</datalist>
       </div>` : ''}
-      <div class="form-group" style="white-space:nowrap;margin-left:auto">
-        <label class="form-label">参照元</label>
-        <div style="display:flex;gap:4px;align-items:center">
-          <select class="src-sel" id="eSrcDay">${daySelOpts}</select>
-          <select class="src-sel" id="eSrcPer">${perSelOpts}</select>
+    </div>
+    <div class="edit-actions" style="align-items:flex-start">
+      <div class="src-grid-wrap">
+        <div class="src-grid-head">
+          <span class="src-grid-title">参照元</span>
           ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
         </div>
+        <div class="src-grid" id="eSrcGrid">
+          <div></div>
+          ${DAY_NAMES.map(n=>`<div class="src-gh">${n}</div>`).join('')}
+          ${srcGridCells}
+        </div>
       </div>
-    </div>
-    <div class="edit-actions">
-      <button class="btn btn-holiday" id="eBtnHoliday" ${isCancel ? 'disabled style="opacity:.4;cursor:default"' : ''}>休みにする</button>
-      <button class="btn btn-restore" id="eBtnRestore" ${!isOvr && !isCancel ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto">
+        <button class="btn btn-restore" id="eBtnRestore" ${!isOvr && !isCancel ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
+        <button class="btn btn-save" id="eBtnOpenChangeModal">授業変更入力</button>
+      </div>
     </div>
   `;
 
@@ -1225,10 +1249,12 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
 
   document.getElementById('eBtnHoliday')?.addEventListener('click', setHoliday);
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
+  document.getElementById('eBtnOpenChangeModal')?.addEventListener('click', () => {
+    const [ds, pStr] = selKeyParts();
+    openChangeModal(ds, +pStr);
+  });
 
-  const saveSrc = () => {
-    const di = +document.getElementById('eSrcDay').value;
-    const p  = +document.getElementById('eSrcPer').value;
+  const saveSrc = (di, p) => {
     const [ds] = selKeyParts();
     const d2  = parseDateStr(ds);
     const ndi = dayIdx(d2);
@@ -1241,8 +1267,11 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
     saveCellSources();
     renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
   };
-  document.getElementById('eSrcDay')?.addEventListener('change', saveSrc);
-  document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
+  document.getElementById('eSrcGrid')?.addEventListener('click', e => {
+    const cell = e.target.closest('.src-gc');
+    if (!cell) return;
+    saveSrc(+cell.dataset.di, +cell.dataset.p);
+  });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
     const [ds] = selKeyParts();
@@ -1790,6 +1819,7 @@ weekPicker.addEventListener('change', function() {
   this.style.pointerEvents = 'none';
 });
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
+document.addEventListener('click', () => { if (selKey) clearSelect(); });
 
 /* ── Google Sheets 同期 ── */
 const SYNC_URL_KEY  = 'tt_sync_url_v1';
@@ -1951,10 +1981,11 @@ document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
 });
 
 /* ── 授業変更入力モーダル ── */
-function openChangeModal() {
-  const today = new Date();
-  document.getElementById('chgDate').value = toDateStr(today);
-  document.getElementById('chgPeriod').value = '1';
+function openChangeModal(prefillDateStr, prefillPeriod) {
+  const dateStr = prefillDateStr || toDateStr(new Date());
+  const period  = prefillPeriod  || 1;
+  document.getElementById('chgDate').value = dateStr;
+  document.getElementById('chgPeriod').value = String(period);
   buildChgToClassOptions();
   updateChgFrom();
   document.getElementById('chgModal').style.display = 'flex';
@@ -2029,7 +2060,7 @@ function updateChgPreview() {
   toBadge.style.border = `1.5px solid ${toColor}`;
 }
 
-document.getElementById('btnOpenChangeModal').addEventListener('click', openChangeModal);
+
 document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
 document.getElementById('chgModalCancel').addEventListener('click', closeChangeModal);
 document.getElementById('chgModal').addEventListener('click', e => {
