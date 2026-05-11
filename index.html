@@ -79,7 +79,8 @@
 
     .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:70px; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
-    .cell.has-entry { border-style:solid; border-width:1.5px; }
+    .cell.has-entry { border-style:solid; border-width:1.5px; border-color:transparent; }
+    .cell.has-content { border-style:solid; border-width:1.5px; }
     .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
@@ -866,6 +867,7 @@ function renderTimetable() {
       const isLight = entry && !cancel && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
       if (entry && !cancel) cls += ' has-entry';
+      if (entry && !cancel && entry.teacher) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (cancel)   cls += ' cancelled';
       if (ovr && !cancel) cls += ' modified';
@@ -886,7 +888,7 @@ function renderTimetable() {
         const color = entry.color || '#667eea';
         const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
-        if (!isDark) cell.style.borderColor = color;
+        if (!isDark && entry.teacher) cell.style.borderColor = color;
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
           ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
