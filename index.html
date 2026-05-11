@@ -111,7 +111,7 @@
     .cell:hover .add-mark { color:var(--accent); }
     .c-class   { font-weight:800; font-size:.82rem; color:rgba(255,255,255,.97); line-height:1.3; }
     .c-subject { font-size:.65rem; color:rgba(255,255,255,.82); margin-top:2px; font-weight:600; }
-    .c-content { font-size:.58rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
+    .c-content { font-size:.72rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
     .cell-with-content .c-class   { color:rgba(0,0,0,.8); }
     .cell-with-content .c-subject { color:rgba(0,0,0,.55); }
     .cell-with-content .c-content { color:rgba(0,0,0,.45); }
@@ -888,8 +888,8 @@ function renderTimetable() {
         cell.style.background = bg;
         if (!isDark) cell.style.borderColor = color;
         cell.innerHTML = `
-          <div class="c-class" ${!isDark ? `style="color:${color}"` : ''}>${esc(entry.name)}</div>
-          ${entry.room    ? `<div class="c-subject" ${!isDark ? `style="color:${color};opacity:.8"` : ''}>${esc(entry.room)}</div>` : ''}
+          <div class="c-class">${esc(entry.name)}</div>
+          ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
           ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
         `;
