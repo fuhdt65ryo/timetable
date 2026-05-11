@@ -232,6 +232,19 @@
       .hol-span-icon { font-size:1.1rem; }
       .hol-span-name { font-size:.7rem; }
     }
+
+    /* ── 同期UI ── */
+    .nav-btn.sync-btn { min-width:80px; }
+    .sync-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
+    .sync-modal { background:#fff; border-radius:16px; padding:24px; max-width:540px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .sync-modal h2 { font-size:1.05rem; font-weight:800; margin-bottom:4px; color:var(--accent); }
+    .sync-modal .sync-desc { font-size:.83rem; color:var(--muted); margin-bottom:14px; line-height:1.6; }
+    .sync-steps { font-size:.82rem; color:var(--text); margin:0 0 10px 18px; line-height:1.9; }
+    .sync-modal summary { font-size:.85rem; font-weight:700; color:var(--accent); cursor:pointer; margin-bottom:8px; }
+    .sync-modal pre { background:#f7fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:.7rem; overflow-x:auto; margin:8px 0 10px; white-space:pre; line-height:1.6; }
+    .sync-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
+    .sync-status-row { font-size:.78rem; color:var(--muted); margin-bottom:12px; }
+    .sync-status-row span { font-weight:600; }
   </style>
 </head>
 <body>
@@ -244,6 +257,7 @@
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
     <button class="gcal-btn" id="gcalBtn"><span class="gcal-dot"></span>📅 Googleカレンダー</button>
+    <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
@@ -320,6 +334,48 @@
   </div>
 </div>
 
+
+<!-- 同期設定モーダル -->
+<div class="sync-overlay" id="syncModal">
+  <div class="sync-modal">
+    <h2>☁ Googleスプレッドシートで同期</h2>
+    <p class="sync-desc">入力した時間割データを複数の端末で共有できます。<br>初回のみ以下のセットアップが必要です（約5分）。</p>
+    <div class="sync-status-row" id="syncStatusRow" style="display:none">最終同期: <span id="syncLastTime">-</span></div>
+    <details id="syncSetupDetails" open>
+      <summary>▶ 初回セットアップ手順</summary>
+      <ol class="sync-steps">
+        <li><a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">Googleスプレッドシート</a>で新しいシートを作成する</li>
+        <li>メニューの「拡張機能」→「Apps Script」を開く</li>
+        <li>表示されたコードをすべて削除し、下のコードを貼り付ける</li>
+        <li>「保存」してから「デプロイ」→「新しいデプロイ」をクリック</li>
+        <li>種類:「ウェブアプリ」、アクセス:「全員」に設定して「デプロイ」</li>
+        <li>表示されたウェブアプリURLをコピーして下の欄に貼り付ける</li>
+      </ol>
+      <pre>function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  return ContentService.createTextOutput(sheet.getRange('A1').getValue() || '{}')
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.getRange('A1').setValue(e.postData.contents);
+  return ContentService.createTextOutput('{"ok":true}')
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+      <button class="btn btn-holiday" id="btnCopyScript" style="font-size:.78rem;padding:6px 14px;margin-bottom:12px">📋 コードをコピー</button>
+    </details>
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">ウェブアプリURL</label>
+      <input type="url" class="form-input" id="syncUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-size:.8rem;margin-top:4px">
+    </div>
+    <div class="sync-modal-actions">
+      <button class="btn btn-danger" id="btnSyncDisconnect" style="display:none;margin-right:auto">接続解除</button>
+      <button class="btn btn-holiday" id="syncModalCancel">キャンセル</button>
+      <button class="btn btn-save" id="syncModalSave">保存して同期</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
@@ -493,15 +549,15 @@ let selKey    = null;
 function load() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
 }
-function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); }
+function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); schedulePush(); }
 function loadDaySchedules() {
   try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1') || '{}'); } catch { daySchedules = {}; }
 }
-function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); }
+function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); schedulePush(); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
 }
-function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); }
+function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); schedulePush(); }
 function loadHolidays() {
   try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
   // 未登録の祝日のみ追加（ユーザーが削除したものは復活させない）
@@ -519,7 +575,7 @@ function loadHolidays() {
     localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
   }
 }
-function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); }
+function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); schedulePush(); }
 function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
 }
@@ -1237,6 +1293,122 @@ document.getElementById('btnNext').addEventListener('click',  () => { weekStart=
 document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); fetchGcalEvents(); });
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
 
+/* ── Google Sheets 同期 ── */
+const SYNC_URL_KEY  = 'tt_sync_url_v1';
+const SYNC_TIME_KEY = 'tt_sync_last_v1';
+let syncTimer = null;
+
+function getSyncUrl()  { return localStorage.getItem(SYNC_URL_KEY) || ''; }
+function setSyncUrl(u) { localStorage.setItem(SYNC_URL_KEY, u); }
+
+function updateSyncBtn(state) {
+  const btn = document.getElementById('btnSync');
+  if (!btn) return;
+  const labels = { idle:'☁ 同期', syncing:'⟳ 同期中…', ok:'✓ 同期済', error:'✗ エラー' };
+  btn.textContent = labels[state] || '☁ 同期';
+  btn.style.opacity = state === 'syncing' ? '.6' : '1';
+}
+
+async function syncPush() {
+  const url = getSyncUrl();
+  if (!url) return;
+  updateSyncBtn('syncing');
+  const payload = JSON.stringify({
+    tt_overrides_v1:  overrides,
+    tt_daysched_v1:   daySchedules,
+    tt_cellsrc_v1:    cellSources,
+    tt_holidays_v1:   holidays,
+    tt_holidays_seen: JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
+    _updated: new Date().toISOString()
+  });
+  try {
+    await fetch(url, { method:'POST', body:payload, headers:{'Content-Type':'text/plain'} });
+    const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem(SYNC_TIME_KEY, now);
+    updateSyncBtn('ok');
+  } catch(e) {
+    console.error('sync push:', e);
+    updateSyncBtn('error');
+  }
+}
+
+async function syncPull() {
+  const url = getSyncUrl();
+  if (!url) return;
+  updateSyncBtn('syncing');
+  try {
+    const res = await fetch(url + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let changed = false;
+    if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
+    if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
+    if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
+    if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
+    if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
+    if (changed) { renderTimetable(); renderProgress(); renderProgress2(); }
+    const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem(SYNC_TIME_KEY, now);
+    updateSyncBtn('ok');
+  } catch(e) {
+    console.error('sync pull:', e);
+    updateSyncBtn('error');
+  }
+}
+
+function schedulePush() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncPush, 1500);
+}
+
+function openSyncModal() {
+  const url = getSyncUrl();
+  document.getElementById('syncUrlInput').value = url;
+  document.getElementById('btnSyncDisconnect').style.display = url ? '' : 'none';
+  document.getElementById('syncSetupDetails').open = !url;
+  const lastTime = localStorage.getItem(SYNC_TIME_KEY);
+  const row = document.getElementById('syncStatusRow');
+  if (url && lastTime) {
+    document.getElementById('syncLastTime').textContent = lastTime;
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+  document.getElementById('syncModal').style.display = 'flex';
+}
+
+function closeSyncModal() {
+  document.getElementById('syncModal').style.display = 'none';
+}
+
+document.getElementById('btnSync').addEventListener('click', openSyncModal);
+document.getElementById('syncModalCancel').addEventListener('click', closeSyncModal);
+document.getElementById('syncModal').addEventListener('click', e => { if (e.target === document.getElementById('syncModal')) closeSyncModal(); });
+
+document.getElementById('syncModalSave').addEventListener('click', () => {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  if (!url) return;
+  setSyncUrl(url);
+  closeSyncModal();
+  syncPull();
+});
+
+document.getElementById('btnSyncDisconnect').addEventListener('click', () => {
+  if (!confirm('同期を解除しますか？\nローカルのデータは残ります。')) return;
+  localStorage.removeItem(SYNC_URL_KEY);
+  localStorage.removeItem(SYNC_TIME_KEY);
+  closeSyncModal();
+  updateSyncBtn('idle');
+});
+
+document.getElementById('btnCopyScript').addEventListener('click', function() {
+  const code = document.querySelector('#syncModal pre').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    this.textContent = '✓ コピーしました';
+    setTimeout(() => { this.textContent = '📋 コードをコピー'; }, 2000);
+  });
+});
+
 /* ── 起動 ── */
 loadDaySchedules();
 loadCellSources();
@@ -1246,6 +1418,7 @@ load();
 renderTimetable();
 renderProgress();
 renderProgress2();
+if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
 </script>
 </body>
 </html>
