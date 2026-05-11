@@ -475,8 +475,12 @@ async function fetchGcalEvents() {
     const data = await res.json();
     gcalEvents = {};
     data.forEach(ev => {
-      const dateStr = ev.start.slice(0, 10);
-      const time    = ev.allDay ? '' : ev.start.slice(11, 16);
+      // UTC→JST変換（非終日イベントのみ）
+      const d       = ev.allDay ? null : new Date(ev.start);
+      const dateStr = ev.allDay ? ev.start.slice(0, 10)
+                                : toDateStr(d);  // JST日付
+      const time    = ev.allDay ? ''
+                                : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
       gcalEvents[dateStr].push({ title: ev.title || '(無題)', time });
     });
