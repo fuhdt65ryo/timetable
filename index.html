@@ -86,6 +86,9 @@
     .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
+    .cell-day.is-past { opacity:.5; }
+    .cell.is-past-col { opacity:.45; }
+    .cell.is-past-col.selected { opacity:1; }
 
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
@@ -196,6 +199,8 @@
     .btn-secondary:hover { background:#f1f5f9; }
     .btn-restore { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
     .btn-restore:hover { background:#dcfce7; }
+    .btn-clear { background:#fefce8; color:#854d0e; border:1px solid #fde68a; }
+    .btn-clear:hover { background:#fef08a; }
 
     /* ── Progress ── */
     .list-top { padding:13px 16px 11px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
@@ -220,7 +225,10 @@
     .prog-today { display:inline-block; background:#FFF9C4; color:#F57F17; font-weight:800; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
     .prog-today .prog-p { color:#F9A825; }
 
-    .prog-add-wrap { display:flex; gap:6px; margin:10px 12px 6px; }
+    .prog-add-details { margin:8px 12px 6px; }
+    .prog-add-summary { font-size:.8rem; font-weight:700; color:var(--accent); cursor:pointer; list-style:none; padding:4px 0; user-select:none; }
+    .prog-add-summary::-webkit-details-marker { display:none; }
+    .prog-add-wrap { display:flex; gap:6px; margin:6px 0 2px; }
     .prog-add-inp { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; outline:none; }
     .prog-add-inp:focus { border-color:var(--accent2); }
     .prog-add-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:5px 14px; font-size:.82rem; font-weight:700; cursor:pointer; white-space:nowrap; }
@@ -361,7 +369,6 @@
   <div class="card">
     <div class="list-top">
       <span class="list-title">授業変更一覧（今日以降）</span>
-      <button class="chg-add-btn" id="btnOpenChangeModal">＋ 授業変更入力</button>
     </div>
     <div id="changesBody"></div>
   </div>
@@ -901,7 +908,8 @@ function renderTimetable() {
           ? `<div class="day-shuccho-badge">出張</div>`
           : '';
 
-    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + holClass);
+    const isPastDay = d < today && !isSameDay(d, today);
+    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isPastDay ? ' is-past' : '') + holClass);
     div.style.cssText = `grid-column:${col};grid-row:1`;
     const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
     const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
@@ -965,6 +973,7 @@ function renderTimetable() {
     dates.forEach(d => {
       const col = dates.indexOf(d) + 2;
       const isToday   = isSameDay(d, today);
+      const isPast    = d < today && !isToday;
       const dateStr   = toDateStr(d);
       if (isActualHoliday(dateStr)) return; // 祝日ブロックは後で処理
 
@@ -979,7 +988,13 @@ function renderTimetable() {
       if (entry) cls += ' has-entry';
       if (entry && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
-      if (ovr) cls += ' modified';
+      if (isPast)   cls += ' is-past-col';
+      if (ovr) {
+        const ovrEntry = overrides[key];
+        const baseDi = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
+        const baseE  = BASE[`${baseDi}-${p}`];
+        if (ovrEntry === null || ovrEntry?.name !== baseE?.name || ovrEntry?.room !== baseE?.room) cls += ' modified';
+      }
       if (isSel)    cls += ' selected';
       if (isDark)   cls += ' cell-dark';
       if (isLight)  cls += ' cell-light';
@@ -1140,9 +1155,11 @@ function renderEditForm(entry, isOvr, baseEntry) {
 
   const srcGridCells = PERIODS.map(pp => {
     const cells = DAY_NAMES.map((_, di) => {
-      const name = BASE[`${di}-${pp}`]?.name || '';
+      const e2 = BASE[`${di}-${pp}`];
+      const name = e2?.name || '';
+      const subj = e2?.room ? e2.room[0] : '';
       const isSel = curSrcDi === di && curSrcP === pp;
-      return `<div class="src-gc${isSel ? ' src-active' : ''}" data-di="${di}" data-p="${pp}">${esc(name)}</div>`;
+      return `<div class="src-gc${isSel ? ' src-active' : ''}" data-di="${di}" data-p="${pp}">${esc(name)}${subj ? `<span style="font-size:.75em;opacity:.7">${esc(subj)}</span>` : ''}</div>`;
     }).join('');
     return `<div class="src-gp">${pp}</div>${cells}`;
   }).join('');
@@ -1179,7 +1196,11 @@ function renderEditForm(entry, isOvr, baseEntry) {
         </div>
         ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
       </div>
-      <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''} style="margin-left:auto;align-self:flex-end">元に戻す</button>
+      <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end">
+        <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
+        <button class="btn btn-clear" id="eBtnClear" ${!entry ? 'disabled style="opacity:.4;cursor:default"' : ''}>空欄にする</button>
+        <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
+      </div>
     </div>
   `;
 
@@ -1199,6 +1220,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
     inp.focus();
   };
 
+  const attachConfirmSync = (el) => {
+    if (!el) return;
+    el.addEventListener('blur', () => { clearTimeout(contentTimer); autoSave(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(contentTimer); autoSave(); schedulePush(); } });
+  };
+
   document.getElementById('eClass').addEventListener('change', function() {
     if (this.value === '__other__') {
       attachOtherInput(this.closest('.form-group'));
@@ -1208,20 +1235,22 @@ function renderEditForm(entry, isOvr, baseEntry) {
     autoSave();
   });
   // 既にその他で保存済みの場合はリスナーを付け直す
-  document.getElementById('eClassOther')?.addEventListener('input', () => {
-    clearTimeout(contentTimer);
-    contentTimer = setTimeout(autoSave, 600);
-  });
+  const classOtherEl = document.getElementById('eClassOther');
+  if (classOtherEl) {
+    classOtherEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 600); });
+    attachConfirmSync(classOtherEl);
+  }
   const subjectEl = document.getElementById('eSubject');
-  subjectEl?.addEventListener('change', autoSave);
-  subjectEl?.addEventListener('input', () => {
-    clearTimeout(contentTimer);
-    contentTimer = setTimeout(autoSave, 500);
-  });
-  document.getElementById('eContent')?.addEventListener('input', () => {
-    clearTimeout(contentTimer);
-    contentTimer = setTimeout(autoSave, 500);
-  });
+  subjectEl?.addEventListener('change', () => { autoSave(); });
+  if (subjectEl?.tagName === 'INPUT') {
+    subjectEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
+    attachConfirmSync(subjectEl);
+  }
+  const contentEl = document.getElementById('eContent');
+  if (contentEl) {
+    contentEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
+    attachConfirmSync(contentEl);
+  }
 
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
 
@@ -1241,6 +1270,16 @@ function renderEditForm(entry, isOvr, baseEntry) {
       saveCellSources();
       renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
     });
+  });
+  document.getElementById('eBtnClear')?.addEventListener('click', () => {
+    overrides[selKey] = null;
+    save();
+    schedulePush();
+    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
+  });
+  document.getElementById('eBtnChg')?.addEventListener('click', () => {
+    const [ds, pStr] = selKeyParts();
+    openChangeModal(ds, +pStr);
   });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
@@ -1315,7 +1354,20 @@ function renderProgress() {
     if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
   });
 
-  const rows = Object.values(map);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // 全クラスが過去になった手動追加分を自動削除
+  const beforeLen = progManual.length;
+  progManual = progManual.filter(name => {
+    const info = map[name];
+    if (!info || Object.keys(info.classes).length === 0) return true;
+    return !PROG_CLASSES.every(c => info.classes[c] && info.classes[c].date < today);
+  });
+  if (progManual.length !== beforeLen) saveProgManual();
+
+  const rows = Object.values(map).filter(({ content, classes }) => {
+    return !PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
+  });
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
     renderProgManualInput(container);
@@ -1333,13 +1385,8 @@ function renderProgress() {
   table.style.tableLayout = 'fixed';
   table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
 
-  const today = new Date(); today.setHours(0,0,0,0);
-
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
-    // 全クラスが今日より前の日付で実施済みなら削除（手動追加は除外しない）
-    const allDone = !manual && PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
-    if (allDone) return;
     const tr = document.createElement('tr');
     let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog">×</button>` : ''}</td>`;
     PROG_CLASSES.forEach(cls => {
@@ -1367,10 +1414,37 @@ function renderProgress() {
 }
 
 function renderProgManualInput(container) {
+  const details = document.createElement('details');
+  details.className = 'prog-add-details';
+  const summary = document.createElement('summary');
+  summary.className = 'prog-add-summary';
+  summary.textContent = '＋ 授業名を追加';
   const wrap = document.createElement('div');
   wrap.className = 'prog-add-wrap';
-  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog">追加</button>`;
-  container.appendChild(wrap);
+  const inp = document.createElement('input');
+  inp.className = 'prog-add-inp';
+  inp.type = 'text';
+  inp.placeholder = '授業名を入力してEnterまたはフォーカスを外す';
+  inp.dataset.list = 'prog';
+  wrap.appendChild(inp);
+  details.appendChild(summary);
+  details.appendChild(wrap);
+  container.appendChild(details);
+
+  details.addEventListener('toggle', function() {
+    if (details.open) {
+      inp.focus();
+    } else {
+      const val = inp.value.trim();
+      if (val && !progManual.includes(val)) {
+        progManual.push(val);
+        saveProgManual();
+        renderProgress();
+      }
+      inp.value = '';
+      schedulePush();
+    }
+  });
 }
 
 /* ── 2年生進捗テーブル ── */
@@ -1399,7 +1473,20 @@ function renderProgress2() {
     if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
   });
 
-  const rows = Object.values(map);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // 全クラスが過去になった手動追加分を自動削除
+  const beforeLen2 = prog2Manual.length;
+  prog2Manual = prog2Manual.filter(name => {
+    const info = map[name];
+    if (!info || Object.keys(info.classes).length === 0) return true;
+    return !PROG2_CLASSES.every(c => info.classes[c] && info.classes[c].date < today);
+  });
+  if (prog2Manual.length !== beforeLen2) saveProg2Manual();
+
+  const rows = Object.values(map).filter(({ classes }) => {
+    return !PROG2_CLASSES.every(c => classes[c] && classes[c].date < today);
+  });
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
     renderProg2ManualInput(container);
@@ -1416,8 +1503,6 @@ function renderProgress2() {
   table.className = 'prog-table';
   table.style.tableLayout = 'fixed';
   table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
-
-  const today = new Date(); today.setHours(0,0,0,0);
 
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
@@ -1448,10 +1533,37 @@ function renderProgress2() {
 }
 
 function renderProg2ManualInput(container) {
+  const details = document.createElement('details');
+  details.className = 'prog-add-details';
+  const summary = document.createElement('summary');
+  summary.className = 'prog-add-summary';
+  summary.textContent = '＋ 授業名を追加';
   const wrap = document.createElement('div');
   wrap.className = 'prog-add-wrap';
-  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog2">追加</button>`;
-  container.appendChild(wrap);
+  const inp = document.createElement('input');
+  inp.className = 'prog-add-inp';
+  inp.type = 'text';
+  inp.placeholder = '授業名を入力してEnterまたはフォーカスを外す';
+  inp.dataset.list = 'prog2';
+  wrap.appendChild(inp);
+  details.appendChild(summary);
+  details.appendChild(wrap);
+  container.appendChild(details);
+
+  details.addEventListener('toggle', function() {
+    if (details.open) {
+      inp.focus();
+    } else {
+      const val = inp.value.trim();
+      if (val && !prog2Manual.includes(val)) {
+        prog2Manual.push(val);
+        saveProg2Manual();
+        renderProgress2();
+      }
+      inp.value = '';
+      schedulePush();
+    }
+  });
 }
 
 /* ── 授業変更一覧 ── */
@@ -1825,20 +1937,6 @@ document.getElementById('btnCopyScript').addEventListener('click', function() {
 
 /* ── 授業進捗 手動追加・削除 ── */
 document.addEventListener('click', function(e) {
-  // 追加ボタン
-  if (e.target.classList.contains('prog-add-btn')) {
-    const list = e.target.dataset.list;
-    const inp = e.target.closest('.prog-add-wrap').querySelector('.prog-add-inp');
-    const val = inp.value.trim();
-    if (!val) return;
-    if (list === 'prog') {
-      if (!progManual.includes(val)) { progManual.push(val); saveProgManual(); renderProgress(); }
-    } else {
-      if (!prog2Manual.includes(val)) { prog2Manual.push(val); saveProg2Manual(); renderProgress2(); }
-    }
-    inp.value = '';
-    return;
-  }
   // 削除ボタン
   if (e.target.classList.contains('prog-del-btn')) {
     const list = e.target.dataset.list;
@@ -1850,11 +1948,20 @@ document.addEventListener('click', function(e) {
     }
   }
 });
-// Enterキーで追加
+// Enterキー → detailsを閉じる（toggleハンドラで確定＋同期）
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && e.target.classList.contains('prog-add-inp')) {
-    e.target.closest('.prog-add-wrap').querySelector('.prog-add-btn').click();
+    e.preventDefault();
+    const details = e.target.closest('.prog-add-details');
+    if (details) details.open = false;
   }
+});
+// フォーカスを外したとき → detailsの外に出たら閉じる
+document.addEventListener('focusout', function(e) {
+  if (!e.target.classList.contains('prog-add-inp')) return;
+  const details = e.target.closest('.prog-add-details');
+  if (!details || !details.open) return;
+  if (!details.contains(e.relatedTarget)) details.open = false;
 });
 
 /* ── カレンダー設定ページ イベント ── */
@@ -1867,10 +1974,9 @@ document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
 });
 
 /* ── 授業変更入力モーダル ── */
-function openChangeModal() {
-  const today = new Date();
-  document.getElementById('chgDate').value = toDateStr(today);
-  document.getElementById('chgPeriod').value = '1';
+function openChangeModal(dateStr, period) {
+  document.getElementById('chgDate').value = dateStr || toDateStr(new Date());
+  document.getElementById('chgPeriod').value = period || '1';
   buildChgToClassOptions();
   updateChgFrom();
   document.getElementById('chgModal').style.display = 'flex';
@@ -1945,7 +2051,6 @@ function updateChgPreview() {
   toBadge.style.border = `1.5px solid ${toColor}`;
 }
 
-document.getElementById('btnOpenChangeModal').addEventListener('click', openChangeModal);
 document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
 document.getElementById('chgModalCancel').addEventListener('click', closeChangeModal);
 document.getElementById('chgModal').addEventListener('click', e => {
