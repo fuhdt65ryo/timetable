@@ -117,6 +117,8 @@
     .cell-with-content .c-subject { color:rgba(0,0,0,.55); }
     .cell-with-content .c-content { color:rgba(0,0,0,.45); }
     .c-cancel  { font-size:.78rem; color:#94a3b8; font-weight:700; }
+    .cell-light .c-class  { color:rgba(0,0,0,.75); }
+    .cell-light .c-subject { color:rgba(0,0,0,.6); }
     .cell-light .c-src { background:rgba(0,0,0,.12); color:rgba(0,0,0,.6); }
     .cell-dark .c-class   { color:rgba(255,255,255,.95); }
     .cell-dark .c-subject { color:rgba(255,255,255,.75); }
@@ -908,7 +910,7 @@ function renderTimetable() {
         if (!isDark && entry.teacher) cell.style.borderColor = color;
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
-          ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
+          ${entry.room    ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : ''}
           ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
         `;
