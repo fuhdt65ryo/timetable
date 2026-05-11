@@ -905,7 +905,7 @@ function renderTimetable() {
 
       if (entry && !cancel) {
         const color = entry.color || '#667eea';
-        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
+        const bg = isDark ? (entry.color || '#37474F') : entry.name === '空き' ? '#fff' : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark && entry.teacher) cell.style.borderColor = color;
         cell.innerHTML = `
