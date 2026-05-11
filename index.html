@@ -46,8 +46,8 @@
     }
 
     .cell-day { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; }
-    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:600; font-family:inherit; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:5px; color:inherit; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
-    .day-sched-sel.is-changed { background:rgba(255,255,255,.7); color:#2C3E6B; font-weight:800; }
+    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:5px; color:rgba(255,255,255,.45); padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
+    .day-sched-sel.is-changed { background:rgba(255,255,255,.9); color:#1a2040; font-weight:800; border-color:transparent; }
     .cell-day.is-today { background:linear-gradient(135deg,#1a2d5a,#321a5a); color:#fff; box-shadow:0 0 0 2px #4a6aaa; }
     .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
     .day-name { font-size:.78rem; }
@@ -177,6 +177,7 @@
     .hol-name-text { font-size:.9rem; flex:1; }
     .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
     .hol-del:hover { color:#e53e3e; background:#fff5f5; }
+    .hol-national-badge { font-size:.68rem; font-weight:600; color:#5b7fa0; background:#eaf2f8; border:1px solid #c5dff0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
     .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
 
     /* ── 祝日カウントバッジ ── */
@@ -487,13 +488,15 @@ function renderTimetable() {
 
     if (!isHoliday) {
       const sel = document.createElement('select');
-      sel.className = 'day-sched-sel' + (hasSched ? ' is-changed' : '');
-      sel.innerHTML = `<option value="-1"${!hasSched?' selected':''}>日課</option>` +
-        DAY_NAMES.map((n,j) => `<option value="${j}"${hasSched && schedDi===j?' selected':''}>${n}曜</option>`).join('');
+      const isChanged = hasSched && schedDi !== i;
+      sel.className = 'day-sched-sel' + (isChanged ? ' is-changed' : '');
+      sel.innerHTML = DAY_NAMES.map((n,j) =>
+        `<option value="${j}"${(hasSched ? schedDi : i) === j ? ' selected' : ''}>${n}曜</option>`
+      ).join('');
       sel.addEventListener('change', function(e) {
         e.stopPropagation();
         const v = +this.value;
-        if (v < 0) delete daySchedules[dateStr];
+        if (v === i) delete daySchedules[dateStr];
         else daySchedules[dateStr] = v;
         saveDaySchedules();
         renderTimetable();
@@ -873,13 +876,16 @@ function renderHolidayPage() {
     items.forEach(([date, name]) => {
       const d = parseDateStr(date);
       const row = el('div', 'hol-item');
+      const isNational = date in JP_HOLIDAYS;
       row.innerHTML = `
         <div class="hol-dot"></div>
         <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）</span>
         <span class="hol-name-text">${esc(name)}</span>
-        <button class="hol-del" data-date="${date}" title="削除">✕</button>
+        ${isNational
+          ? '<span class="hol-national-badge">国民の祝日</span>'
+          : `<button class="hol-del" data-date="${date}" title="削除">✕</button>`}
       `;
-      row.querySelector('.hol-del').addEventListener('click', () => {
+      row.querySelector('.hol-del')?.addEventListener('click', () => {
         delete holidays[date];
         saveHolidays();
         renderHolidayPage();
