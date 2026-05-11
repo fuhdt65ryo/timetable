@@ -1023,8 +1023,13 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   const currentSubject = entry?.room    || '';
   const currentContent = entry?.teacher || '';
 
+  const knownClasses  = CLASSES.map(c => c.name);
+  const isOtherClass  = currentClass && !knownClasses.includes(currentClass);
+  const classSelectVal = isOtherClass ? '__other__' : currentClass;
+
   const classOpts = '<option value="">── 選択 ──</option>' +
-    CLASSES.map(c=>`<option value="${c.name}"${c.name===currentClass?' selected':''}>${c.name}</option>`).join('');
+    CLASSES.map(c=>`<option value="${c.name}"${c.name===classSelectVal?' selected':''}>${c.name}</option>`).join('') +
+    `<option value="__other__"${classSelectVal==='__other__'?' selected':''}>その他...</option>`;
   const subjectOpts = getSubjectOptions(currentClass, currentSubject);
   const datalistHtml = pastContents.map(v=>`<option value="${esc(v)}">`).join('');
 
@@ -1055,6 +1060,7 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
         <select class="form-select" id="eClass">${classOpts}</select>
+        ${classSelectVal === '__other__' ? `<input class="form-input" id="eClassOther" type="text" placeholder="クラス名を入力" value="${esc(currentClass)}" style="margin-top:4px">` : ''}
       </div>
       ${showSubject ? `
       <div class="form-group fg-subject">
@@ -1086,8 +1092,16 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   `;
 
   document.getElementById('eClass').addEventListener('change', function() {
-    // autoSave → refreshEditForm で教科欄ごと再描画されるので直接書き換え不要
+    if (this.value === '__other__') {
+      refreshEditForm();
+      setTimeout(() => document.getElementById('eClassOther')?.focus(), 30);
+      return;
+    }
     autoSave();
+  });
+  document.getElementById('eClassOther')?.addEventListener('input', () => {
+    clearTimeout(contentTimer);
+    contentTimer = setTimeout(autoSave, 600);
   });
   const subjectEl = document.getElementById('eSubject');
   subjectEl?.addEventListener('change', autoSave);
@@ -1139,7 +1153,8 @@ let contentTimer = null;
 
 function autoSave() {
   if (!selKey) return;
-  const klass   = document.getElementById('eClass')?.value;
+  let klass     = document.getElementById('eClass')?.value;
+  if (klass === '__other__') klass = document.getElementById('eClassOther')?.value.trim() || '';
   const subject = document.getElementById('eSubject')?.value || '';
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
