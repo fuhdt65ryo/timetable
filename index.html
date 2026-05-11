@@ -634,14 +634,15 @@ function renderCalendarPage() {
 
 function gcalEventStyle(cal) {
   const c = cal || '';
-  // 白背景セルに合わせてクラスの色と統一
-  if (c.includes('学校'))  return 'background:#FFF0E0;border-color:#E8922A;color:#7A4500';  // オレンジ（2-4色系）
-  if (c.includes('部活'))  return 'background:#E0EEFF;border-color:#4A90D9;color:#1A4A8A';  // 青（3-2色系）
-  if (c.includes('出張'))  return 'background:#E0F8EC;border-color:#3DAE65;color:#0D6B35';  // 緑（3-4色系）
-  if (c.includes('受験'))  return 'background:#FFF8E0;border-color:#D4A017;color:#7A5A00';  // 黄（3-3色系）
-  if (c.includes('個人') || c.includes('みちこ') || c.includes('ファミリー'))  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515';  // 赤（3-1色系）
-  if (c.includes('勉強'))  return 'background:#F3EEFF;border-color:#8040C0;color:#4A1580';  // 紫
-  return 'background:#f0f4ff;border-color:#c8d4ee;color:#444';
+  // 数字つきカレンダーまたはファミリーカレンダー → 自分の予定（カラー表示）
+  const isMine = /\d/.test(c) || c.includes('ファミリー');
+  if (!isMine) return 'background:#F5F5F5;border-color:#BDBDBD;color:#757575'; // 妻の予定 → グレー
+  if (c.includes('学校'))  return 'background:#FFF0E0;border-color:#E8922A;color:#7A4500';
+  if (c.includes('部活'))  return 'background:#E0EEFF;border-color:#4A90D9;color:#1A4A8A';
+  if (c.includes('出張'))  return 'background:#E0F8EC;border-color:#3DAE65;color:#0D6B35';
+  if (c.includes('受験'))  return 'background:#FFF8E0;border-color:#D4A017;color:#7A5A00';
+  if (c.includes('勉強'))  return 'background:#F3EEFF;border-color:#8040C0;color:#4A1580';
+  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515'; // ファミリー等 → 赤
 }
 
 /* ── 状態 ── */
