@@ -500,7 +500,7 @@ function gcalEventStyle(cal) {
   if (c.includes('部活'))  return 'background:#E0EEFF;border-color:#4A90D9;color:#1A4A8A';  // 青（3-2色系）
   if (c.includes('出張'))  return 'background:#E0F8EC;border-color:#3DAE65;color:#0D6B35';  // 緑（3-4色系）
   if (c.includes('受験'))  return 'background:#FFF8E0;border-color:#D4A017;color:#7A5A00';  // 黄（3-3色系）
-  if (c.includes('個人'))  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515';  // 赤（3-1色系）
+  if (c.includes('個人') || c.includes('みちこ') || c.includes('ファミリー'))  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515';  // 赤（3-1色系）
   if (c.includes('勉強'))  return 'background:#F3EEFF;border-color:#8040C0;color:#4A1580';  // 紫
   return 'background:#f0f4ff;border-color:#c8d4ee;color:#444';
 }
