@@ -58,9 +58,8 @@
 
     /* ── Day events ── */
     .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
-    .day-event-item { font-size:.56rem; font-weight:600; color:rgba(255,255,255,.9); background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:default; }
+    .day-event-item { font-size:.56rem; font-weight:600; color:rgba(255,255,255,.9); background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
     .day-event-item.ev-type-event { background:rgba(255,200,80,.25); border-color:rgba(255,200,80,.4); color:rgba(255,240,180,.97); }
-    .day-event-item.ev-type-gcal  { background:rgba(100,180,255,.25); border-color:rgba(100,180,255,.45); color:rgba(200,235,255,.97); }
     .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
     .gcal-btn:hover { background:rgba(255,255,255,.25); }
     .gcal-btn.connected { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
@@ -482,7 +481,7 @@ async function fetchGcalEvents() {
       const time    = ev.allDay ? ''
                                 : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
-      gcalEvents[dateStr].push({ title: ev.title || '(無題)', time });
+      gcalEvents[dateStr].push({ title: ev.title || '(無題)', time, calendar: ev.calendar || '' });
     });
     if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中'; btn.classList.add('connected'); btn.disabled = false; }
     renderTimetable();
@@ -493,6 +492,17 @@ async function fetchGcalEvents() {
 }
 
 document.getElementById('gcalBtn').addEventListener('click', fetchGcalEvents);
+
+function gcalEventStyle(cal) {
+  const c = cal || '';
+  if (c.includes('学校'))  return 'background:rgba(255,120,30,.35);border-color:rgba(255,120,30,.6);color:rgba(255,220,180,.97)';
+  if (c.includes('部活'))  return 'background:rgba(50,130,255,.35);border-color:rgba(50,130,255,.6);color:rgba(180,215,255,.97)';
+  if (c.includes('出張'))  return 'background:rgba(40,185,90,.35);border-color:rgba(40,185,90,.6);color:rgba(180,255,210,.97)';
+  if (c.includes('受験'))  return 'background:rgba(220,190,0,.35);border-color:rgba(220,190,0,.6);color:rgba(255,245,160,.97)';
+  if (c.includes('個人'))  return 'background:rgba(220,60,60,.35);border-color:rgba(220,60,60,.6);color:rgba(255,190,190,.97)';
+  if (c.includes('勉強'))  return 'background:rgba(140,70,200,.35);border-color:rgba(140,70,200,.6);color:rgba(220,180,255,.97)';
+  return 'background:rgba(100,180,255,.25);border-color:rgba(100,180,255,.45);color:rgba(200,235,255,.97)';
+}
 
 /* ── 状態 ── */
 let overrides    = {};
@@ -643,9 +653,11 @@ function renderTimetable() {
     const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
     const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
     const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
-    const evHtml = allEvs.map(ev =>
-      `<div class="day-event-item ${ev.src === 'gcal' ? 'ev-type-gcal' : 'ev-type-event'}" title="${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`
-    ).join('');
+    const evHtml = allEvs.map(ev => {
+      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
+      const cls   = ev.src === 'gcal' ? 'day-event-item' : 'day-event-item ev-type-event';
+      return `<div class="${cls}" style="${style}" title="${esc(ev.calendar||'')} ${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`;
+    }).join('');
     div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday ? `<div class="day-hol-badge">祝</div>` : ''}<div class="day-events">${evHtml}</div>`;
 
     // 予定追加ボタン（祝日でない場合のみ）
