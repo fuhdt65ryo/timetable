@@ -891,7 +891,7 @@ function renderTimetable() {
       const isLight = entry && !cancel && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
       if (entry && !cancel) cls += ' has-entry';
-      if (entry && !cancel && entry.teacher) cls += ' has-content';
+      if (entry && !cancel && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (cancel)   cls += ' cancelled';
       if (ovr && !cancel) cls += ' modified';
@@ -912,7 +912,7 @@ function renderTimetable() {
         const color = entry.color || '#667eea';
         const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
-        if (!isDark && entry.teacher) cell.style.borderColor = color;
+        if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
           ${entry.room    ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : ''}
