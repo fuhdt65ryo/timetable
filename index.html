@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割</title>
+  <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -53,6 +54,19 @@
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
     .day-hol-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+
+    /* ── Day events ── */
+    .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
+    .day-event-item { font-size:.56rem; font-weight:600; color:rgba(255,255,255,.9); background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:default; }
+    .day-event-item.ev-type-event { background:rgba(255,200,80,.25); border-color:rgba(255,200,80,.4); color:rgba(255,240,180,.97); }
+    .day-event-item.ev-type-gcal  { background:rgba(100,180,255,.25); border-color:rgba(100,180,255,.45); color:rgba(200,235,255,.97); }
+    .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
+    .gcal-btn:hover { background:rgba(255,255,255,.25); }
+    .gcal-btn.connected { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
+    .gcal-btn .gcal-dot { width:7px; height:7px; border-radius:50%; background:#5cb85c; display:none; }
+    .gcal-btn.connected .gcal-dot { display:inline-block; }
+    .day-event-add { display:inline-block; margin-top:3px; font-size:.58rem; color:rgba(255,255,255,.4); background:none; border:1px dashed rgba(255,255,255,.2); border-radius:4px; padding:1px 7px; cursor:pointer; font-family:inherit; transition:all .15s; }
+    .day-event-add:hover { color:rgba(255,255,255,.85); border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.1); }
 
     .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
     .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
@@ -229,6 +243,7 @@
     <div class="week-label" id="weekLabel"></div>
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
+    <button class="gcal-btn" id="gcalBtn"><span class="gcal-dot"></span>📅 Googleカレンダー</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
@@ -257,6 +272,30 @@
     <div id="progress2Body"></div>
   </div>
 
+</div>
+
+<!-- 予定入力モーダル -->
+<div id="eventModal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:min(420px,94vw);box-shadow:0 8px 32px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:linear-gradient(135deg,#2C3E6B,#4A2D6B);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+      <span id="eventModalTitle" style="font-size:.95rem;font-weight:700"></span>
+      <button id="eventModalClose" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;font-size:.9rem;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px">
+      <div id="eventList" style="margin-bottom:12px;display:flex;flex-direction:column;gap:6px"></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:.65rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em">時刻</label>
+          <input type="time" id="evTime" style="padding:7px 8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;width:110px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:150px">
+          <label style="font-size:.65rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em">予定名</label>
+          <input type="text" id="evTitle" placeholder="例: 学年会議、職員会議" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;width:100%">
+        </div>
+        <button id="evAdd" style="padding:8px 16px;background:linear-gradient(135deg,#2C3E6B,#4A2D6B);color:#fff;border:none;border-radius:8px;font-size:.87rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">追加</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 祝日管理ページ -->
@@ -359,11 +398,94 @@ const JP_HOLIDAYS = {
   '2027-03-21': '春分の日',
 };
 
+/* ── Google Calendar ── */
+const GCAL_CLIENT_ID = '766123162875-2mnl4u8kpbui9tnmvm9cep3i8aon3pj3.apps.googleusercontent.com';
+const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar.readonly';
+let tokenClient    = null;
+let gcalToken      = null;
+let gcalEvents     = {};  // { "YYYY-MM-DD": [{ title, time }] }
+
+function initGoogleAuth() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPE,
+    callback: async (resp) => {
+      if (resp.error) { console.error(resp); return; }
+      gcalToken = resp.access_token;
+      localStorage.setItem('tt_gcal_token', gcalToken);
+      updateGcalBtn();
+      await fetchGcalEvents();
+    },
+  });
+  const saved = localStorage.getItem('tt_gcal_token');
+  if (saved) { gcalToken = saved; updateGcalBtn(); fetchGcalEvents(); }
+}
+
+function updateGcalBtn() {
+  const btn = document.getElementById('gcalBtn');
+  if (!btn) return;
+  if (gcalToken) {
+    btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中';
+    btn.classList.add('connected');
+    btn.title = 'クリックで連携解除';
+  } else {
+    btn.innerHTML = '<span class="gcal-dot"></span>📅 Googleカレンダー';
+    btn.classList.remove('connected');
+    btn.title = 'Googleカレンダーと連携';
+  }
+}
+
+async function fetchGcalEvents() {
+  if (!gcalToken) return;
+  const dates   = getWeekDates();
+  const timeMin = encodeURIComponent(dates[0].toISOString());
+  const timeMax = encodeURIComponent(addDays(dates[4], 1).toISOString());
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=200`,
+      { headers: { Authorization: `Bearer ${gcalToken}` } }
+    );
+    if (res.status === 401) {
+      gcalToken = null;
+      localStorage.removeItem('tt_gcal_token');
+      updateGcalBtn();
+      return;
+    }
+    const data = await res.json();
+    gcalEvents = {};
+    (data.items || []).forEach(ev => {
+      const start   = ev.start?.dateTime || ev.start?.date;
+      if (!start) return;
+      const dateStr = start.slice(0, 10);
+      const time    = ev.start?.dateTime ? start.slice(11, 16) : '';
+      if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
+      gcalEvents[dateStr].push({ title: ev.summary || '(無題)', time });
+    });
+    renderTimetable();
+  } catch (e) { console.error('GCal fetch error:', e); }
+}
+
+document.getElementById('gcalBtn').addEventListener('click', () => {
+  if (gcalToken) {
+    google.accounts.oauth2.revoke(gcalToken, () => {
+      gcalToken = null;
+      gcalEvents = {};
+      localStorage.removeItem('tt_gcal_token');
+      updateGcalBtn();
+      renderTimetable();
+    });
+  } else {
+    if (!tokenClient) { alert('Googleライブラリ読み込み中です。少し待ってから再試行してください。'); return; }
+    tokenClient.requestAccessToken();
+  }
+});
+
 /* ── 状態 ── */
 let overrides    = {};
 let daySchedules = {};
 let cellSources  = {};
 let holidays     = {};
+let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
 let weekStart = getMonday(new Date());
 let selKey    = null;
 
@@ -398,6 +520,10 @@ function loadHolidays() {
   }
 }
 function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); }
+function loadCalEvents() {
+  try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
+}
+function saveCalEvents() { localStorage.setItem('tt_calevents_v1', JSON.stringify(calEvents)); }
 
 /* ── 日付ユーティリティ ── */
 function getMonday(d) {
@@ -499,7 +625,23 @@ function renderTimetable() {
 
     const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isHoliday ? ' is-holiday' : ''));
     div.style.cssText = `grid-column:${col};grid-row:1`;
-    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday ? `<div class="day-hol-badge">祝</div>` : ''}`;
+    const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
+    const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
+    const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+    const evHtml = allEvs.map(ev =>
+      `<div class="day-event-item ${ev.src === 'gcal' ? 'ev-type-gcal' : 'ev-type-event'}" title="${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`
+    ).join('');
+    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday ? `<div class="day-hol-badge">祝</div>` : ''}<div class="day-events">${evHtml}</div>`;
+
+    // 予定追加ボタン（祝日でない場合のみ）
+    if (!isHoliday) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'day-event-add';
+      addBtn.textContent = '+ 予定';
+      addBtn.title = '予定を追加';
+      addBtn.addEventListener('click', e => { e.stopPropagation(); openEventModal(dateStr); });
+      div.querySelector('.day-events').appendChild(addBtn);
+    }
 
     if (!isHoliday) {
       const sel = document.createElement('select');
@@ -1022,16 +1164,84 @@ document.getElementById('hName').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('hSave').click();
 });
 
+/* ── 予定モーダル ── */
+let modalDateStr = null;
+
+function openEventModal(dateStr) {
+  modalDateStr = dateStr;
+  const d = parseDateStr(dateStr);
+  document.getElementById('eventModalTitle').textContent =
+    `${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）の予定`;
+  refreshEventList();
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evTime').value = '';
+  const modal = document.getElementById('eventModal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('evTitle').focus(), 50);
+}
+
+function closeEventModal() {
+  document.getElementById('eventModal').style.display = 'none';
+  modalDateStr = null;
+}
+
+function refreshEventList() {
+  const evs = calEvents[modalDateStr] || [];
+  const container = document.getElementById('eventList');
+  if (!evs.length) {
+    container.innerHTML = '<div style="color:#a0aec0;font-size:.82rem;text-align:center;padding:4px 0">予定はありません</div>';
+    return;
+  }
+  container.innerHTML = evs.map((ev, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7fafc;border-radius:8px;border:1px solid #e2e8f0">
+      ${ev.time ? `<span style="font-size:.75rem;font-weight:700;color:#4A6DB5;white-space:nowrap">${esc(ev.time)}</span>` : ''}
+      <span style="flex:1;font-size:.85rem">${esc(ev.title)}</span>
+      <button data-idx="${i}" style="background:none;border:none;color:#c8d2e0;font-size:.8rem;cursor:pointer;padding:3px 6px;border-radius:5px;transition:all .15s" onmouseover="this.style.color='#e53e3e';this.style.background='#fff5f5'" onmouseout="this.style.color='#c8d2e0';this.style.background='none'" class="ev-del-btn">✕</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('.ev-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = +btn.dataset.idx;
+      calEvents[modalDateStr].splice(idx, 1);
+      if (!calEvents[modalDateStr].length) delete calEvents[modalDateStr];
+      saveCalEvents();
+      refreshEventList();
+      renderTimetable();
+    });
+  });
+}
+
+function addEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  const time  = document.getElementById('evTime').value;
+  if (!title) { document.getElementById('evTitle').focus(); return; }
+  if (!calEvents[modalDateStr]) calEvents[modalDateStr] = [];
+  calEvents[modalDateStr].push({ title, time });
+  calEvents[modalDateStr].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  saveCalEvents();
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evTime').value = '';
+  refreshEventList();
+  renderTimetable();
+  document.getElementById('evTitle').focus();
+}
+
+document.getElementById('evAdd').addEventListener('click', addEvent);
+document.getElementById('evTitle').addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
+document.getElementById('eventModalClose').addEventListener('click', closeEventModal);
+document.getElementById('eventModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEventModal(); });
+
 /* ── 週ナビ ── */
-document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
-document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
-document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') clearSelect(); });
+document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); fetchGcalEvents(); });
+document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); fetchGcalEvents(); });
+document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); fetchGcalEvents(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
 
 /* ── 起動 ── */
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
+loadCalEvents();
 load();
 renderTimetable();
 renderProgress();
