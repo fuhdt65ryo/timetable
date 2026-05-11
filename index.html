@@ -215,6 +215,14 @@
     .prog-today { display:inline-block; background:#FFF9C4; color:#F57F17; font-weight:800; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
     .prog-today .prog-p { color:#F9A825; }
 
+    .prog-add-wrap { display:flex; gap:6px; margin:10px 12px 6px; }
+    .prog-add-inp { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; outline:none; }
+    .prog-add-inp:focus { border-color:var(--accent2); }
+    .prog-add-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:5px 14px; font-size:.82rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .prog-add-btn:hover { background:var(--accent2); }
+    .prog-del-btn { background:none; border:none; color:#BDBDBD; font-size:.9rem; cursor:pointer; padding:0 0 0 4px; line-height:1; vertical-align:middle; }
+    .prog-del-btn:hover { color:#E53935; }
+
     /* ── 授業変更一覧 ── */
     .chg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
     .chg-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:left; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
@@ -655,6 +663,8 @@ let daySchedules = {};
 let cellSources  = {};
 let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
+let progManual   = [];  // 3年生 手動追加授業名
+let prog2Manual  = [];  // 2年生 手動追加授業名
 let weekStart = getMonday(new Date());
 let selKey    = null;
 
@@ -704,6 +714,10 @@ function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
 }
 function saveCalEvents() { localStorage.setItem('tt_calevents_v1', JSON.stringify(calEvents)); }
+function loadProgManual()  { try { progManual  = JSON.parse(localStorage.getItem('tt_prog_manual')  || '[]'); } catch { progManual  = []; } }
+function saveProgManual()  { localStorage.setItem('tt_prog_manual',  JSON.stringify(progManual));  }
+function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem('tt_prog2_manual') || '[]'); } catch { prog2Manual = []; } }
+function saveProg2Manual() { localStorage.setItem('tt_prog2_manual', JSON.stringify(prog2Manual)); }
 
 /* ── 日付ユーティリティ ── */
 function getMonday(d) {
@@ -1230,9 +1244,15 @@ function renderProgress() {
     }
   });
 
+  // 手動追加分をマージ
+  progManual.forEach(name => {
+    if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
+  });
+
   const rows = Object.values(map);
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    renderProgManualInput(container);
     return;
   }
 
@@ -1250,12 +1270,12 @@ function renderProgress() {
   const today = new Date(); today.setHours(0,0,0,0);
 
   const tbody = document.createElement('tbody');
-  rows.forEach(({ content, classes }) => {
-    // 全クラスが今日より前の日付で実施済みなら削除
-    const allDone = PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
+  rows.forEach(({ content, classes, manual }) => {
+    // 全クラスが今日より前の日付で実施済みなら削除（手動追加は除外しない）
+    const allDone = !manual && PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
     if (allDone) return;
     const tr = document.createElement('tr');
-    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog">×</button>` : ''}</td>`;
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1277,6 +1297,14 @@ function renderProgress() {
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
+  renderProgManualInput(container);
+}
+
+function renderProgManualInput(container) {
+  const wrap = document.createElement('div');
+  wrap.className = 'prog-add-wrap';
+  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog">追加</button>`;
+  container.appendChild(wrap);
 }
 
 /* ── 2年生進捗テーブル ── */
@@ -1300,9 +1328,15 @@ function renderProgress2() {
     }
   });
 
+  // 手動追加分をマージ
+  prog2Manual.forEach(name => {
+    if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
+  });
+
   const rows = Object.values(map);
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    renderProg2ManualInput(container);
     return;
   }
 
@@ -1320,9 +1354,9 @@ function renderProgress2() {
   const today = new Date(); today.setHours(0,0,0,0);
 
   const tbody = document.createElement('tbody');
-  rows.forEach(({ content, classes }) => {
+  rows.forEach(({ content, classes, manual }) => {
     const tr = document.createElement('tr');
-    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog2">×</button>` : ''}</td>`;
     PROG2_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1341,6 +1375,88 @@ function renderProgress2() {
     tr.innerHTML = html;
     tbody.appendChild(tr);
   });
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+  renderProg2ManualInput(container);
+}
+
+function renderProg2ManualInput(container) {
+  const wrap = document.createElement('div');
+  wrap.className = 'prog-add-wrap';
+  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog2">追加</button>`;
+  container.appendChild(wrap);
+}
+
+/* ── 授業変更一覧 ── */
+function renderChanges() {
+  const container = document.getElementById('changesBody');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const changes = [];
+  Object.entries(overrides).forEach(([key, newEntry]) => {
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    if (date < today) return;
+
+    const naturalDi = dayIdx(date);
+    const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+    // cellSources を考慮して正しい元エントリを取得
+    const ok2 = overrideKey(dateStr, period);
+    const origEntry = (ok2 in cellSources)
+      ? (BASE[`${cellSources[ok2].di}-${cellSources[ok2].p}`] || null)
+      : (BASE[`${di}-${period}`] || null);
+
+    // クラス・教科が同じ場合はスキップ（授業内容のみの変更は変更一覧に出さない）
+    if (newEntry !== null &&
+        newEntry.name === (origEntry ? origEntry.name : null) &&
+        (newEntry.room || '') === (origEntry ? (origEntry.room || '') : '')) return;
+
+    changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
+  });
+
+  changes.sort((a, b) => a.date - b.date || a.period - b.period);
+
+  if (!changes.length) {
+    container.innerHTML = '<div class="list-empty">今日以降の授業変更はありません</div>';
+    return;
+  }
+
+  rows.sort((a, b) => {
+    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
+    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
+  });
+
+  const table = document.createElement('table');
+  table.className = 'chg-table';
+  table.innerHTML = '<thead><tr><th>日付</th><th>時</th><th>変更内容</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  changes.forEach(({ dateStr, date, period, from, to }) => {
+    const tr = document.createElement('tr');
+    const dayLabel = `${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})`;
+    const isToday  = isSameDay(date, today);
+    const dateCell = `<td class="chg-date">${isToday ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>` : dayLabel}</td>`;
+    const periodCell = `<td class="chg-period">${period}限</td>`;
+
+    const fromHtml = from
+      ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+      : '<span style="color:#aaa">なし</span>';
+
+    let toHtml;
+    if (to === null) {
+      toHtml = '<span class="chg-cancel">休み</span>';
+    } else {
+      toHtml = `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`;
+    }
+
+    tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
+    tbody.appendChild(tr);
+  });
+
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
@@ -1718,6 +1834,40 @@ document.getElementById('btnCopyScript').addEventListener('click', function() {
   });
 });
 
+/* ── 授業進捗 手動追加・削除 ── */
+document.addEventListener('click', function(e) {
+  // 追加ボタン
+  if (e.target.classList.contains('prog-add-btn')) {
+    const list = e.target.dataset.list;
+    const inp = e.target.closest('.prog-add-wrap').querySelector('.prog-add-inp');
+    const val = inp.value.trim();
+    if (!val) return;
+    if (list === 'prog') {
+      if (!progManual.includes(val)) { progManual.push(val); saveProgManual(); renderProgress(); }
+    } else {
+      if (!prog2Manual.includes(val)) { prog2Manual.push(val); saveProg2Manual(); renderProgress2(); }
+    }
+    inp.value = '';
+    return;
+  }
+  // 削除ボタン
+  if (e.target.classList.contains('prog-del-btn')) {
+    const list = e.target.dataset.list;
+    const key  = e.target.dataset.key;
+    if (list === 'prog') {
+      progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
+    } else {
+      prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
+    }
+  }
+});
+// Enterキーで追加
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.classList.contains('prog-add-inp')) {
+    e.target.closest('.prog-add-wrap').querySelector('.prog-add-btn').click();
+  }
+});
+
 /* ── カレンダー設定ページ イベント ── */
 document.getElementById('btnGcalRefresh').addEventListener('click', fetchGcalEvents);
 document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
@@ -1732,6 +1882,8 @@ loadDaySchedules();
 loadCellSources();
 loadHolidays();
 loadCalEvents();
+loadProgManual();
+loadProg2Manual();
 load();
 loadGcalCache();
 renderTimetable();
