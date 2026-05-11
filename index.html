@@ -299,6 +299,24 @@
     .sync-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
     .sync-status-row { font-size:.78rem; color:var(--muted); margin-bottom:12px; }
     .sync-status-row span { font-weight:600; }
+
+    /* ── 授業変更入力モーダル ── */
+    .chgmod-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
+    .chgmod { background:#fff; border-radius:16px; width:min(480px,96vw); box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
+    .chgmod-head { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
+    .chgmod-head h2 { font-size:.95rem; font-weight:800; margin:0; }
+    .chgmod-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; font-size:.9rem; cursor:pointer; }
+    .chgmod-body { padding:18px; display:flex; flex-direction:column; gap:14px; }
+    .chgmod-row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+    .chgmod-field { display:flex; flex-direction:column; gap:4px; }
+    .chgmod-label { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .chgmod-from { font-size:.88rem; font-weight:700; padding:7px 12px; background:#f7fafc; border:1.5px solid var(--border); border-radius:8px; min-width:130px; line-height:1.4; }
+    .chgmod-preview { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; flex-wrap:wrap; min-height:42px; }
+    .chgmod-preview .chg-from-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; background:#f7fafc; border:1.5px solid var(--border); }
+    .chgmod-preview .chg-to-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; }
+    .chgmod-actions { display:flex; gap:8px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--border); }
+    .chg-add-btn { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; padding:5px 14px; border-radius:14px; font-size:.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+    .chg-add-btn:hover { opacity:.85; }
   </style>
 </head>
 <body>
@@ -343,6 +361,7 @@
   <div class="card">
     <div class="list-top">
       <span class="list-title">授業変更一覧（今日以降）</span>
+      <button class="chg-add-btn" id="btnOpenChangeModal">＋ 授業変更入力</button>
     </div>
     <div id="changesBody"></div>
   </div>
@@ -439,6 +458,60 @@
         <button class="btn btn-save" id="btnGcalRefresh">↻ 今すぐ更新</button>
       </div>
       <div class="gcal-status-msg" id="gcalStatusMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 授業変更入力モーダル -->
+<div class="chgmod-overlay" id="chgModal">
+  <div class="chgmod">
+    <div class="chgmod-head">
+      <h2>授業変更を入力</h2>
+      <button class="chgmod-close" id="chgModalClose">✕</button>
+    </div>
+    <div class="chgmod-body">
+      <div class="chgmod-row">
+        <div class="chgmod-field">
+          <span class="chgmod-label">日付</span>
+          <input type="date" class="form-input" id="chgDate" style="width:155px">
+        </div>
+        <div class="chgmod-field">
+          <span class="chgmod-label">時限</span>
+          <select class="form-select" id="chgPeriod">
+            <option value="1">1限</option>
+            <option value="2">2限</option>
+            <option value="3">3限</option>
+            <option value="4">4限</option>
+            <option value="5">5限</option>
+            <option value="6">6限</option>
+          </select>
+        </div>
+      </div>
+      <div class="chgmod-row">
+        <div class="chgmod-field" style="flex:1">
+          <span class="chgmod-label">変更前（現在）</span>
+          <div class="chgmod-from" id="chgFromDisplay">──</div>
+        </div>
+      </div>
+      <div class="chgmod-row">
+        <div class="chgmod-field" style="flex:1">
+          <span class="chgmod-label">変更後　クラス</span>
+          <select class="form-select" id="chgToClass"></select>
+        </div>
+        <div class="chgmod-field" style="flex:1">
+          <span class="chgmod-label">変更後　教科</span>
+          <select class="form-select" id="chgToSubject"></select>
+        </div>
+      </div>
+      <div class="chgmod-preview" id="chgPreview">
+        <span id="chgPreviewFrom" class="chg-from-badge"></span>
+        <span class="chg-arrow">→</span>
+        <span id="chgPreviewTo" class="chg-to-badge"></span>
+      </div>
+    </div>
+    <div class="chgmod-actions">
+      <button class="btn btn-holiday" id="chgModalCancel">キャンセル</button>
+      <button class="btn btn-save" id="chgModalSave">保存する</button>
     </div>
   </div>
 </div>
@@ -1862,6 +1935,112 @@ document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
   if (!val) return;
   localStorage.setItem(GCAL_URL_KEY, val);
   showGcalStatus('ok', 'URLを保存しました');
+});
+
+/* ── 授業変更入力モーダル ── */
+function openChangeModal() {
+  const today = new Date();
+  document.getElementById('chgDate').value = toDateStr(today);
+  document.getElementById('chgPeriod').value = '1';
+  buildChgToClassOptions();
+  updateChgFrom();
+  document.getElementById('chgModal').style.display = 'flex';
+}
+
+function closeChangeModal() {
+  document.getElementById('chgModal').style.display = 'none';
+}
+
+function buildChgToClassOptions() {
+  const sel = document.getElementById('chgToClass');
+  sel.innerHTML = CLASSES.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+}
+
+function updateChgFrom() {
+  const dateStr = document.getElementById('chgDate').value;
+  const period = +document.getElementById('chgPeriod').value;
+  if (!dateStr || !period) return;
+
+  const d = parseDateStr(dateStr);
+  const naturalDi = dayIdx(d);
+  const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+  const entry = BASE[`${di}-${period}`] || null;
+
+  const fromEl = document.getElementById('chgFromDisplay');
+  if (entry) {
+    fromEl.textContent = entry.name + (entry.room ? ' ' + entry.room : '');
+    fromEl.style.color = entry.color || '#333';
+  } else {
+    fromEl.textContent = '（授業なし）';
+    fromEl.style.color = '#aaa';
+  }
+
+  // 既存オーバーライドがあれば変更後の初期値に反映
+  const ok = overrideKey(dateStr, period);
+  const hasOvr = ok in overrides && overrides[ok] !== null;
+  const targetEntry = hasOvr ? overrides[ok] : entry;
+
+  const toClassEl = document.getElementById('chgToClass');
+  toClassEl.value = targetEntry ? targetEntry.name : (CLASSES[0]?.name || '');
+  updateChgToSubjects(targetEntry?.room);
+}
+
+function updateChgToSubjects(preselectRoom) {
+  const cls = document.getElementById('chgToClass').value;
+  const subs = getSubjects(cls);
+  const sel = document.getElementById('chgToSubject');
+  if (subs.length) {
+    sel.innerHTML = subs.map(s =>
+      `<option value="${s.name}"${s.name === preselectRoom ? ' selected' : ''}>${s.name}</option>`
+    ).join('');
+    sel.disabled = false;
+  } else {
+    sel.innerHTML = '<option value="">──</option>';
+    sel.disabled = true;
+  }
+  updateChgPreview();
+}
+
+function updateChgPreview() {
+  const fromText = document.getElementById('chgFromDisplay').textContent;
+  const toClass = document.getElementById('chgToClass').value;
+  const toSubjectEl = document.getElementById('chgToSubject');
+  const toSubject = toSubjectEl.disabled ? '' : (toSubjectEl.value || '');
+  const toColor = getColor(toClass, toSubject);
+  const toText = toClass + (toSubject && toSubject !== '──' ? ' ' + toSubject : '');
+
+  document.getElementById('chgPreviewFrom').textContent = fromText;
+  const toBadge = document.getElementById('chgPreviewTo');
+  toBadge.textContent = toText;
+  toBadge.style.background = pastelizeColor(toColor);
+  toBadge.style.border = `1.5px solid ${toColor}`;
+}
+
+document.getElementById('btnOpenChangeModal').addEventListener('click', openChangeModal);
+document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
+document.getElementById('chgModalCancel').addEventListener('click', closeChangeModal);
+document.getElementById('chgModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('chgModal')) closeChangeModal();
+});
+document.getElementById('chgDate').addEventListener('change', updateChgFrom);
+document.getElementById('chgPeriod').addEventListener('change', updateChgFrom);
+document.getElementById('chgToClass').addEventListener('change', () => updateChgToSubjects());
+document.getElementById('chgToSubject').addEventListener('change', updateChgPreview);
+document.getElementById('chgModalSave').addEventListener('click', () => {
+  const dateStr = document.getElementById('chgDate').value;
+  const period = +document.getElementById('chgPeriod').value;
+  const toClass = document.getElementById('chgToClass').value;
+  const toSubjectEl = document.getElementById('chgToSubject');
+  const toSubject = toSubjectEl.disabled ? '' : (toSubjectEl.value || '');
+  if (!dateStr || !period || !toClass) return;
+  const ok = overrideKey(dateStr, period);
+  overrides[ok] = { name: toClass, room: toSubject, teacher: '', color: getColor(toClass, toSubject) };
+  save();
+  renderTimetable();
+  renderProgress();
+  renderProgress2();
+  renderChanges();
+  closeChangeModal();
 });
 
 /* ── 起動 ── */
