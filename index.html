@@ -21,7 +21,9 @@
     .header-top { text-align:center; margin-bottom:12px; }
     h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
     .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
-    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; }
+    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; position:relative; cursor:pointer; }
+    .week-label:hover { opacity:.8; }
+    #weekDatePicker { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; top:0; left:50%; }
     .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
     .nav-btn:hover { background:rgba(255,255,255,.25); }
     .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#D87840; border-color:transparent; }
@@ -293,7 +295,7 @@
   <div class="header-top"><h1>時間割</h1></div>
   <div class="nav-bar" id="navBar">
     <button class="nav-btn" id="btnPrev">‹ 前の週</button>
-    <div class="week-label" id="weekLabel"></div>
+    <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
     <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
@@ -1586,6 +1588,18 @@ document.getElementById('eventModal').addEventListener('click', e => { if (e.tar
 document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
 document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
 document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
+
+const weekPicker = document.getElementById('weekDatePicker');
+document.getElementById('weekLabel').addEventListener('click', () => {
+  weekPicker.value = toDateStr(weekStart);
+  weekPicker.style.pointerEvents = 'auto';
+  weekPicker.showPicker?.();
+  weekPicker.focus();
+});
+weekPicker.addEventListener('change', function() {
+  if (this.value) { weekStart = getMonday(new Date(this.value)); renderTimetable(); }
+  this.style.pointerEvents = 'none';
+});
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
 
 /* ── Google Sheets 同期 ── */
