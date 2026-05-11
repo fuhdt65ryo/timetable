@@ -89,7 +89,6 @@
 
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
-    .cell.cancelled { background:#f1f5f9 !important; border:2px solid #cbd5e0 !important; }
     .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
@@ -118,7 +117,6 @@
     .cell-with-content .c-class   { color:rgba(0,0,0,.8); }
     .cell-with-content .c-subject { color:rgba(0,0,0,.55); }
     .cell-with-content .c-content { color:rgba(0,0,0,.45); }
-    .c-cancel  { font-size:.78rem; color:#94a3b8; font-weight:700; }
     .cell-light .c-class  { color:rgba(0,0,0,.75); }
     .cell-light .c-subject { color:rgba(0,0,0,.6); }
     .cell-light .c-src { background:#fff; color:#333; border:1.5px solid #757575; }
@@ -132,10 +130,17 @@
     /* ── Source selector in edit panel ── */
     .src-row { display:flex; align-items:center; gap:6px; padding:0 16px 12px; flex-wrap:wrap; }
     .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
-    .src-sel { padding:6px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; font-family:inherit; outline:none; background:#fafbfc; cursor:pointer; -webkit-appearance:none; appearance:none; }
-    .src-sel:focus { border-color:var(--accent); }
-    .btn-src-clear { padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:.78rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; }
+    .btn-src-clear { padding:4px 10px; border:1px solid var(--border); border-radius:8px; font-size:.75rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; margin-top:4px; }
     .btn-src-clear:hover { background:#f1f5f9; }
+    .src-grid-wrap { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+    .src-grid-label { font-size:.72rem; font-weight:700; color:#64748b; letter-spacing:.03em; }
+    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; }
+    .src-gh { font-size:.65rem; font-weight:700; color:#64748b; text-align:center; padding:1px 0; }
+    .src-gh-corner { }
+    .src-gp { font-size:.62rem; color:#94a3b8; display:flex; align-items:center; justify-content:center; }
+    .src-gc { font-size:.6rem; text-align:center; padding:3px 2px; border-radius:5px; border:1.5px solid var(--border); background:#f8fafc; cursor:pointer; line-height:1.2; min-width:28px; min-height:22px; display:flex; align-items:center; justify-content:center; color:#475569; transition:background .12s, border-color .12s; }
+    .src-gc:hover { background:#e8f0fe; border-color:#a5b4fc; }
+    .src-gc.src-active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
 
     /* ── インライン編集行 ── */
     .edit-inline {
@@ -183,14 +188,14 @@
     .btn:hover { transform:translateY(-1px); }
     .btn-save    { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); }
     .btn-save:hover { filter:brightness(1.08); }
-    .btn-holiday { background:#f8fafc; color:#64748b; border:1px solid var(--border); }
-    .btn-holiday:hover { background:#f1f5f9; }
-    .btn-restore { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
-    .btn-restore:hover { background:#dcfce7; }
     .btn-del { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
     .btn-del:hover { background:#fed7d7; }
     .btn-danger { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
     .btn-danger:hover { background:#fed7d7; }
+    .btn-secondary { background:#f8fafc; color:#64748b; border:1px solid var(--border); }
+    .btn-secondary:hover { background:#f1f5f9; }
+    .btn-restore { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+    .btn-restore:hover { background:#dcfce7; }
 
     /* ── Progress ── */
     .list-top { padding:13px 16px 11px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
@@ -231,7 +236,6 @@
     .chg-period { text-align:center; color:var(--accent); font-weight:800; }
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
-    .chg-cancel { color:#e53e3e; font-weight:700; }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -467,7 +471,7 @@ function doPost(e) {
   return ContentService.createTextOutput('{"ok":true}')
     .setMimeType(ContentService.MimeType.JSON);
 }</pre>
-      <button class="btn btn-holiday" id="btnCopyScript" style="font-size:.78rem;padding:6px 14px;margin-bottom:12px">📋 コードをコピー</button>
+      <button class="btn btn-secondary" id="btnCopyScript" style="font-size:.78rem;padding:6px 14px;margin-bottom:12px">📋 コードをコピー</button>
     </details>
     <div class="form-group" style="margin-top:14px">
       <label class="form-label">ウェブアプリURL</label>
@@ -475,7 +479,7 @@ function doPost(e) {
     </div>
     <div class="sync-modal-actions">
       <button class="btn btn-danger" id="btnSyncDisconnect" style="display:none;margin-right:auto">接続解除</button>
-      <button class="btn btn-holiday" id="syncModalCancel">キャンセル</button>
+      <button class="btn btn-secondary" id="syncModalCancel">キャンセル</button>
       <button class="btn btn-save" id="syncModalSave">保存して同期</button>
     </div>
   </div>
@@ -769,10 +773,6 @@ function isOverride(dateStr, period) {
   return overrideKey(dateStr, period) in overrides;
 }
 
-function isCancelled(dateStr, period) {
-  const ok = overrideKey(dateStr, period);
-  return (ok in overrides) && overrides[ok] === null;
-}
 
 /* ── 色・クラス ── */
 const DARK_CLASSES  = new Set(['裁量']);
@@ -898,31 +898,29 @@ function renderTimetable() {
       const key    = overrideKey(dateStr, p);
       const entry  = getEntry(dateStr, p);
       const ovr    = isOverride(dateStr, p);
-      const cancel = isCancelled(dateStr, p);
       const isSel  = key === selKey;
 
-      const isDark  = entry && !cancel && DARK_CLASSES.has(entry.name);
-      const isLight = entry && !cancel && LIGHT_CLASSES.has(entry.name);
+      const isDark  = entry && DARK_CLASSES.has(entry.name);
+      const isLight = entry && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
-      if (entry && !cancel) cls += ' has-entry';
-      if (entry && !cancel && (entry.teacher || isLight)) cls += ' has-content';
+      if (entry) cls += ' has-entry';
+      if (entry && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
-      if (cancel)   cls += ' cancelled';
-      if (ovr && !cancel) cls += ' modified';
+      if (ovr) cls += ' modified';
       if (isSel)    cls += ' selected';
       if (isDark)   cls += ' cell-dark';
       if (isLight)  cls += ' cell-light';
-      if (entry && !cancel && !isDark && !isLight && entry.teacher) cls += ' cell-with-content';
+      if (entry && !isDark && !isLight && entry.teacher) cls += ' cell-with-content';
 
       const naturalDi = dayIdx(d);
       const src = getEffectiveSrc(dateStr, p);
-      const srcBadge = (!cancel && !(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
+      const srcBadge = (!(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
         ? `${DAY_NAMES[src.di]}${src.p}` : '';
 
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
-      if (entry && !cancel) {
+      if (entry) {
         const color = entry.color || '#667eea';
         const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
@@ -933,8 +931,6 @@ function renderTimetable() {
           ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
         `;
-      } else if (cancel) {
-        cell.innerHTML = '<span class="c-cancel">休み</span>';
       } else {
         cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
       }
@@ -949,9 +945,8 @@ function renderTimetable() {
       const selP = +selPStr;
       const selD = parseDateStr(selDs);
       const selOvr    = isOverride(selDs, selP);
-      const selCancel = isCancelled(selDs, selP);
       const selLabel  = `${selD.getMonth()+1}月${selD.getDate()}日(${DAY_JP[selD.getDay()]}) ${selP}限`;
-      const selSub    = selOvr ? (selCancel ? '休みに変更中' : '変更中') : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
+      const selSub    = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
 
       const editRow = el('div', 'edit-inline');
       editRow.style.cssText = `grid-column:1/-1;grid-row:${periodRow+1}`;
@@ -1030,13 +1025,12 @@ function refreshEditForm() {
   const p = +pStr;
   const entry     = getEntry(ds, p);
   const ovr       = isOverride(ds, p);
-  const cancel    = isCancelled(ds, p);
   const d         = parseDateStr(ds);
   const baseEntry = BASE[`${dayIdx(d)}-${p}`];
-  renderEditForm(entry, ovr, cancel, baseEntry);
+  renderEditForm(entry, ovr, baseEntry);
 }
 
-function renderEditForm(entry, isOvr, isCancel, baseEntry) {
+function renderEditForm(entry, isOvr, baseEntry) {
   const pastContents = [...new Set(Object.values(overrides).filter(Boolean).map(v=>v.teacher).filter(Boolean))];
   const currentClass   = entry?.name    || '';
   const currentSubject = entry?.room    || '';
@@ -1071,8 +1065,14 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
   const srcChanged = existSrc || (srcDateStr in daySchedules);
 
-  const daySelOpts = DAY_NAMES.map((n,j)=>`<option value="${j}"${curSrcDi===j?' selected':''}>${n}曜</option>`).join('');
-  const perSelOpts = PERIODS.map(pp=>`<option value="${pp}"${curSrcP===pp?' selected':''}>${pp}限</option>`).join('');
+  const srcGridCells = PERIODS.map(pp => {
+    const cells = DAY_NAMES.map((_, di) => {
+      const name = BASE[`${di}-${pp}`]?.name || '';
+      const isSel = curSrcDi === di && curSrcP === pp;
+      return `<div class="src-gc${isSel ? ' src-active' : ''}" data-di="${di}" data-p="${pp}">${esc(name)}</div>`;
+    }).join('');
+    return `<div class="src-gp">${pp}</div>${cells}`;
+  }).join('');
 
   document.getElementById('editBody').innerHTML = `
     <div class="edit-form">
@@ -1095,18 +1095,18 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
           placeholder="例: 光合成のまとめ" value="${esc(currentContent)}">
         <datalist id="eContentList">${datalistHtml}</datalist>
       </div>` : ''}
-      <div class="form-group" style="white-space:nowrap;margin-left:auto">
-        <label class="form-label">参照元</label>
-        <div style="display:flex;gap:4px;align-items:center">
-          <select class="src-sel" id="eSrcDay">${daySelOpts}</select>
-          <select class="src-sel" id="eSrcPer">${perSelOpts}</select>
-          ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
-        </div>
-      </div>
     </div>
     <div class="edit-actions">
-      <button class="btn btn-holiday" id="eBtnHoliday" ${isCancel ? 'disabled style="opacity:.4;cursor:default"' : ''}>休みにする</button>
-      <button class="btn btn-restore" id="eBtnRestore" ${!isOvr && !isCancel ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
+      <div class="src-grid-wrap">
+        <div class="src-grid-label">参照元</div>
+        <div class="src-grid">
+          <div class="src-gh-corner"></div>
+          ${DAY_NAMES.map(n=>`<div class="src-gh">${n}</div>`).join('')}
+          ${srcGridCells}
+        </div>
+        ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
+      </div>
+      <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''} style="margin-left:auto;align-self:flex-end">元に戻す</button>
     </div>
   `;
 
@@ -1150,26 +1150,25 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
     contentTimer = setTimeout(autoSave, 500);
   });
 
-  document.getElementById('eBtnHoliday')?.addEventListener('click', setHoliday);
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
 
-  const saveSrc = () => {
-    const di = +document.getElementById('eSrcDay').value;
-    const p  = +document.getElementById('eSrcPer').value;
-    const [ds] = selKeyParts();
-    const d2  = parseDateStr(ds);
-    const ndi = dayIdx(d2);
-    const dsDi = ds in daySchedules ? daySchedules[ds] : ndi;
-    if (di === dsDi && p === +selKeyParts()[1]) {
-      delete cellSources[selKey];
-    } else {
-      cellSources[selKey] = { di, p };
-    }
-    saveCellSources();
-    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
-  };
-  document.getElementById('eSrcDay')?.addEventListener('change', saveSrc);
-  document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
+  document.querySelectorAll('.src-gc').forEach(gc => {
+    gc.addEventListener('click', () => {
+      const di = +gc.dataset.di;
+      const p  = +gc.dataset.p;
+      const [ds] = selKeyParts();
+      const d2  = parseDateStr(ds);
+      const ndi = dayIdx(d2);
+      const dsDi = ds in daySchedules ? daySchedules[ds] : ndi;
+      if (di === dsDi && p === +selKeyParts()[1]) {
+        delete cellSources[selKey];
+      } else {
+        cellSources[selKey] = { di, p };
+      }
+      saveCellSources();
+      renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
+    });
+  });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
     const [ds] = selKeyParts();
@@ -1201,12 +1200,6 @@ function autoSave() {
   refreshEditForm();
   renderProgress();
   renderProgress2(); renderChanges();
-}
-
-function setHoliday() {
-  overrides[selKey] = null;
-  save();
-  selectCell(...selKeyParts());
 }
 
 function restoreBase() {
@@ -1446,12 +1439,9 @@ function renderChanges() {
       ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
       : '<span style="color:#aaa">なし</span>';
 
-    let toHtml;
-    if (to === null) {
-      toHtml = '<span class="chg-cancel">休み</span>';
-    } else {
-      toHtml = `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`;
-    }
+    const toHtml = to
+      ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`
+      : '<span style="color:#aaa">なし</span>';
 
     tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
     tbody.appendChild(tr);
@@ -1512,12 +1502,9 @@ function renderChanges() {
       ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
       : '<span style="color:#aaa">なし</span>';
 
-    let toHtml;
-    if (to === null) {
-      toHtml = '<span class="chg-cancel">休み</span>';
-    } else {
-      toHtml = `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`;
-    }
+    const toHtml = to
+      ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`
+      : '<span style="color:#aaa">なし</span>';
 
     tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
     tbody.appendChild(tr);
