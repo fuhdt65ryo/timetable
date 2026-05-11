@@ -1091,14 +1091,31 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
     </div>
   `;
 
+  const attachOtherInput = (fg) => {
+    if (document.getElementById('eClassOther')) return;
+    const inp = document.createElement('input');
+    inp.className = 'form-input';
+    inp.id = 'eClassOther';
+    inp.type = 'text';
+    inp.placeholder = 'クラス名を入力';
+    inp.style.marginTop = '4px';
+    inp.addEventListener('input', () => {
+      clearTimeout(contentTimer);
+      contentTimer = setTimeout(autoSave, 600);
+    });
+    fg.appendChild(inp);
+    inp.focus();
+  };
+
   document.getElementById('eClass').addEventListener('change', function() {
     if (this.value === '__other__') {
-      refreshEditForm();
-      setTimeout(() => document.getElementById('eClassOther')?.focus(), 30);
+      attachOtherInput(this.closest('.form-group'));
       return;
     }
+    document.getElementById('eClassOther')?.remove();
     autoSave();
   });
+  // 既にその他で保存済みの場合はリスナーを付け直す
   document.getElementById('eClassOther')?.addEventListener('input', () => {
     clearTimeout(contentTimer);
     contentTimer = setTimeout(autoSave, 600);
