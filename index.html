@@ -193,6 +193,8 @@
     .prog-none { color:#d1d9e6; font-size:1rem; }
     .prog-upcoming { display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
     .prog-upcoming .prog-p { color:#b45309; }
+    .prog-today { display:inline-block; background:#FFD600; color:#5a3e00; font-weight:800; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
+    .prog-today .prog-p { color:#7a5500; }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -891,11 +893,12 @@ function renderProgress() {
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
-        // 完了（過去）
         const d = info.date;
         html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info && isSameDay(info.date, today)) {
+        const d = info.date;
+        html += `<td><span class="prog-today">今日<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info) {
-        // 予定あり（未来）
         const d = info.date;
         html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else {
@@ -959,6 +962,8 @@ function renderProgress2() {
       if (info && info.date < today) {
         const d = info.date;
         html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info && isSameDay(info.date, today)) {
+        html += `<td><span class="prog-today">今日<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info) {
         const d = info.date;
         html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
