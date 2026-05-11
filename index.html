@@ -11,7 +11,7 @@
       --text: #1a202c; --muted: #718096;
       --accent: #2C3E6B; --accent2: #4A2D6B;
       --on-accent: #fff;
-      --today: #f0f6ff; --today-b: #B0C8F0;
+      --today: #fffbe6; --today-b: #E6AC00;
       --shadow: 0 4px 16px rgba(0,0,0,.10);
     }
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -42,28 +42,33 @@
       display:grid;
       grid-template-columns:52px repeat(5,1fr);
       gap:5px;
+      position:relative;
       min-width:460px;
     }
 
-    .cell-day { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; }
-    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:5px; color:rgba(255,255,255,.45); padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
-    .day-sched-sel.is-changed { background:rgba(255,255,255,.9); color:#1a2040; font-weight:800; border-color:transparent; }
-    .cell-day.is-today { background:linear-gradient(135deg,#1a2d5a,#321a5a); color:#fff; box-shadow:0 0 0 2px #4a6aaa; }
-    .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
+    .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; border:1.5px solid var(--border); }
+    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.12); border-radius:5px; color:#999; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
+    .day-sched-sel.is-changed { background:rgba(44,62,107,.12); color:#1a2040; font-weight:800; border-color:transparent; }
+    .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
+    .cell-day.is-today .day-sched-sel { background:#fff; border-color:rgba(0,0,0,.12); color:#666; }
+    .cell-day.is-holiday { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
     .day-hol-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
 
-    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
+    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); position:relative; z-index:1; }
     .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
     .period-time { font-size:.5rem; color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; min-height:70px; }
+    .cell { border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:70px; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border:none; }
     .cell.has-entry:hover { filter:brightness(1.07); box-shadow:0 4px 14px rgba(0,0,0,.2); }
-    .cell.is-today-col { background:var(--today); border-color:var(--today-b); }
+    .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
+
+    /* ── 今日列のハイライト ── */
+    .col-today-hl { display:none; }
     .cell.cancelled { background:#f1f5f9 !important; border:2px solid #cbd5e0 !important; }
     .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
@@ -484,6 +489,7 @@ function renderTimetable() {
   const grid = document.getElementById('timetable');
   grid.innerHTML = '';
 
+
   // コーナー（空白）
   const corner = el('div');
   corner.style.cssText = 'grid-column:1;grid-row:1';
@@ -628,6 +634,25 @@ function renderTimetable() {
       <div class="hol-span-label">休校日</div>
     `;
     grid.appendChild(block);
+  });
+
+  // 今日列ハイライト枠（レンダリング後に座標取得して配置）
+  requestAnimationFrame(() => {
+    grid.querySelectorAll('.col-today-hl').forEach(e => e.remove());
+    const todayHeader = grid.querySelector('.cell-day.is-today');
+    const todayCells  = [...grid.querySelectorAll('.cell.is-today-col, .cell-day.is-today')];
+    if (!todayHeader || !todayCells.length) return;
+    const gRect = grid.getBoundingClientRect();
+    const topEl = todayHeader;
+    const botEl = todayCells[todayCells.length - 1];
+    const t = topEl.getBoundingClientRect();
+    const b = botEl.getBoundingClientRect();
+    const hl = el('div', 'col-today-hl');
+    hl.style.left   = (t.left - gRect.left) + 'px';
+    hl.style.top    = (t.top  - gRect.top)  + 'px';
+    hl.style.width  = t.width + 'px';
+    hl.style.height = (b.bottom - t.top) + 'px';
+    grid.appendChild(hl);
   });
 }
 
@@ -851,7 +876,8 @@ function renderProgress() {
 
   const table = document.createElement('table');
   table.className = 'prog-table';
-  table.innerHTML = `<thead><tr><th>授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  table.style.tableLayout = 'fixed';
+  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
 
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -884,39 +910,63 @@ function renderProgress() {
   container.appendChild(table);
 }
 
-/* ── 2年生進捗リスト ── */
+/* ── 2年生進捗テーブル ── */
+const PROG2_CLASSES = ['2-4'];
+
 function renderProgress2() {
   const container = document.getElementById('progress2Body');
 
-  const items = Object.entries(overrides)
-    .filter(([, v]) => v && v.teacher && v.name === '2-4')
-    .map(([key, entry]) => {
-      const parts = key.split('-');
-      const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
-      const period  = Number(parts[3]);
-      const date    = parseDateStr(dateStr);
-      return { dateStr, period, entry, date };
-    })
-    .sort((a, b) => a.date - b.date || a.period - b.period);
+  const map = {};
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || !entry.teacher) return;
+    if (!PROG2_CLASSES.includes(entry.name)) return;
+    const mk = entry.teacher;
+    if (!map[mk]) map[mk] = { content: entry.teacher, classes: {} };
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
+      map[mk].classes[entry.name] = { date, period };
+    }
+  });
 
-  if (!items.length) {
+  const rows = Object.values(map);
+  if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
     return;
   }
 
+  rows.sort((a, b) => {
+    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
+    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
+  });
+
   const table = document.createElement('table');
   table.className = 'prog-table';
-  table.innerHTML = '<thead><tr><th>日付</th><th>時限</th><th>教科</th><th style="text-align:left">授業内容</th></tr></thead>';
+  table.style.tableLayout = 'fixed';
+  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+
+  const today = new Date(); today.setHours(0,0,0,0);
 
   const tbody = document.createElement('tbody');
-  items.forEach(({ dateStr, period, entry, date }) => {
+  rows.forEach(({ content, classes }) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="white-space:nowrap">${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})</td>
-      <td>${period}限</td>
-      <td><span style="display:inline-block;background:${entry.color||'#4A90D9'};color:#3d3353;border-radius:8px;padding:1px 7px;font-size:.7rem;font-weight:700">${esc(entry.room||'')}</span></td>
-      <td style="text-align:left" class="prog-cnt">${esc(entry.teacher)}</td>
-    `;
+    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div></td>`;
+    PROG2_CLASSES.forEach(cls => {
+      const info = classes[cls];
+      if (info && info.date < today) {
+        const d = info.date;
+        html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info) {
+        const d = info.date;
+        html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else {
+        html += '<td class="prog-none">─</td>';
+      }
+    });
+    tr.innerHTML = html;
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
