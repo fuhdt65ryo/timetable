@@ -506,11 +506,11 @@ const BASE = {
 };
 
 const CLASSES = [
-  { name:'2-4',  subjects:[{name:'理科',color:'#E8922A'}] },
-  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#BF3939'},{name:'道徳',color:'#E85555'},{name:'総合',color:'#C84242'}] },
-  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'}] },
-  { name:'3-3',  subjects:[{name:'理科',color:'#D4A017'}] },
-  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'}] },
+  { name:'2-4',  subjects:[{name:'理科',color:'#E8922A'},{name:'自習',color:'#78909C'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#BF3939'},{name:'道徳',color:'#E85555'},{name:'総合',color:'#C84242'},{name:'自習',color:'#78909C'}] },
+  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'},{name:'自習',color:'#78909C'}] },
+  { name:'3-3',  subjects:[{name:'理科',color:'#D4A017'},{name:'自習',color:'#78909C'}] },
+  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'自習',color:'#78909C'}] },
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
   { name:'行事',   color:'#C0392B', isEvent:true, subjects:[] },
@@ -1067,7 +1067,7 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
         <label class="form-label">${subjectLabel}</label>
         ${isTanin && !isJikoji && !isKenkyu
           ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
-          : `<input class="form-input" id="eSubject" type="text" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}">`}
+          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList"><option value="自習"><option value="理科"></datalist>`}
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
