@@ -211,6 +211,16 @@
     .prog-today { display:inline-block; background:#FFF9C4; color:#F57F17; font-weight:800; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
     .prog-today .prog-p { color:#F9A825; }
 
+    /* ── 授業変更一覧 ── */
+    .chg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .chg-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:left; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
+    .chg-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; }
+    .chg-date  { font-weight:700; white-space:nowrap; }
+    .chg-period { text-align:center; color:var(--accent); font-weight:800; }
+    .chg-arrow { color:#aaa; margin:0 6px; }
+    .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
+    .chg-cancel { color:#e53e3e; font-weight:700; }
+
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
     .hol-page-form .form-group { flex:0 0 auto; }
@@ -312,6 +322,13 @@
       <span class="list-title">2年生 授業進捗</span>
     </div>
     <div id="progress2Body"></div>
+  </div>
+
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">授業変更一覧（今日以降）</span>
+    </div>
+    <div id="changesBody"></div>
   </div>
 
 </div>
@@ -831,7 +848,7 @@ function renderTimetable() {
         saveDaySchedules();
         renderTimetable();
         renderProgress();
-        renderProgress2();
+        renderProgress2(); renderChanges();
       });
       schedDiv.appendChild(sel);
       grid.appendChild(schedDiv);
@@ -974,7 +991,7 @@ function selectCell(dateStr, period) {
   renderTimetable(); // editBody を含む edit-inline 行を生成
   refreshEditForm();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
   document.getElementById('editBody')?.closest('.edit-inline')
     ?.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
@@ -983,7 +1000,7 @@ function clearSelect() {
   selKey = null;
   renderTimetable();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
 }
 
 function refreshEditForm() {
@@ -1097,7 +1114,7 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
       cellSources[selKey] = { di, p };
     }
     saveCellSources();
-    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2();
+    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
   };
   document.getElementById('eSrcDay')?.addEventListener('change', saveSrc);
   document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
@@ -1130,7 +1147,7 @@ function autoSave() {
   renderTimetable();
   refreshEditForm();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
 }
 
 function setHoliday() {
@@ -1285,6 +1302,72 @@ function renderProgress2() {
     tr.innerHTML = html;
     tbody.appendChild(tr);
   });
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+}
+
+/* ── 授業変更一覧 ── */
+function renderChanges() {
+  const container = document.getElementById('changesBody');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const changes = [];
+  Object.entries(overrides).forEach(([key, newEntry]) => {
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    if (date < today) return;
+
+    const naturalDi = dayIdx(date);
+    const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+    const origEntry = BASE[`${di}-${period}`] || null;
+
+    // 元と同じ場合はスキップ（内容入力のみの変更は除外）
+    const fromName = origEntry ? origEntry.name : null;
+    const toName   = newEntry  ? newEntry.name  : null;
+    const fromRoom = origEntry ? origEntry.room : null;
+    const toRoom   = newEntry  ? newEntry.room  : null;
+    if (fromName === toName && fromRoom === toRoom && newEntry !== null) return;
+
+    changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
+  });
+
+  changes.sort((a, b) => a.date - b.date || a.period - b.period);
+
+  if (!changes.length) {
+    container.innerHTML = '<div class="list-empty">今日以降の授業変更はありません</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'chg-table';
+  table.innerHTML = '<thead><tr><th>日付</th><th>時</th><th>変更内容</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  changes.forEach(({ dateStr, date, period, from, to }) => {
+    const tr = document.createElement('tr');
+    const dayLabel = `${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})`;
+    const isToday  = isSameDay(date, today);
+    const dateCell = `<td class="chg-date">${isToday ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>` : dayLabel}</td>`;
+    const periodCell = `<td class="chg-period">${period}限</td>`;
+
+    const fromHtml = from
+      ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+      : '<span style="color:#aaa">なし</span>';
+
+    let toHtml;
+    if (to === null) {
+      toHtml = '<span class="chg-cancel">休み</span>';
+    } else {
+      toHtml = `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`;
+    }
+
+    tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
+    tbody.appendChild(tr);
+  });
+
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
@@ -1521,7 +1604,7 @@ async function syncPull() {
     if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
     if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
     if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
-    if (changed) { renderTimetable(); renderProgress(); renderProgress2(); }
+    if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
     const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
     localStorage.setItem(SYNC_TIME_KEY, now);
     updateSyncBtn('ok');
@@ -1602,7 +1685,7 @@ load();
 loadGcalCache();
 renderTimetable();
 renderProgress();
-renderProgress2();
+renderProgress2(); renderChanges();
 if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
 fetchGcalEvents();
 </script>
