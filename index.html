@@ -1205,7 +1205,7 @@ function renderProgress() {
         html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info && isSameDay(info.date, today)) {
         const d = info.date;
-        html += `<td><span class="prog-today">今日<span class="prog-p">${info.period}限</span></span></td>`;
+        html += `<td><span class="prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info) {
         const d = info.date;
         html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
@@ -1271,7 +1271,8 @@ function renderProgress2() {
         const d = info.date;
         html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info && isSameDay(info.date, today)) {
-        html += `<td><span class="prog-today">今日<span class="prog-p">${info.period}限</span></span></td>`;
+        const d = info.date;
+        html += `<td><span class="prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info) {
         const d = info.date;
         html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
