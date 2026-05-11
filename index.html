@@ -17,14 +17,20 @@
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
     /* ── Header ── */
-    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 14px; }
+    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; }
     .header-top { text-align:center; margin-bottom:12px; }
     h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
-    .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+    .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
     .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; }
     .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
     .nav-btn:hover { background:rgba(255,255,255,.25); }
     .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#2C3E6B; border-color:transparent; }
+
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
+    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:11px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
+    .tab-btn:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .tab-btn.active { color:#fff; border-bottom:3px solid rgba(255,255,255,.9); background:rgba(255,255,255,.12); }
 
     /* ── Layout ── */
     .container { max-width:980px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
@@ -32,20 +38,27 @@
 
     /* ── Timetable ── */
     .tt-wrap { padding:12px; overflow-x:auto; }
-    .timetable { display:grid; grid-template-columns:52px repeat(5,1fr); gap:5px; min-width:460px; }
+    .timetable {
+      display:grid;
+      grid-template-columns:52px repeat(5,1fr);
+      gap:5px;
+      min-width:460px;
+    }
 
     .cell-day { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; }
     .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:600; font-family:inherit; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:5px; color:inherit; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
     .day-sched-sel.is-changed { background:rgba(255,255,255,.7); color:#2C3E6B; font-weight:800; }
     .cell-day.is-today { background:linear-gradient(135deg,#1a2d5a,#321a5a); color:#fff; box-shadow:0 0 0 2px #4a6aaa; }
+    .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
+    .day-hol-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
 
     .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
     .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
     .period-time { font-size:.5rem; color:var(--muted); white-space:nowrap; }
 
-    .cell { min-height:70px; border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; }
+    .cell { border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; min-height:70px; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border:none; }
     .cell.has-entry:hover { filter:brightness(1.07); box-shadow:0 4px 14px rgba(0,0,0,.2); }
@@ -54,6 +67,23 @@
     .cell.cancelled { background:#f1f5f9 !important; border:2px solid #cbd5e0 !important; }
     .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
+
+    /* ── 祝日列（全体ブロック） ── */
+    .cell-holiday-span {
+      border-radius:10px;
+      background:linear-gradient(180deg,#1a1f2e 0%,#221530 100%);
+      background-image:repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,.03) 8px,rgba(255,255,255,.03) 16px);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      cursor:default;
+      user-select:none;
+    }
+    .hol-span-icon { font-size:1.6rem; opacity:.5; }
+    .hol-span-name { font-size:.82rem; font-weight:700; color:rgba(255,110,110,.9); text-align:center; padding:0 8px; line-height:1.5; }
+    .hol-span-label { font-size:.62rem; color:rgba(255,255,255,.3); font-weight:600; letter-spacing:.06em; }
 
     .add-mark { font-size:1.4rem; color:#c8d2e0; transition:color .18s; }
     .cell:hover .add-mark { color:var(--accent); }
@@ -71,6 +101,7 @@
     .cell-dark .c-src { background:rgba(255,255,255,.18); color:rgba(255,255,255,.9); }
     .c-src { position:absolute; bottom:2px; left:3px; font-size:.52rem; font-weight:800; background:rgba(255,255,255,.25); color:#fff; border-radius:3px; padding:0 3px; line-height:1.5; }
     .cell.is-today-col .c-src { background:rgba(255,255,255,.3); }
+
     /* ── Source selector in edit panel ── */
     .src-row { display:flex; align-items:center; gap:6px; padding:0 16px 12px; flex-wrap:wrap; }
     .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
@@ -112,19 +143,8 @@
     .btn-restore:hover { background:#dcfce7; }
     .btn-del { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
     .btn-del:hover { background:#fed7d7; }
-
-    /* ── Holiday ── */
-    .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
-    .day-hol-name { font-size:.55rem; font-weight:700; margin-top:3px; color:rgba(255,120,120,.95); letter-spacing:.02em; }
-    .cell.is-holiday-col { background:#1e2530 !important; border:none !important; cursor:default !important;
-      background-image:repeating-linear-gradient(-45deg,transparent,transparent 5px,rgba(255,255,255,.03) 5px,rgba(255,255,255,.03) 10px) !important; }
-    .cell.is-holiday-col > * { display:none !important; }
-    .hol-form { padding:10px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--border); }
-    .hol-item { display:flex; align-items:center; gap:10px; padding:8px 16px; border-bottom:1px solid #f0f2f6; }
-    .hol-date { font-size:.8rem; font-weight:700; color:var(--accent); min-width:100px; white-space:nowrap; }
-    .hol-name { font-size:.85rem; flex:1; }
-    .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:3px 8px; border-radius:5px; transition:all .15s; }
-    .hol-del:hover { color:#e53e3e; background:#fff5f5; }
+    .btn-danger { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
+    .btn-danger:hover { background:#fed7d7; }
 
     /* ── Progress ── */
     .list-top { padding:13px 16px 11px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
@@ -143,12 +163,33 @@
     .prog-p   { font-size:.65rem; color:var(--muted); font-weight:400; display:block; }
     .prog-none { color:#d1d9e6; font-size:1rem; }
 
+    /* ── 祝日管理ページ ── */
+    .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
+    .hol-page-form .form-group { flex:0 0 auto; }
+    .hol-page-form .form-group.fg-name { flex:1 1 160px; }
+    .hol-empty { padding:40px 16px; text-align:center; color:var(--muted); font-size:.9rem; }
+    .hol-list { padding:8px 0; }
+    .hol-item { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid #f0f2f6; transition:background .12s; }
+    .hol-item:last-child { border-bottom:none; }
+    .hol-item:hover { background:#fafbfc; }
+    .hol-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,80,80,.7); flex-shrink:0; }
+    .hol-date { font-size:.85rem; font-weight:700; color:var(--accent); min-width:110px; white-space:nowrap; }
+    .hol-name-text { font-size:.9rem; flex:1; }
+    .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
+    .hol-del:hover { color:#e53e3e; background:#fff5f5; }
+    .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
+
+    /* ── 祝日カウントバッジ ── */
+    .hol-count-badge { display:inline-flex; align-items:center; justify-content:center; background:rgba(255,80,80,.12); color:#c53030; border-radius:12px; padding:2px 8px; font-size:.72rem; font-weight:700; margin-left:auto; }
+
     @media (max-width:640px) {
       .edit-form { grid-template-columns:1fr 1fr; }
       .edit-form .fg-content { grid-column:1/-1; }
       .cell { min-height:58px; padding:4px; }
       .c-content { display:none; }
       .period-time { display:none; }
+      .hol-span-icon { font-size:1.1rem; }
+      .hol-span-name { font-size:.7rem; }
     }
   </style>
 </head>
@@ -156,15 +197,20 @@
 
 <header>
   <div class="header-top"><h1>時間割</h1></div>
-  <div class="nav-bar">
+  <div class="nav-bar" id="navBar">
     <button class="nav-btn" id="btnPrev">‹ 前の週</button>
     <div class="week-label" id="weekLabel"></div>
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
   </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="timetable">時間割</button>
+    <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
+  </div>
 </header>
 
-<div class="container">
+<!-- 時間割ページ -->
+<div id="pageTimetable" class="container">
 
   <div class="card tt-wrap">
     <div class="timetable" id="timetable"></div>
@@ -185,20 +231,6 @@
 
   <div class="card">
     <div class="list-top">
-      <span class="list-title">祝日・休校日</span>
-      <button class="btn btn-save" id="btnAddHol" style="padding:5px 12px;font-size:.78rem">＋ 追加</button>
-    </div>
-    <div id="holForm" class="hol-form" style="display:none">
-      <input type="date" class="form-input" id="hDate" style="flex:0 0 auto;width:160px">
-      <input type="text" class="form-input" id="hName" placeholder="例: 体育大会、文化祭">
-      <button class="btn btn-save" id="hSave">保存</button>
-      <button class="btn btn-holiday" id="hCancel">キャンセル</button>
-    </div>
-    <div id="holidayList"></div>
-  </div>
-
-  <div class="card">
-    <div class="list-top">
       <span class="list-title">3年生 授業進捗</span>
     </div>
     <div id="progressBody"></div>
@@ -213,16 +245,37 @@
 
 </div>
 
+<!-- 祝日管理ページ -->
+<div id="pageHoliday" class="container" style="display:none">
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">祝日・休校日の登録</span>
+      <span class="hol-count-badge" id="holCountBadge">0件</span>
+    </div>
+    <div class="hol-page-form">
+      <div class="form-group">
+        <label class="form-label">日付</label>
+        <input type="date" class="form-input" id="hDate" style="width:160px">
+      </div>
+      <div class="form-group fg-name">
+        <label class="form-label">名称</label>
+        <input type="text" class="form-input" id="hName" placeholder="例: 体育大会、文化祭、振替休日">
+      </div>
+      <button class="btn btn-save" id="hSave">追加</button>
+    </div>
+    <div id="holidayList"></div>
+  </div>
+</div>
+
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
-// キー: "曜日インデックス(0=月)-時限"
 const BASE = {
   '0-1':{ name:'3-3',  room:'理科', color:'#C855A0' },
   '0-2':{ name:'3-4',  room:'理科', color:'#D44545' },
   '0-3':{ name:'2-4',  room:'理科', color:'#4A90D9' },
   '0-4':{ name:'3-1',  room:'道徳', color:'#7A65D4' },
   '0-5':{ name:'3-1',  room:'理科', color:'#3DAE65' },
-  '0-6':{ name:'空き',  room:'',    color:'#37474F' },
+  '0-6':{ name:'空き',  room:'',    color:'#B07D4E' },
   '1-1':{ name:'2-4',  room:'理科', color:'#4A90D9' },
   '1-2':{ name:'3-3',  room:'理科', color:'#C855A0' },
   '1-3':{ name:'3-1',  room:'理科', color:'#3DAE65' },
@@ -234,14 +287,13 @@ const BASE = {
   '2-3':{ name:'3-3',  room:'理科', color:'#C855A0' },
   '2-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
   '2-5':{ name:'3-1',  room:'理科', color:'#3DAE65' },
-  '2-6':{ name:'空き',  room:'',    color:'#37474F' },
-  '3-1':{ name:'空き',  room:'',    color:'#37474F' },
+  '2-6':{ name:'空き',  room:'',    color:'#B07D4E' },
+  '3-1':{ name:'空き',  room:'',    color:'#B07D4E' },
   '3-2':{ name:'3-3',  room:'理科', color:'#C855A0' },
-  '3-3':{ name:'研究部', room:'',   color:'#4A5568' },
+  '3-3':{ name:'研究部', room:'',   color:'#3D7A6E' },
   '3-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
   '3-5':{ name:'3-4',  room:'理科', color:'#D44545' },
-  '3-6':{ name:'空き',  room:'',    color:'#37474F' },
-  '4-1':{ name:'空き',  room:'',    color:'#37474F' },
+  '4-1':{ name:'空き',  room:'',    color:'#B07D4E' },
   '4-2':{ name:'3-4',  room:'理科', color:'#D44545' },
   '4-3':{ name:'2-4',  room:'理科', color:'#4A90D9' },
   '4-4':{ name:'3-2',  room:'理科', color:'#E8922A' },
@@ -255,7 +307,7 @@ const CLASSES = [
   { name:'3-2',  subjects:[{name:'理科',color:'#E8922A'}] },
   { name:'3-3',  subjects:[{name:'理科',color:'#C855A0'}] },
   { name:'3-4',  subjects:[{name:'理科',color:'#D44545'}] },
-  { name:'研究部', color:'#4A5568', subjects:[] },
+  { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
 ];
 
@@ -264,11 +316,38 @@ const DAY_JP    = ['日','月','火','水','木','金','土'];
 const PERIODS   = [1,2,3,4,5,6];
 const TIMES     = ['8:50〜9:40','9:50〜10:40','10:50〜11:40','13:00〜13:50','14:00〜14:50','15:00〜15:50'];
 
+/* ── 日本の祝日（2026〜2027年3月） ── */
+const JP_HOLIDAYS = {
+  '2026-01-01': '元日',
+  '2026-01-12': '成人の日',
+  '2026-02-11': '建国記念の日',
+  '2026-02-23': '天皇誕生日',
+  '2026-03-20': '春分の日',
+  '2026-04-29': '昭和の日',
+  '2026-05-03': '憲法記念日',
+  '2026-05-04': 'みどりの日',
+  '2026-05-05': 'こどもの日',
+  '2026-05-06': '振替休日',
+  '2026-07-20': '海の日',
+  '2026-08-11': '山の日',
+  '2026-09-21': '敬老の日',
+  '2026-09-22': '国民の休日',
+  '2026-09-23': '秋分の日',
+  '2026-10-12': 'スポーツの日',
+  '2026-11-03': '文化の日',
+  '2026-11-23': '勤労感謝の日',
+  '2027-01-01': '元日',
+  '2027-01-11': '成人の日',
+  '2027-02-11': '建国記念の日',
+  '2027-02-23': '天皇誕生日',
+  '2027-03-21': '春分の日',
+};
+
 /* ── 状態 ── */
 let overrides    = {};
 let daySchedules = {};
 let cellSources  = {};
-let holidays     = {}; // { 'YYYY-MM-DD': '祝日名' }
+let holidays     = {};
 let weekStart = getMonday(new Date());
 let selKey    = null;
 
@@ -287,6 +366,20 @@ function loadCellSources() {
 function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); }
 function loadHolidays() {
   try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
+  // 未登録の祝日のみ追加（ユーザーが削除したものは復活させない）
+  const seen = JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}');
+  let changed = false;
+  Object.entries(JP_HOLIDAYS).forEach(([date, name]) => {
+    if (!(date in seen) && !(date in holidays)) {
+      holidays[date] = name;
+      changed = true;
+    }
+    seen[date] = true;
+  });
+  if (changed) {
+    saveHolidays();
+    localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
+  }
 }
 function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); }
 
@@ -301,7 +394,7 @@ function pad(n)       { return String(n).padStart(2,'0'); }
 function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 function getWeekDates(){ return Array.from({length:5},(_,i)=>addDays(weekStart,i)); }
 function parseDateStr(s){ const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d); }
-function dayIdx(d)     { return d.getDay()-1; } // 0=月 4=金
+function dayIdx(d)     { return d.getDay()-1; }
 
 function formatWeekLabel() {
   const [s,e]=[getWeekDates()[0],getWeekDates()[4]];
@@ -346,7 +439,8 @@ function isCancelled(dateStr, period) {
 }
 
 /* ── 色・クラス ── */
-const DARK_CLASSES = new Set(['研究部','裁量','空き']);
+const DARK_CLASSES  = new Set(['裁量']);
+const LIGHT_CLASSES = new Set(['空き','研究部']);
 
 function pastelizeColor(hex) {
   if (!hex || hex.length < 7) return hex;
@@ -373,86 +467,117 @@ function renderTimetable() {
 
   const grid = document.getElementById('timetable');
   grid.innerHTML = '';
-  grid.appendChild(el('div'));
 
-  dates.forEach((d,i) => {
+  // コーナー（空白）
+  const corner = el('div');
+  corner.style.cssText = 'grid-column:1;grid-row:1';
+  grid.appendChild(corner);
+
+  // 曜日ヘッダー行
+  dates.forEach((d, i) => {
+    const col = i + 2;
     const dateStr = toDateStr(d);
     const hasSched  = dateStr in daySchedules;
     const schedDi   = hasSched ? daySchedules[dateStr] : i;
     const isHoliday = dateStr in holidays;
 
-    const div = el('div','cell-day'+(isSameDay(d,today)?' is-today':'')+(isHoliday?' is-holiday':''));
-    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday?`<div class="day-hol-name">${esc(holidays[dateStr])}</div>`:''}` ;
+    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isHoliday ? ' is-holiday' : ''));
+    div.style.cssText = `grid-column:${col};grid-row:1`;
+    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday ? `<div class="day-hol-badge">祝</div>` : ''}`;
 
-    const sel = document.createElement('select');
-    sel.className = 'day-sched-sel' + (hasSched ? ' is-changed' : '');
-    sel.innerHTML = `<option value="-1"${!hasSched?' selected':''}>日課</option>` +
-      DAY_NAMES.map((n,j) => `<option value="${j}"${hasSched && schedDi===j?' selected':''}>${n}曜</option>`).join('');
-    sel.addEventListener('change', function(e) {
-      e.stopPropagation();
-      const v = +this.value;
-      if (v < 0) delete daySchedules[dateStr];
-      else daySchedules[dateStr] = v;
-      saveDaySchedules();
-      renderTimetable();
-      renderProgress();
-      renderProgress2();
-    });
-    div.appendChild(sel);
+    if (!isHoliday) {
+      const sel = document.createElement('select');
+      sel.className = 'day-sched-sel' + (hasSched ? ' is-changed' : '');
+      sel.innerHTML = `<option value="-1"${!hasSched?' selected':''}>日課</option>` +
+        DAY_NAMES.map((n,j) => `<option value="${j}"${hasSched && schedDi===j?' selected':''}>${n}曜</option>`).join('');
+      sel.addEventListener('change', function(e) {
+        e.stopPropagation();
+        const v = +this.value;
+        if (v < 0) delete daySchedules[dateStr];
+        else daySchedules[dateStr] = v;
+        saveDaySchedules();
+        renderTimetable();
+        renderProgress();
+        renderProgress2();
+      });
+      div.appendChild(sel);
+    }
     grid.appendChild(div);
   });
 
-  PERIODS.forEach((p,pi) => {
-    const pc = el('div','cell-period');
+  // 時限ラベル列
+  PERIODS.forEach((p, pi) => {
+    const row = pi + 2;
+    const pc = el('div', 'cell-period');
+    pc.style.cssText = `grid-column:1;grid-row:${row}`;
     pc.innerHTML = `<span class="period-num">${p}</span>`;
     grid.appendChild(pc);
+  });
 
-    dates.forEach(d => {
-      const isToday   = isSameDay(d,today);
-      const dateStr   = toDateStr(d);
-      const isHoliday = dateStr in holidays;
-      const key       = overrideKey(dateStr, p);
-      const entry     = getEntry(dateStr, p);
-      const ovr       = isOverride(dateStr, p);
-      const cancel    = isCancelled(dateStr, p);
-      const isSel     = key === selKey;
+  // 各曜日の授業セル or 祝日ブロック
+  dates.forEach((d, i) => {
+    const col = i + 2;
+    const dateStr = toDateStr(d);
+    const isHoliday = dateStr in holidays;
 
-      const isDark = entry && !cancel && DARK_CLASSES.has(entry.name);
-      let cls = 'cell';
-      if (isHoliday) { cls += ' is-holiday-col'; }
-      else if (entry && !cancel) cls += ' has-entry';
-      else if (!cancel) cls += ' cell-empty';
-      if (isToday)  cls += ' is-today-col';
-      if (cancel)   cls += ' cancelled';
-      if (ovr && !cancel) cls += ' modified';
-      if (isSel)    cls += ' selected';
-      if (isDark) cls += ' cell-dark';
+    if (isHoliday) {
+      // 1〜6限をまとめて1つのブロックで表示
+      const block = el('div', 'cell-holiday-span');
+      block.style.cssText = `grid-column:${col};grid-row:2 / ${PERIODS.length + 2}`;
+      block.innerHTML = `
+        <div class="hol-span-icon">🎌</div>
+        <div class="hol-span-name">${esc(holidays[dateStr])}</div>
+        <div class="hol-span-label">休校日</div>
+      `;
+      grid.appendChild(block);
+    } else {
+      PERIODS.forEach((p, pi) => {
+        const row = pi + 2;
+        const isToday   = isSameDay(d, today);
+        const key       = overrideKey(dateStr, p);
+        const entry     = getEntry(dateStr, p);
+        const ovr       = isOverride(dateStr, p);
+        const cancel    = isCancelled(dateStr, p);
+        const isSel     = key === selKey;
 
-      // 参照元バッジ（自然な曜日・時限と異なる場合のみ表示）
-      const naturalDi = dayIdx(d);
-      const src = getEffectiveSrc(dateStr, p);
-      const srcBadge = (!cancel && !(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
-        ? `${DAY_NAMES[src.di]}${src.p}` : '';
+        const isDark  = entry && !cancel && DARK_CLASSES.has(entry.name);
+        const isLight = entry && !cancel && LIGHT_CLASSES.has(entry.name);
+        let cls = 'cell';
+        if (entry && !cancel) cls += ' has-entry';
+        if (isToday)  cls += ' is-today-col';
+        if (cancel)   cls += ' cancelled';
+        if (ovr && !cancel) cls += ' modified';
+        if (isSel)    cls += ' selected';
+        if (isDark)   cls += ' cell-dark';
+        if (isLight)  cls += ' cell-light';
 
-      const cell = el('div', cls);
-      if (entry && !cancel) {
-        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(entry.color || '#667eea');
-        cell.style.background = bg;
-        cell.innerHTML = `
-          <div class="c-class">${esc(entry.name)}</div>
-          ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
-          ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
-          ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
-        `;
-      } else if (cancel) {
-        cell.innerHTML = '<span class="c-cancel">休み</span>';
-      } else {
-        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
-      }
+        const naturalDi = dayIdx(d);
+        const src = getEffectiveSrc(dateStr, p);
+        const srcBadge = (!cancel && !(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
+          ? `${DAY_NAMES[src.di]}${src.p}` : '';
 
-      if (!isHoliday) cell.addEventListener('click', () => selectCell(dateStr, p));
-      grid.appendChild(cell);
-    });
+        const cell = el('div', cls);
+        cell.style.cssText = `grid-column:${col};grid-row:${row}`;
+
+        if (entry && !cancel) {
+          const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(entry.color || '#667eea');
+          cell.style.background = bg;
+          cell.innerHTML = `
+            <div class="c-class">${esc(entry.name)}</div>
+            ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
+            ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
+            ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
+          `;
+        } else if (cancel) {
+          cell.innerHTML = '<span class="c-cancel">休み</span>';
+        } else {
+          cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
+        }
+
+        cell.addEventListener('click', () => selectCell(dateStr, p));
+        grid.appendChild(cell);
+      });
+    }
   });
 }
 
@@ -560,7 +685,7 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
     const ndi = dayIdx(d2);
     const dsDi = ds in daySchedules ? daySchedules[ds] : ndi;
     if (di === dsDi && p === +selKeyParts()[1]) {
-      delete cellSources[selKey]; // 日課と同じなら削除
+      delete cellSources[selKey];
     } else {
       cellSources[selKey] = { di, p };
     }
@@ -571,12 +696,12 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
-    if (srcDateStr in daySchedules) delete daySchedules[srcDateStr];
+    const [ds] = selKeyParts();
+    if (ds in daySchedules) delete daySchedules[ds];
     saveCellSources(); saveDaySchedules();
     selectCell(...selKeyParts());
   });
 }
-
 
 function getSubjectOptions(className, currentSubject) {
   const subs = getSubjects(className);
@@ -617,14 +742,12 @@ function selKeyParts() {
   return [`${parts[0]}-${parts[1]}-${parts[2]}`, parts[3]];
 }
 
-
 /* ── 3年生進捗テーブル ── */
 const PROG_CLASSES = ['3-1','3-2','3-3','3-4'];
 
 function renderProgress() {
   const container = document.getElementById('progressBody');
 
-  // 授業内容が入力されているoverridesを (教科|内容) でグループ化
   const map = {};
   Object.entries(overrides).forEach(([key, entry]) => {
     if (!entry || !entry.teacher) return;
@@ -635,7 +758,6 @@ function renderProgress() {
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period  = Number(parts[3]);
     const date    = parseDateStr(dateStr);
-    // 同じクラス・同じ内容が複数ある場合は最初の日付
     if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
       map[mk].classes[entry.name] = { date, period };
     }
@@ -647,7 +769,6 @@ function renderProgress() {
     return;
   }
 
-  // 最初に実施した日付順でソート
   rows.sort((a, b) => {
     const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
     const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
@@ -720,62 +841,107 @@ function renderProgress2() {
   container.appendChild(table);
 }
 
-/* ── ユーティリティ ── */
-function el(tag,cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
-function esc(s) { return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* ── 祝日管理 ── */
-function renderHolidayList() {
+/* ── 祝日管理ページ ── */
+function renderHolidayPage() {
   const list = document.getElementById('holidayList');
   const entries = Object.entries(holidays).sort(([a],[b]) => a < b ? -1 : 1);
+
+  const count = entries.length;
+  document.getElementById('holCountBadge').textContent = `${count}件`;
+
   if (!entries.length) {
-    list.innerHTML = '<div class="list-empty">祝日・休校日は登録されていません</div>';
+    list.innerHTML = '<div class="hol-empty">祝日・休校日は登録されていません</div>';
     return;
   }
+
   list.innerHTML = '';
+
+  // 年ごとにグループ化
+  const byYear = {};
   entries.forEach(([date, name]) => {
-    const d = parseDateStr(date);
-    const row = el('div','hol-item');
-    row.innerHTML = `
-      <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日(${DAY_JP[d.getDay()]})</span>
-      <span class="hol-name">${esc(name)}</span>
-      <button class="hol-del" data-date="${date}">✕</button>
-    `;
-    row.querySelector('.hol-del').addEventListener('click', () => {
-      delete holidays[date];
-      saveHolidays();
-      renderHolidayList();
-      renderTimetable();
+    const year = date.slice(0, 4);
+    if (!byYear[year]) byYear[year] = [];
+    byYear[year].push([date, name]);
+  });
+
+  Object.entries(byYear).forEach(([year, items]) => {
+    const yearDiv = el('div', 'hol-year-group');
+    yearDiv.textContent = `${year}年`;
+    list.appendChild(yearDiv);
+
+    const listDiv = el('div', 'hol-list');
+    items.forEach(([date, name]) => {
+      const d = parseDateStr(date);
+      const row = el('div', 'hol-item');
+      row.innerHTML = `
+        <div class="hol-dot"></div>
+        <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）</span>
+        <span class="hol-name-text">${esc(name)}</span>
+        <button class="hol-del" data-date="${date}" title="削除">✕</button>
+      `;
+      row.querySelector('.hol-del').addEventListener('click', () => {
+        delete holidays[date];
+        saveHolidays();
+        renderHolidayPage();
+        renderTimetable();
+      });
+      listDiv.appendChild(row);
     });
-    list.appendChild(row);
+    list.appendChild(listDiv);
   });
 }
 
-/* ── イベント ── */
-document.getElementById('btnPrev').addEventListener('click',  ()=>{ weekStart=addDays(weekStart,-7); renderTimetable(); });
-document.getElementById('btnNext').addEventListener('click',  ()=>{ weekStart=addDays(weekStart, 7); renderTimetable(); });
-document.getElementById('btnToday').addEventListener('click', ()=>{ weekStart=getMonday(new Date()); renderTimetable(); });
-document.getElementById('editClose').addEventListener('click', clearSelect);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') clearSelect(); });
+/* ── ユーティリティ ── */
+function el(tag, cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
+function esc(s) { return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-document.getElementById('btnAddHol').addEventListener('click', () => {
-  document.getElementById('holForm').style.display = '';
+/* ── タブ切り替え ── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+
+    const tab = this.dataset.tab;
+    if (tab === 'timetable') {
+      document.getElementById('pageTimetable').style.display = '';
+      document.getElementById('pageHoliday').style.display = 'none';
+      document.getElementById('navBar').style.display = '';
+    } else {
+      document.getElementById('pageTimetable').style.display = 'none';
+      document.getElementById('pageHoliday').style.display = '';
+      document.getElementById('navBar').style.display = 'none';
+      renderHolidayPage();
+    }
+  });
 });
-document.getElementById('hCancel').addEventListener('click', () => {
-  document.getElementById('holForm').style.display = 'none';
-});
+
+/* ── 祝日追加 ── */
 document.getElementById('hSave').addEventListener('click', () => {
   const date = document.getElementById('hDate').value;
   const name = document.getElementById('hName').value.trim();
-  if (!date || !name) return;
+  if (!date || !name) {
+    if (!date) document.getElementById('hDate').focus();
+    else document.getElementById('hName').focus();
+    return;
+  }
   holidays[date] = name;
   saveHolidays();
-  document.getElementById('holForm').style.display = 'none';
   document.getElementById('hDate').value = '';
   document.getElementById('hName').value = '';
-  renderHolidayList();
+  renderHolidayPage();
   renderTimetable();
 });
+
+document.getElementById('hName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('hSave').click();
+});
+
+/* ── 週ナビ ── */
+document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
+document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
+document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
+document.getElementById('editClose').addEventListener('click', clearSelect);
+document.addEventListener('keydown', e => { if(e.key==='Escape') clearSelect(); });
 
 /* ── 起動 ── */
 loadDaySchedules();
@@ -785,7 +951,6 @@ load();
 renderTimetable();
 renderProgress();
 renderProgress2();
-renderHolidayList();
 </script>
 </body>
 </html>
