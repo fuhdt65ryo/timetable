@@ -1031,12 +1031,12 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   const isJikoji   = currentClass === '行事';
   const isKenkyu   = currentClass === '研究部';
   const isSairyo   = currentClass === '裁量';
-  const isTanin    = !!(CLASSES.find(c => c.name === currentClass)?.tanin); // 担任クラス（3-1）のみ教科選択あり
-  const showText   = isJikoji || isKenkyu;
-  const showContent = !isJikoji && !isKenkyu && !isSairyo;
-  const showSubject = isJikoji || isKenkyu || isTanin; // 行事名・会議内容・教科（3-1のみ）
+  const isAki      = currentClass === '空き';
+  const isTanin    = !!(CLASSES.find(c => c.name === currentClass)?.tanin);
+  const showContent = !isJikoji && !isKenkyu && !isSairyo && !isAki;
+  const showSubject = !isSairyo && !isAki; // 全クラスで教科入力可
   const subjectLabel = isJikoji ? '行事名' : isKenkyu ? '会議内容' : '教科';
-  const subjectPlaceholder = isJikoji ? '例: 体育大会、文化祭' : '例: 学年会議';
+  const subjectPlaceholder = isJikoji ? '例: 体育大会、文化祭' : isKenkyu ? '例: 学年会議' : '例: 数学、英語';
 
   const [srcDateStr, srcPStr] = selKeyParts();
   const srcPeriod = +srcPStr;
@@ -1057,11 +1057,11 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
         <select class="form-select" id="eClass">${classOpts}</select>
       </div>
       ${showSubject ? `
-      <div class="form-group ${showText && !showContent ? 'fg-content' : 'fg-subject'}">
+      <div class="form-group fg-subject">
         <label class="form-label">${subjectLabel}</label>
-        ${showText
-          ? `<input class="form-input" id="eSubject" type="text" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}">`
-          : `<select class="form-select" id="eSubject">${subjectOpts}</select>`}
+        ${isTanin && !isJikoji && !isKenkyu
+          ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
+          : `<input class="form-input" id="eSubject" type="text" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}">`}
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
