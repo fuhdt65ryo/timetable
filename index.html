@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割</title>
-  <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --bg: #f0f2f8; --surface: #fff; --border: #e2e8f0;
       --text: #1a202c; --muted: #718096;
-      --accent: #2C3E6B; --accent2: #4A2D6B;
+      --accent: #F0A870; --accent2: #D87840;
       --on-accent: #fff;
-      --today: #f0f6ff; --today-b: #B0C8F0;
+      --today: #fffbe6; --today-b: #E6AC00;
       --shadow: 0 4px 16px rgba(0,0,0,.10);
     }
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -22,10 +21,12 @@
     .header-top { text-align:center; margin-bottom:12px; }
     h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
     .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
-    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; }
+    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; position:relative; cursor:pointer; }
+    .week-label:hover { opacity:.8; }
+    #weekDatePicker { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; top:0; left:50%; }
     .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
     .nav-btn:hover { background:rgba(255,255,255,.25); }
-    .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#2C3E6B; border-color:transparent; }
+    .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#D87840; border-color:transparent; }
 
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
@@ -43,23 +44,29 @@
       display:grid;
       grid-template-columns:52px repeat(5,1fr);
       gap:5px;
+      position:relative;
       min-width:460px;
     }
 
-    .cell-day { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; }
-    .day-sched-sel { display:block; width:100%; margin-top:4px; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:5px; color:rgba(255,255,255,.45); padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
-    .day-sched-sel.is-changed { background:rgba(255,255,255,.9); color:#1a2040; font-weight:800; border-color:transparent; }
-    .cell-day.is-today { background:linear-gradient(135deg,#1a2d5a,#321a5a); color:#fff; box-shadow:0 0 0 2px #4a6aaa; }
-    .cell-day.is-holiday { background:linear-gradient(135deg,#1e2530,#2a1a2e) !important; }
+    .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; border:1.5px solid var(--border); display:flex; flex-direction:column; }
+    .cell-sched { display:flex; align-items:center; padding:2px 2px 0; }
+    .day-sched-sel { display:block; width:100%; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.12); border-radius:5px; color:#999; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
+    .day-sched-sel.is-changed { background:rgba(44,62,107,.12); color:#1a2040; font-weight:800; border-color:transparent; }
+    .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
+    .cell-day.is-today .day-sched-sel { background:#fff; border-color:rgba(0,0,0,.12); color:#666; }
+    .cell-day.is-holiday  { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
+    .cell-day.is-nenkyuu { background:#f0f8f0 !important; color:#2d7a3a !important; border-color:#b8dfc0 !important; }
+    .cell-day.is-shuccho { background:#f0f4ff !important; color:#2c47a0 !important; border-color:#b8c8ef !important; }
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
-    .day-hol-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-hol-badge     { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2d7a3a; background:rgba(60,180,90,.15); border:1px solid rgba(60,180,90,.35); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2c47a0; background:rgba(70,100,220,.12); border:1px solid rgba(70,100,220,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
 
     /* ── Day events ── */
     .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
-    .day-event-item { font-size:.56rem; font-weight:600; color:rgba(255,255,255,.9); background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:default; }
-    .day-event-item.ev-type-event { background:rgba(255,200,80,.25); border-color:rgba(255,200,80,.4); color:rgba(255,240,180,.97); }
-    .day-event-item.ev-type-gcal  { background:rgba(100,180,255,.25); border-color:rgba(100,180,255,.45); color:rgba(200,235,255,.97); }
+    .day-event-item { font-size:.56rem; font-weight:600; color:#444; background:#f0f4ff; border:1px solid #c8d4ee; border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
+    .day-event-item.ev-type-event { background:#FFF8E0; border-color:#D4A017; color:#7A5A00; }
     .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
     .gcal-btn:hover { background:rgba(255,255,255,.25); }
     .gcal-btn.connected { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
@@ -68,16 +75,20 @@
     .day-event-add { display:inline-block; margin-top:3px; font-size:.58rem; color:rgba(255,255,255,.4); background:none; border:1px dashed rgba(255,255,255,.2); border-radius:4px; padding:1px 7px; cursor:pointer; font-family:inherit; transition:all .15s; }
     .day-event-add:hover { color:rgba(255,255,255,.85); border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.1); }
 
-    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); }
+    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); position:relative; z-index:1; }
     .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
     .period-time { font-size:.5rem; color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed #d1d9e6; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; min-height:70px; }
+    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:70px; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
-    .cell.has-entry { border:none; }
-    .cell.has-entry:hover { filter:brightness(1.07); box-shadow:0 4px 14px rgba(0,0,0,.2); }
-    .cell.is-today-col { background:var(--today); border-color:var(--today-b); }
+    .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
+    .cell.has-content { border-style:solid; border-width:2.5px; }
+    .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
+
+    /* ── 今日列のハイライト ── */
+    .col-today-hl { display:none; }
     .cell.cancelled { background:#f1f5f9 !important; border:2px solid #cbd5e0 !important; }
     .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
@@ -102,22 +113,21 @@
     .add-mark { font-size:1.4rem; color:#c8d2e0; transition:color .18s; }
     .cell:hover .add-mark { color:var(--accent); }
     .c-class   { font-weight:800; font-size:.82rem; color:rgba(255,255,255,.97); line-height:1.3; }
-    .c-subject { font-size:.65rem; color:rgba(255,255,255,.82); margin-top:2px; font-weight:600; }
-    .c-content { font-size:.58rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
+    .c-subject { font-size:.65rem; color:rgba(0,0,0,.55); margin-top:2px; font-weight:600; }
+    .c-content { font-size:.72rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
     .cell-with-content .c-class   { color:rgba(0,0,0,.8); }
     .cell-with-content .c-subject { color:rgba(0,0,0,.55); }
     .cell-with-content .c-content { color:rgba(0,0,0,.45); }
     .c-cancel  { font-size:.78rem; color:#94a3b8; font-weight:700; }
-    .cell-light .c-class   { color:rgba(0,0,0,.72); }
-    .cell-light .c-subject { color:rgba(0,0,0,.52); }
-    .cell-light .c-content { color:rgba(0,0,0,.42); }
-    .cell-light .c-src { background:rgba(0,0,0,.12); color:rgba(0,0,0,.6); }
+    .cell-light .c-class  { color:rgba(0,0,0,.75); }
+    .cell-light .c-subject { color:rgba(0,0,0,.6); }
+    .cell-light .c-src { background:#fff; color:#333; border:1.5px solid #757575; }
     .cell-dark .c-class   { color:rgba(255,255,255,.95); }
     .cell-dark .c-subject { color:rgba(255,255,255,.75); }
     .cell-dark .c-content { color:rgba(255,255,255,.6); }
-    .cell-dark .c-src { background:rgba(255,255,255,.18); color:rgba(255,255,255,.9); }
-    .c-src { position:absolute; bottom:2px; left:3px; font-size:.52rem; font-weight:800; background:rgba(255,255,255,.25); color:#fff; border-radius:3px; padding:0 3px; line-height:1.5; }
-    .cell.is-today-col .c-src { background:rgba(255,255,255,.3); }
+    .cell-dark .c-src { background:#fff; color:#333; border:1.5px solid #757575; }
+    .c-src { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#fff; color:#333; border-radius:3px; padding:0 4px; line-height:1.6; border:1.5px solid #757575; }
+    .cell.is-today-col .c-src { background:#fff; color:#333; }
 
     /* ── Source selector in edit panel ── */
     .src-row { display:flex; align-items:center; gap:6px; padding:0 16px 12px; flex-wrap:wrap; }
@@ -196,12 +206,32 @@
     .prog-sub { font-size:.68rem; color:var(--muted); }
     .prog-cnt { font-weight:600; }
     .prog-done { }
-    .prog-done-badge { display:inline-block; background:#f1f5f9; color:#94a3b8; font-weight:500; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
-    .prog-done-badge .prog-p { color:#b0bec5; }
+    .prog-done-badge { display:inline-block; background:#EEEEEE; color:#9E9E9E; font-weight:500; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
+    .prog-done-badge .prog-p { color:#BDBDBD; }
     .prog-p   { font-size:.62rem; font-weight:500; display:block; }
     .prog-none { color:#d1d9e6; font-size:1rem; }
-    .prog-upcoming { display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
-    .prog-upcoming .prog-p { color:#b45309; }
+    .prog-upcoming { display:inline-block; background:#E3F2FD; color:#1565C0; font-weight:700; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
+    .prog-upcoming .prog-p { color:#1976D2; }
+    .prog-today { display:inline-block; background:#FFF9C4; color:#F57F17; font-weight:800; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
+    .prog-today .prog-p { color:#F9A825; }
+
+    .prog-add-wrap { display:flex; gap:6px; margin:10px 12px 6px; }
+    .prog-add-inp { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; outline:none; }
+    .prog-add-inp:focus { border-color:var(--accent2); }
+    .prog-add-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:5px 14px; font-size:.82rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .prog-add-btn:hover { background:var(--accent2); }
+    .prog-del-btn { background:none; border:none; color:#BDBDBD; font-size:.9rem; cursor:pointer; padding:0 0 0 4px; line-height:1; vertical-align:middle; }
+    .prog-del-btn:hover { color:#E53935; }
+
+    /* ── 授業変更一覧 ── */
+    .chg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .chg-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:left; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
+    .chg-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; }
+    .chg-date  { font-weight:700; white-space:nowrap; }
+    .chg-period { text-align:center; color:var(--accent); font-weight:800; }
+    .chg-arrow { color:#aaa; margin:0 6px; }
+    .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
+    .chg-cancel { color:#e53e3e; font-weight:700; }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -217,7 +247,12 @@
     .hol-name-text { font-size:.9rem; flex:1; }
     .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
     .hol-del:hover { color:#e53e3e; background:#fff5f5; }
-    .hol-national-badge { font-size:.68rem; font-weight:600; color:#5b7fa0; background:#eaf2f8; border:1px solid #c5dff0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-national-badge  { font-size:.68rem; font-weight:600; color:#5b7fa0; background:#eaf2f8; border:1px solid #c5dff0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-type-nenkyuu   { font-size:.68rem; font-weight:600; color:#2d7a3a; background:#e8f8eb; border:1px solid #b8dfc0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-type-shuccho   { font-size:.68rem; font-weight:600; color:#2c47a0; background:#eaf0ff; border:1px solid #b8c8ef; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-dot-nenkyuu    { background:rgba(60,180,90,.7) !important; }
+    .hol-dot-shuccho    { background:rgba(70,100,220,.7) !important; }
+    .hol-type-sel { padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none; background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; }
     .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
 
     /* ── 祝日カウントバッジ ── */
@@ -232,6 +267,34 @@
       .hol-span-icon { font-size:1.1rem; }
       .hol-span-name { font-size:.7rem; }
     }
+
+    /* ── カレンダー設定ページ ── */
+    .gcal-section { padding:16px; border-bottom:1px solid var(--border); }
+    .gcal-section:last-child { border-bottom:none; }
+    .gcal-section-title { font-size:.85rem; font-weight:700; margin-bottom:10px; color:var(--accent); }
+    .gcal-url-wrap { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+    .gcal-meta { display:flex; gap:20px; flex-wrap:wrap; margin:12px 0 4px; }
+    .gcal-meta-item { display:flex; flex-direction:column; gap:2px; }
+    .gcal-meta-label { font-size:.62rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .gcal-meta-value { font-size:.9rem; font-weight:600; }
+    .gcal-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .gcal-status-msg { font-size:.82rem; padding:7px 12px; border-radius:8px; margin-top:10px; display:none; }
+    .gcal-status-msg.ok      { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; display:block; }
+    .gcal-status-msg.error   { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; display:block; }
+    .gcal-status-msg.loading { background:#f0f4ff; color:#2C3E6B; border:1px solid #c8d2e0; display:block; }
+
+    /* ── 同期UI ── */
+    .nav-btn.sync-btn { min-width:80px; }
+    .sync-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
+    .sync-modal { background:#fff; border-radius:16px; padding:24px; max-width:540px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .sync-modal h2 { font-size:1.05rem; font-weight:800; margin-bottom:4px; color:var(--accent); }
+    .sync-modal .sync-desc { font-size:.83rem; color:var(--muted); margin-bottom:14px; line-height:1.6; }
+    .sync-steps { font-size:.82rem; color:var(--text); margin:0 0 10px 18px; line-height:1.9; }
+    .sync-modal summary { font-size:.85rem; font-weight:700; color:var(--accent); cursor:pointer; margin-bottom:8px; }
+    .sync-modal pre { background:#f7fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:.7rem; overflow-x:auto; margin:8px 0 10px; white-space:pre; line-height:1.6; }
+    .sync-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
+    .sync-status-row { font-size:.78rem; color:var(--muted); margin-bottom:12px; }
+    .sync-status-row span { font-weight:600; }
   </style>
 </head>
 <body>
@@ -240,14 +303,15 @@
   <div class="header-top"><h1>時間割</h1></div>
   <div class="nav-bar" id="navBar">
     <button class="nav-btn" id="btnPrev">‹ 前の週</button>
-    <div class="week-label" id="weekLabel"></div>
+    <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
     <button class="nav-btn today-btn" id="btnToday">今週</button>
     <button class="nav-btn" id="btnNext">次の週 ›</button>
-    <button class="gcal-btn" id="gcalBtn"><span class="gcal-dot"></span>📅 Googleカレンダー</button>
+    <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
+    <button class="tab-btn" data-tab="calendar">📅 カレンダー設定</button>
   </div>
 </header>
 
@@ -270,6 +334,13 @@
       <span class="list-title">2年生 授業進捗</span>
     </div>
     <div id="progress2Body"></div>
+  </div>
+
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">授業変更一覧（今日以降）</span>
+    </div>
+    <div id="changesBody"></div>
   </div>
 
 </div>
@@ -314,6 +385,14 @@
         <label class="form-label">名称</label>
         <input type="text" class="form-input" id="hName" placeholder="例: 体育大会、文化祭、振替休日">
       </div>
+      <div class="form-group">
+        <label class="form-label">種別</label>
+        <select class="hol-type-sel" id="hType">
+          <option value="holiday">休校日</option>
+          <option value="nenkyuu">年休</option>
+          <option value="shuccho">出張</option>
+        </select>
+      </div>
       <button class="btn btn-save" id="hSave">追加</button>
     </div>
     <div id="holidayList"></div>
@@ -321,46 +400,127 @@
 </div>
 
 
+<!-- カレンダー設定ページ -->
+<div id="pageCalendar" class="container" style="display:none">
+  <div class="card">
+    <div class="list-top">
+      <span class="list-title">Googleカレンダー設定</span>
+    </div>
+    <div class="gcal-section">
+      <div class="gcal-section-title">Apps Script URL</div>
+      <div class="gcal-url-wrap">
+        <div class="form-group" style="flex:1;min-width:200px">
+          <input type="url" class="form-input" id="gcalUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-size:.8rem">
+        </div>
+        <button class="btn btn-save" id="btnGcalSaveUrl">URLを保存</button>
+      </div>
+    </div>
+    <div class="gcal-section">
+      <div class="gcal-section-title">キャッシュ状態</div>
+      <div class="gcal-meta" id="gcalMeta">
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">最終更新</span>
+          <span class="gcal-meta-value" id="gcalLastUpdate">未取得</span>
+        </div>
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">取得済みイベント</span>
+          <span class="gcal-meta-value" id="gcalEventCount">-</span>
+        </div>
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">取得期間</span>
+          <span class="gcal-meta-value" id="gcalDateRange">-</span>
+        </div>
+      </div>
+      <div class="gcal-actions">
+        <button class="btn btn-save" id="btnGcalRefresh">↻ 今すぐ更新</button>
+      </div>
+      <div class="gcal-status-msg" id="gcalStatusMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 同期設定モーダル -->
+<div class="sync-overlay" id="syncModal">
+  <div class="sync-modal">
+    <h2>☁ Googleスプレッドシートで同期</h2>
+    <p class="sync-desc">入力した時間割データを複数の端末で共有できます。<br>初回のみ以下のセットアップが必要です（約5分）。</p>
+    <div class="sync-status-row" id="syncStatusRow" style="display:none">最終同期: <span id="syncLastTime">-</span></div>
+    <details id="syncSetupDetails" open>
+      <summary>▶ 初回セットアップ手順</summary>
+      <ol class="sync-steps">
+        <li><a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">Googleスプレッドシート</a>で新しいシートを作成する</li>
+        <li>メニューの「拡張機能」→「Apps Script」を開く</li>
+        <li>表示されたコードをすべて削除し、下のコードを貼り付ける</li>
+        <li>「保存」してから「デプロイ」→「新しいデプロイ」をクリック</li>
+        <li>種類:「ウェブアプリ」、アクセス:「全員」に設定して「デプロイ」</li>
+        <li>表示されたウェブアプリURLをコピーして下の欄に貼り付ける</li>
+      </ol>
+      <pre>function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  return ContentService.createTextOutput(sheet.getRange('A1').getValue() || '{}')
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.getRange('A1').setValue(e.postData.contents);
+  return ContentService.createTextOutput('{"ok":true}')
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+      <button class="btn btn-holiday" id="btnCopyScript" style="font-size:.78rem;padding:6px 14px;margin-bottom:12px">📋 コードをコピー</button>
+    </details>
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">ウェブアプリURL</label>
+      <input type="url" class="form-input" id="syncUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-size:.8rem;margin-top:4px">
+    </div>
+    <div class="sync-modal-actions">
+      <button class="btn btn-danger" id="btnSyncDisconnect" style="display:none;margin-right:auto">接続解除</button>
+      <button class="btn btn-holiday" id="syncModalCancel">キャンセル</button>
+      <button class="btn btn-save" id="syncModalSave">保存して同期</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
 const BASE = {
-  '0-1':{ name:'3-3',  room:'理科', color:'#D4A017' },
+  '0-1':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '0-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
-  '0-3':{ name:'2-4',  room:'理科', color:'#E8922A' },
+  '0-3':{ name:'2-4',  room:'理科', color:'#E06010' },
   '0-4':{ name:'3-1',  room:'道徳', color:'#E85555' },
   '0-5':{ name:'3-1',  room:'理科', color:'#D44545' },
   '0-6':{ name:'空き',  room:'',    color:'#B07D4E' },
-  '1-1':{ name:'2-4',  room:'理科', color:'#E8922A' },
-  '1-2':{ name:'3-3',  room:'理科', color:'#D4A017' },
+  '1-1':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '1-2':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '1-3':{ name:'3-1',  room:'理科', color:'#D44545' },
   '1-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
   '1-5':{ name:'3-1',  room:'学活', color:'#BF3939' },
   '1-6':{ name:'裁量',  room:'',    color:'#546E7A' },
   '2-1':{ name:'3-4',  room:'理科', color:'#3DAE65' },
-  '2-2':{ name:'2-4',  room:'理科', color:'#E8922A' },
-  '2-3':{ name:'3-3',  room:'理科', color:'#D4A017' },
+  '2-2':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '2-3':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '2-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
   '2-5':{ name:'3-1',  room:'理科', color:'#D44545' },
   '2-6':{ name:'空き',  room:'',    color:'#B07D4E' },
   '3-1':{ name:'空き',  room:'',    color:'#B07D4E' },
-  '3-2':{ name:'3-3',  room:'理科', color:'#D4A017' },
+  '3-2':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '3-3':{ name:'研究部', room:'',   color:'#3D7A6E' },
   '3-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
   '3-5':{ name:'3-4',  room:'理科', color:'#3DAE65' },
   '4-1':{ name:'空き',  room:'',    color:'#B07D4E' },
   '4-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
-  '4-3':{ name:'2-4',  room:'理科', color:'#E8922A' },
+  '4-3':{ name:'2-4',  room:'理科', color:'#E06010' },
   '4-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
   '4-5':{ name:'3-1',  room:'理科', color:'#D44545' },
   '4-6':{ name:'3-1',  room:'総合', color:'#C84242' },
 };
 
 const CLASSES = [
-  { name:'2-4',  subjects:[{name:'理科',color:'#E8922A'}] },
-  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#BF3939'},{name:'道徳',color:'#E85555'},{name:'総合',color:'#C84242'}] },
-  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'}] },
-  { name:'3-3',  subjects:[{name:'理科',color:'#D4A017'}] },
-  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'}] },
+  { name:'2-4',  subjects:[{name:'理科',color:'#E06010'},{name:'自習',color:'#78909C'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#BF3939'},{name:'道徳',color:'#E85555'},{name:'総合',color:'#C84242'},{name:'自習',color:'#78909C'}] },
+  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'},{name:'自習',color:'#78909C'}] },
+  { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'},{name:'自習',color:'#78909C'}] },
+  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'自習',color:'#78909C'}] },
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
   { name:'行事',   color:'#C0392B', isEvent:true, subjects:[] },
@@ -398,87 +558,104 @@ const JP_HOLIDAYS = {
   '2027-03-21': '春分の日',
 };
 
-/* ── Google Calendar ── */
-const GCAL_CLIENT_ID = '766123162875-2mnl4u8kpbui9tnmvm9cep3i8aon3pj3.apps.googleusercontent.com';
-const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar.readonly';
-let tokenClient    = null;
-let gcalToken      = null;
-let gcalEvents     = {};  // { "YYYY-MM-DD": [{ title, time }] }
+/* ── Google Calendar（Apps Script経由・キャッシュ方式） ── */
+const DEFAULT_GCAL_URL = 'https://script.google.com/macros/s/AKfycbxz5VLzGbsnafBfEKiJlLm7XpLfMnRWp-G8uQ63zZ52bTMhadEABDzGGcThcDS5awzlLw/exec';
+const GCAL_URL_KEY     = 'tt_gcal_url_v1';
+const GCAL_CACHE_KEY   = 'tt_gcal_cache_v1';
+let gcalEvents = {};
 
-function initGoogleAuth() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GCAL_CLIENT_ID,
-    scope: GCAL_SCOPE,
-    callback: async (resp) => {
-      if (resp.error) { console.error(resp); return; }
-      gcalToken = resp.access_token;
-      localStorage.setItem('tt_gcal_token', gcalToken);
-      updateGcalBtn();
-      await fetchGcalEvents();
-    },
-  });
-  const saved = localStorage.getItem('tt_gcal_token');
-  if (saved) { gcalToken = saved; updateGcalBtn(); fetchGcalEvents(); }
+function getGcalUrl() {
+  return localStorage.getItem(GCAL_URL_KEY) || DEFAULT_GCAL_URL;
 }
 
-function updateGcalBtn() {
-  const btn = document.getElementById('gcalBtn');
-  if (!btn) return;
-  if (gcalToken) {
-    btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中';
-    btn.classList.add('connected');
-    btn.title = 'クリックで連携解除';
-  } else {
-    btn.innerHTML = '<span class="gcal-dot"></span>📅 Googleカレンダー';
-    btn.classList.remove('connected');
-    btn.title = 'Googleカレンダーと連携';
-  }
+function loadGcalCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(GCAL_CACHE_KEY) || 'null');
+    if (cached && cached.events) gcalEvents = cached.events;
+  } catch { gcalEvents = {}; }
+}
+
+function saveGcalCache(events, timeMin, timeMax) {
+  localStorage.setItem(GCAL_CACHE_KEY, JSON.stringify({
+    events, timeMin, timeMax, updatedAt: new Date().toISOString()
+  }));
+}
+
+function showGcalStatus(type, msg) {
+  const el = document.getElementById('gcalStatusMsg');
+  if (!el) return;
+  el.className = 'gcal-status-msg ' + type;
+  el.textContent = msg;
 }
 
 async function fetchGcalEvents() {
-  if (!gcalToken) return;
-  const dates   = getWeekDates();
-  const timeMin = encodeURIComponent(dates[0].toISOString());
-  const timeMax = encodeURIComponent(addDays(dates[4], 1).toISOString());
+  const url = getGcalUrl();
+  if (!url) { showGcalStatus('error', 'URLが設定されていません'); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const timeMin = addDays(today, -8*7).toISOString();
+  // 年度末（3月31日）まで取得
+  const yearEnd = new Date(today.getMonth() >= 3 ? today.getFullYear() + 1 : today.getFullYear(), 2, 31, 23, 59, 59);
+  const timeMax = yearEnd.toISOString();
+  showGcalStatus('loading', '取得中…');
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=200`,
-      { headers: { Authorization: `Bearer ${gcalToken}` } }
-    );
-    if (res.status === 401) {
-      gcalToken = null;
-      localStorage.removeItem('tt_gcal_token');
-      updateGcalBtn();
-      return;
-    }
+    const res  = await fetch(`${url}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
     const data = await res.json();
     gcalEvents = {};
-    (data.items || []).forEach(ev => {
-      const start   = ev.start?.dateTime || ev.start?.date;
-      if (!start) return;
-      const dateStr = start.slice(0, 10);
-      const time    = ev.start?.dateTime ? start.slice(11, 16) : '';
+    data.forEach(ev => {
+      const d       = ev.allDay ? null : new Date(ev.start);
+      const dateStr = ev.allDay ? ev.start.slice(0, 10) : toDateStr(d);
+      const time    = ev.allDay ? '' : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
-      gcalEvents[dateStr].push({ title: ev.summary || '(無題)', time });
+      gcalEvents[dateStr].push({ title: ev.title || '(無題)', time, calendar: ev.calendar || '' });
     });
+    saveGcalCache(gcalEvents, timeMin, timeMax);
     renderTimetable();
-  } catch (e) { console.error('GCal fetch error:', e); }
+    const count = Object.values(gcalEvents).reduce((s, evs) => s + evs.length, 0);
+    showGcalStatus('ok', `更新完了 — ${count}件取得`);
+    renderCalendarPage();
+  } catch (e) {
+    console.error('GCal fetch error:', e);
+    showGcalStatus('error', '取得に失敗しました。URLを確認してください。');
+  }
 }
 
-document.getElementById('gcalBtn').addEventListener('click', () => {
-  if (gcalToken) {
-    google.accounts.oauth2.revoke(gcalToken, () => {
-      gcalToken = null;
-      gcalEvents = {};
-      localStorage.removeItem('tt_gcal_token');
-      updateGcalBtn();
-      renderTimetable();
-    });
-  } else {
-    if (!tokenClient) { alert('Googleライブラリ読み込み中です。少し待ってから再試行してください。'); return; }
-    tokenClient.requestAccessToken();
-  }
-});
+function renderCalendarPage() {
+  const urlInput = document.getElementById('gcalUrlInput');
+  if (urlInput) urlInput.value = getGcalUrl();
+  try {
+    const cached = JSON.parse(localStorage.getItem(GCAL_CACHE_KEY) || 'null');
+    if (cached) {
+      const d = new Date(cached.updatedAt);
+      const fmt = d.toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const el = document.getElementById('gcalLastUpdate');
+      if (el) el.textContent = fmt;
+      const countEl = document.getElementById('gcalEventCount');
+      if (countEl) {
+        const cnt = Object.values(cached.events || {}).reduce((s, evs) => s + evs.length, 0);
+        countEl.textContent = cnt + '件';
+      }
+      const rangeEl = document.getElementById('gcalDateRange');
+      if (rangeEl && cached.timeMin && cached.timeMax) {
+        const s = new Date(cached.timeMin);
+        const e = new Date(cached.timeMax);
+        rangeEl.textContent = `${s.getMonth()+1}/${s.getDate()} 〜 ${e.getMonth()+1}/${e.getDate()}`;
+      }
+    }
+  } catch {}
+}
+
+function gcalEventStyle(cal) {
+  const c = cal || '';
+  // 数字つきカレンダーまたはファミリーカレンダー → 自分の予定（カラー表示）
+  const isMine = /\d/.test(c) || c.includes('ファミリー');
+  if (!isMine) return 'background:#F5F5F5;border-color:#BDBDBD;color:#757575'; // 妻の予定 → グレー
+  if (c.includes('学校'))  return 'background:#FFF0E0;border-color:#E8922A;color:#7A4500';
+  if (c.includes('部活'))  return 'background:#E0EEFF;border-color:#4A90D9;color:#1A4A8A';
+  if (c.includes('出張'))  return 'background:#E0F8EC;border-color:#3DAE65;color:#0D6B35';
+  if (c.includes('受験'))  return 'background:#FFF8E0;border-color:#D4A017;color:#7A5A00';
+  if (c.includes('勉強'))  return 'background:#F3EEFF;border-color:#8040C0;color:#4A1580';
+  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515'; // ファミリー等 → 赤
+}
 
 /* ── 状態 ── */
 let overrides    = {};
@@ -486,6 +663,8 @@ let daySchedules = {};
 let cellSources  = {};
 let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
+let progManual   = [];  // 3年生 手動追加授業名
+let prog2Manual  = [];  // 2年生 手動追加授業名
 let weekStart = getMonday(new Date());
 let selKey    = null;
 
@@ -493,15 +672,15 @@ let selKey    = null;
 function load() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
 }
-function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); }
+function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); schedulePush(); }
 function loadDaySchedules() {
   try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1') || '{}'); } catch { daySchedules = {}; }
 }
-function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); }
+function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); schedulePush(); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
 }
-function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); }
+function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); schedulePush(); }
 function loadHolidays() {
   try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
   // 未登録の祝日のみ追加（ユーザーが削除したものは復活させない）
@@ -519,11 +698,26 @@ function loadHolidays() {
     localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
   }
 }
-function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); }
+function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); schedulePush(); }
+
+function getHolidayEntry(dateStr) {
+  const val = holidays[dateStr];
+  if (!val) return null;
+  if (typeof val === 'string') return { name: val, type: 'holiday' };
+  return { name: val.name, type: val.type || 'holiday' };
+}
+function isActualHoliday(dateStr) {
+  const e = getHolidayEntry(dateStr);
+  return !!e && e.type === 'holiday';
+}
 function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
 }
 function saveCalEvents() { localStorage.setItem('tt_calevents_v1', JSON.stringify(calEvents)); }
+function loadProgManual()  { try { progManual  = JSON.parse(localStorage.getItem('tt_prog_manual')  || '[]'); } catch { progManual  = []; } }
+function saveProgManual()  { localStorage.setItem('tt_prog_manual',  JSON.stringify(progManual));  }
+function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem('tt_prog2_manual') || '[]'); } catch { prog2Manual = []; } }
+function saveProg2Manual() { localStorage.setItem('tt_prog2_manual', JSON.stringify(prog2Manual)); }
 
 /* ── 日付ユーティリティ ── */
 function getMonday(d) {
@@ -610,6 +804,7 @@ function renderTimetable() {
   const grid = document.getElementById('timetable');
   grid.innerHTML = '';
 
+
   // コーナー（空白）
   const corner = el('div');
   corner.style.cssText = 'grid-column:1;grid-row:1';
@@ -621,20 +816,32 @@ function renderTimetable() {
     const dateStr = toDateStr(d);
     const hasSched  = dateStr in daySchedules;
     const schedDi   = hasSched ? daySchedules[dateStr] : i;
-    const isHoliday = dateStr in holidays;
+    const holEntry   = getHolidayEntry(dateStr);
+    const isHoliday  = !!holEntry;
+    const isActHol   = isHoliday && holEntry.type === 'holiday';
+    const holClass   = isActHol ? ' is-holiday' : holEntry?.type === 'nenkyuu' ? ' is-nenkyuu' : holEntry?.type === 'shuccho' ? ' is-shuccho' : '';
+    const holBadge   = isActHol
+      ? `<div class="day-hol-badge">祝</div>`
+      : holEntry?.type === 'nenkyuu'
+        ? `<div class="day-nenkyuu-badge">年休</div>`
+        : holEntry?.type === 'shuccho'
+          ? `<div class="day-shuccho-badge">出張</div>`
+          : '';
 
-    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isHoliday ? ' is-holiday' : ''));
+    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + holClass);
     div.style.cssText = `grid-column:${col};grid-row:1`;
     const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
     const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
     const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
-    const evHtml = allEvs.map(ev =>
-      `<div class="day-event-item ${ev.src === 'gcal' ? 'ev-type-gcal' : 'ev-type-event'}" title="${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`
-    ).join('');
-    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${isHoliday ? `<div class="day-hol-badge">祝</div>` : ''}<div class="day-events">${evHtml}</div>`;
+    const evHtml = allEvs.map(ev => {
+      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
+      const cls   = ev.src === 'gcal' ? 'day-event-item' : 'day-event-item ev-type-event';
+      return `<div class="${cls}" style="${style}" title="${esc(ev.calendar||'')} ${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`;
+    }).join('');
+    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${holBadge}<div class="day-events">${evHtml}</div>`;
 
     // 予定追加ボタン（祝日でない場合のみ）
-    if (!isHoliday) {
+    if (!isActHol) {
       const addBtn = document.createElement('button');
       addBtn.className = 'day-event-add';
       addBtn.textContent = '+ 予定';
@@ -642,8 +849,12 @@ function renderTimetable() {
       addBtn.addEventListener('click', e => { e.stopPropagation(); openEventModal(dateStr); });
       div.querySelector('.day-events').appendChild(addBtn);
     }
+    grid.appendChild(div);
 
-    if (!isHoliday) {
+    // 日課セレクタ（行2・セルの外）
+    if (!isActHol) {
+      const schedDiv = el('div', 'cell-sched');
+      schedDiv.style.cssText = `grid-column:${col};grid-row:2`;
       const sel = document.createElement('select');
       const isChanged = hasSched && schedDi !== i;
       sel.className = 'day-sched-sel' + (isChanged ? ' is-changed' : '');
@@ -658,11 +869,11 @@ function renderTimetable() {
         saveDaySchedules();
         renderTimetable();
         renderProgress();
-        renderProgress2();
+        renderProgress2(); renderChanges();
       });
-      div.appendChild(sel);
+      schedDiv.appendChild(sel);
+      grid.appendChild(schedDiv);
     }
-    grid.appendChild(div);
   });
 
   // 選択中の時限を取得
@@ -671,7 +882,7 @@ function renderTimetable() {
   // 時限ラベル列・授業セル（選択時限の後に編集行を挿入するためrow計算にshiftを加える）
   PERIODS.forEach((p, pi) => {
     const shift = (selPeriod !== null && p > selPeriod) ? 1 : 0;
-    const periodRow = pi + 2 + shift;
+    const periodRow = pi + 3 + shift;
 
     const pc = el('div', 'cell-period');
     pc.style.cssText = `grid-column:1;grid-row:${periodRow}`;
@@ -682,8 +893,7 @@ function renderTimetable() {
       const col = dates.indexOf(d) + 2;
       const isToday   = isSameDay(d, today);
       const dateStr   = toDateStr(d);
-      const isHoliday = dateStr in holidays;
-      if (isHoliday) return; // 祝日ブロックは後で処理
+      if (isActualHoliday(dateStr)) return; // 祝日ブロックは後で処理
 
       const key    = overrideKey(dateStr, p);
       const entry  = getEntry(dateStr, p);
@@ -695,6 +905,7 @@ function renderTimetable() {
       const isLight = entry && !cancel && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
       if (entry && !cancel) cls += ' has-entry';
+      if (entry && !cancel && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (cancel)   cls += ' cancelled';
       if (ovr && !cancel) cls += ' modified';
@@ -712,11 +923,13 @@ function renderTimetable() {
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
       if (entry && !cancel) {
-        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(entry.color || '#667eea');
+        const color = entry.color || '#667eea';
+        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
+        if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
-          ${entry.room    ? `<div class="c-subject">${esc(entry.room)}</div>` : ''}
+          ${entry.room    ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : ''}
           ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
         `;
@@ -758,18 +971,38 @@ function renderTimetable() {
   });
 
   // 祝日列ブロック（全時限スパン）
-  const holRowEnd = PERIODS.length + 2 + (selPeriod !== null ? 1 : 0);
+  const holRowEnd = PERIODS.length + 3 + (selPeriod !== null ? 1 : 0);
   dates.forEach((d, i) => {
     const dateStr = toDateStr(d);
-    if (!(dateStr in holidays)) return;
+    if (!isActualHoliday(dateStr)) return;
+    const _he = getHolidayEntry(dateStr);
     const block = el('div', 'cell-holiday-span');
-    block.style.cssText = `grid-column:${i+2};grid-row:2 / ${holRowEnd}`;
+    block.style.cssText = `grid-column:${i+2};grid-row:3 / ${holRowEnd}`;
     block.innerHTML = `
       <div class="hol-span-icon">🎌</div>
-      <div class="hol-span-name">${esc(holidays[dateStr])}</div>
+      <div class="hol-span-name">${esc(_he.name)}</div>
       <div class="hol-span-label">休校日</div>
     `;
     grid.appendChild(block);
+  });
+
+  // 今日列ハイライト枠（レンダリング後に座標取得して配置）
+  requestAnimationFrame(() => {
+    grid.querySelectorAll('.col-today-hl').forEach(e => e.remove());
+    const todayHeader = grid.querySelector('.cell-day.is-today');
+    const todayCells  = [...grid.querySelectorAll('.cell.is-today-col, .cell-day.is-today')];
+    if (!todayHeader || !todayCells.length) return;
+    const gRect = grid.getBoundingClientRect();
+    const topEl = todayHeader;
+    const botEl = todayCells[todayCells.length - 1];
+    const t = topEl.getBoundingClientRect();
+    const b = botEl.getBoundingClientRect();
+    const hl = el('div', 'col-today-hl');
+    hl.style.left   = (t.left - gRect.left) + 'px';
+    hl.style.top    = (t.top  - gRect.top)  + 'px';
+    hl.style.width  = t.width + 'px';
+    hl.style.height = (b.bottom - t.top) + 'px';
+    grid.appendChild(hl);
   });
 }
 
@@ -779,7 +1012,7 @@ function selectCell(dateStr, period) {
   renderTimetable(); // editBody を含む edit-inline 行を生成
   refreshEditForm();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
   document.getElementById('editBody')?.closest('.edit-inline')
     ?.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
@@ -788,7 +1021,7 @@ function clearSelect() {
   selKey = null;
   renderTimetable();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
 }
 
 function refreshEditForm() {
@@ -809,20 +1042,25 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
   const currentSubject = entry?.room    || '';
   const currentContent = entry?.teacher || '';
 
+  const knownClasses  = CLASSES.map(c => c.name);
+  const isOtherClass  = currentClass && !knownClasses.includes(currentClass);
+  const classSelectVal = isOtherClass ? '__other__' : currentClass;
+
   const classOpts = '<option value="">── 選択 ──</option>' +
-    CLASSES.map(c=>`<option value="${c.name}"${c.name===currentClass?' selected':''}>${c.name}</option>`).join('');
+    CLASSES.map(c=>`<option value="${c.name}"${c.name===classSelectVal?' selected':''}>${c.name}</option>`).join('') +
+    `<option value="__other__"${classSelectVal==='__other__'?' selected':''}>その他...</option>`;
   const subjectOpts = getSubjectOptions(currentClass, currentSubject);
   const datalistHtml = pastContents.map(v=>`<option value="${esc(v)}">`).join('');
 
   const isJikoji   = currentClass === '行事';
   const isKenkyu   = currentClass === '研究部';
   const isSairyo   = currentClass === '裁量';
-  const isTanin    = !!(CLASSES.find(c => c.name === currentClass)?.tanin); // 担任クラス（3-1）のみ教科選択あり
-  const showText   = isJikoji || isKenkyu;
-  const showContent = !isJikoji && !isKenkyu && !isSairyo;
-  const showSubject = isJikoji || isKenkyu || isTanin; // 行事名・会議内容・教科（3-1のみ）
+  const isAki      = currentClass === '空き';
+  const isTanin    = !!(CLASSES.find(c => c.name === currentClass)?.tanin);
+  const showContent = !isJikoji && !isKenkyu && !isSairyo && !isAki;
+  const showSubject = !isSairyo && !isAki; // 全クラスで教科入力可
   const subjectLabel = isJikoji ? '行事名' : isKenkyu ? '会議内容' : '教科';
-  const subjectPlaceholder = isJikoji ? '例: 体育大会、文化祭' : '例: 学年会議';
+  const subjectPlaceholder = isJikoji ? '例: 体育大会、文化祭' : isKenkyu ? '例: 学年会議' : '例: 数学、英語';
 
   const [srcDateStr, srcPStr] = selKeyParts();
   const srcPeriod = +srcPStr;
@@ -841,13 +1079,14 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
         <select class="form-select" id="eClass">${classOpts}</select>
+        ${classSelectVal === '__other__' ? `<input class="form-input" id="eClassOther" type="text" placeholder="クラス名を入力" value="${esc(currentClass)}" style="margin-top:4px">` : ''}
       </div>
       ${showSubject ? `
-      <div class="form-group ${showText && !showContent ? 'fg-content' : 'fg-subject'}">
+      <div class="form-group fg-subject">
         <label class="form-label">${subjectLabel}</label>
-        ${showText
-          ? `<input class="form-input" id="eSubject" type="text" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}">`
-          : `<select class="form-select" id="eSubject">${subjectOpts}</select>`}
+        ${isTanin && !isJikoji && !isKenkyu
+          ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
+          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList"><option value="自習"><option value="理科"></datalist>`}
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
@@ -871,9 +1110,34 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
     </div>
   `;
 
+  const attachOtherInput = (fg) => {
+    if (document.getElementById('eClassOther')) return;
+    const inp = document.createElement('input');
+    inp.className = 'form-input';
+    inp.id = 'eClassOther';
+    inp.type = 'text';
+    inp.placeholder = 'クラス名を入力';
+    inp.style.marginTop = '4px';
+    inp.addEventListener('input', () => {
+      clearTimeout(contentTimer);
+      contentTimer = setTimeout(autoSave, 600);
+    });
+    fg.appendChild(inp);
+    inp.focus();
+  };
+
   document.getElementById('eClass').addEventListener('change', function() {
-    // autoSave → refreshEditForm で教科欄ごと再描画されるので直接書き換え不要
+    if (this.value === '__other__') {
+      attachOtherInput(this.closest('.form-group'));
+      return;
+    }
+    document.getElementById('eClassOther')?.remove();
     autoSave();
+  });
+  // 既にその他で保存済みの場合はリスナーを付け直す
+  document.getElementById('eClassOther')?.addEventListener('input', () => {
+    clearTimeout(contentTimer);
+    contentTimer = setTimeout(autoSave, 600);
   });
   const subjectEl = document.getElementById('eSubject');
   subjectEl?.addEventListener('change', autoSave);
@@ -902,7 +1166,7 @@ function renderEditForm(entry, isOvr, isCancel, baseEntry) {
       cellSources[selKey] = { di, p };
     }
     saveCellSources();
-    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2();
+    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
   };
   document.getElementById('eSrcDay')?.addEventListener('change', saveSrc);
   document.getElementById('eSrcPer')?.addEventListener('change', saveSrc);
@@ -925,7 +1189,8 @@ let contentTimer = null;
 
 function autoSave() {
   if (!selKey) return;
-  const klass   = document.getElementById('eClass')?.value;
+  let klass     = document.getElementById('eClass')?.value;
+  if (klass === '__other__') klass = document.getElementById('eClassOther')?.value.trim() || '';
   const subject = document.getElementById('eSubject')?.value || '';
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
@@ -935,7 +1200,7 @@ function autoSave() {
   renderTimetable();
   refreshEditForm();
   renderProgress();
-  renderProgress2();
+  renderProgress2(); renderChanges();
 }
 
 function setHoliday() {
@@ -979,9 +1244,15 @@ function renderProgress() {
     }
   });
 
+  // 手動追加分をマージ
+  progManual.forEach(name => {
+    if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
+  });
+
   const rows = Object.values(map);
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    renderProgManualInput(container);
     return;
   }
 
@@ -993,25 +1264,27 @@ function renderProgress() {
 
   const table = document.createElement('table');
   table.className = 'prog-table';
-  table.innerHTML = `<thead><tr><th>授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  table.style.tableLayout = 'fixed';
+  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
 
   const today = new Date(); today.setHours(0,0,0,0);
 
   const tbody = document.createElement('tbody');
-  rows.forEach(({ content, classes }) => {
-    // 全クラスが今日より前の日付で実施済みなら削除
-    const allDone = PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
+  rows.forEach(({ content, classes, manual }) => {
+    // 全クラスが今日より前の日付で実施済みなら削除（手動追加は除外しない）
+    const allDone = !manual && PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
     if (allDone) return;
     const tr = document.createElement('tr');
-    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog">×</button>` : ''}</td>`;
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
-        // 完了（過去）
         const d = info.date;
         html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info && isSameDay(info.date, today)) {
+        const d = info.date;
+        html += `<td><span class="prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else if (info) {
-        // 予定あり（未来）
         const d = info.date;
         html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
       } else {
@@ -1024,43 +1297,160 @@ function renderProgress() {
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
+  renderProgManualInput(container);
 }
 
-/* ── 2年生進捗リスト ── */
+function renderProgManualInput(container) {
+  const wrap = document.createElement('div');
+  wrap.className = 'prog-add-wrap';
+  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog">追加</button>`;
+  container.appendChild(wrap);
+}
+
+/* ── 2年生進捗テーブル ── */
+const PROG2_CLASSES = ['2-4'];
+
 function renderProgress2() {
   const container = document.getElementById('progress2Body');
 
-  const items = Object.entries(overrides)
-    .filter(([, v]) => v && v.teacher && v.name === '2-4')
-    .map(([key, entry]) => {
-      const parts = key.split('-');
-      const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
-      const period  = Number(parts[3]);
-      const date    = parseDateStr(dateStr);
-      return { dateStr, period, entry, date };
-    })
-    .sort((a, b) => a.date - b.date || a.period - b.period);
+  const map = {};
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || !entry.teacher) return;
+    if (!PROG2_CLASSES.includes(entry.name)) return;
+    const mk = entry.teacher;
+    if (!map[mk]) map[mk] = { content: entry.teacher, classes: {} };
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
+      map[mk].classes[entry.name] = { date, period };
+    }
+  });
 
-  if (!items.length) {
+  // 手動追加分をマージ
+  prog2Manual.forEach(name => {
+    if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
+  });
+
+  const rows = Object.values(map);
+  if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
+    renderProg2ManualInput(container);
+    return;
+  }
+
+  rows.sort((a, b) => {
+    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
+    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
+  });
+
+  const table = document.createElement('table');
+  table.className = 'prog-table';
+  table.style.tableLayout = 'fixed';
+  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach(({ content, classes, manual }) => {
+    const tr = document.createElement('tr');
+    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog2">×</button>` : ''}</td>`;
+    PROG2_CLASSES.forEach(cls => {
+      const info = classes[cls];
+      if (info && info.date < today) {
+        const d = info.date;
+        html += `<td><span class="prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info && isSameDay(info.date, today)) {
+        const d = info.date;
+        html += `<td><span class="prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else if (info) {
+        const d = info.date;
+        html += `<td><span class="prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></td>`;
+      } else {
+        html += '<td class="prog-none">─</td>';
+      }
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+  renderProg2ManualInput(container);
+}
+
+function renderProg2ManualInput(container) {
+  const wrap = document.createElement('div');
+  wrap.className = 'prog-add-wrap';
+  wrap.innerHTML = `<input class="prog-add-inp" type="text" placeholder="授業名を追加"><button class="prog-add-btn" data-list="prog2">追加</button>`;
+  container.appendChild(wrap);
+}
+
+/* ── 授業変更一覧 ── */
+function renderChanges() {
+  const container = document.getElementById('changesBody');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const changes = [];
+  Object.entries(overrides).forEach(([key, newEntry]) => {
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period  = Number(parts[3]);
+    const date    = parseDateStr(dateStr);
+    if (date < today) return;
+
+    const naturalDi = dayIdx(date);
+    const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+    // cellSources を考慮して正しい元エントリを取得
+    const ok2 = overrideKey(dateStr, period);
+    const origEntry = (ok2 in cellSources)
+      ? (BASE[`${cellSources[ok2].di}-${cellSources[ok2].p}`] || null)
+      : (BASE[`${di}-${period}`] || null);
+
+    // クラス・教科が同じ場合はスキップ（授業内容のみの変更は変更一覧に出さない）
+    if (newEntry !== null &&
+        newEntry.name === (origEntry ? origEntry.name : null) &&
+        (newEntry.room || '') === (origEntry ? (origEntry.room || '') : '')) return;
+
+    changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
+  });
+
+  changes.sort((a, b) => a.date - b.date || a.period - b.period);
+
+  if (!changes.length) {
+    container.innerHTML = '<div class="list-empty">今日以降の授業変更はありません</div>';
     return;
   }
 
   const table = document.createElement('table');
-  table.className = 'prog-table';
-  table.innerHTML = '<thead><tr><th>日付</th><th>時限</th><th>教科</th><th style="text-align:left">授業内容</th></tr></thead>';
-
+  table.className = 'chg-table';
+  table.innerHTML = '<thead><tr><th>日付</th><th>時</th><th>変更内容</th></tr></thead>';
   const tbody = document.createElement('tbody');
-  items.forEach(({ dateStr, period, entry, date }) => {
+
+  changes.forEach(({ dateStr, date, period, from, to }) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="white-space:nowrap">${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})</td>
-      <td>${period}限</td>
-      <td><span style="display:inline-block;background:${entry.color||'#4A90D9'};color:#3d3353;border-radius:8px;padding:1px 7px;font-size:.7rem;font-weight:700">${esc(entry.room||'')}</span></td>
-      <td style="text-align:left" class="prog-cnt">${esc(entry.teacher)}</td>
-    `;
+    const dayLabel = `${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})`;
+    const isToday  = isSameDay(date, today);
+    const dateCell = `<td class="chg-date">${isToday ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>` : dayLabel}</td>`;
+    const periodCell = `<td class="chg-period">${period}限</td>`;
+
+    const fromHtml = from
+      ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+      : '<span style="color:#aaa">なし</span>';
+
+    let toHtml;
+    if (to === null) {
+      toHtml = '<span class="chg-cancel">休み</span>';
+    } else {
+      toHtml = `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`;
+    }
+
+    tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
     tbody.appendChild(tr);
   });
+
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
@@ -1083,29 +1473,38 @@ function renderHolidayPage() {
 
   // 年ごとにグループ化
   const byYear = {};
-  entries.forEach(([date, name]) => {
+  entries.forEach(([date]) => {
     const year = date.slice(0, 4);
     if (!byYear[year]) byYear[year] = [];
-    byYear[year].push([date, name]);
+    byYear[year].push(date);
   });
 
-  Object.entries(byYear).forEach(([year, items]) => {
+  Object.entries(byYear).forEach(([year, dates]) => {
     const yearDiv = el('div', 'hol-year-group');
     yearDiv.textContent = `${year}年`;
     list.appendChild(yearDiv);
 
     const listDiv = el('div', 'hol-list');
-    items.forEach(([date, name]) => {
+    dates.forEach(date => {
+      const entry = getHolidayEntry(date);
+      const { name, type } = entry;
       const d = parseDateStr(date);
       const row = el('div', 'hol-item');
       const isNational = date in JP_HOLIDAYS;
+      const dotClass = type === 'nenkyuu' ? ' hol-dot-nenkyuu' : type === 'shuccho' ? ' hol-dot-shuccho' : '';
+      const typeBadge = isNational
+        ? '<span class="hol-national-badge">国民の祝日</span>'
+        : type === 'nenkyuu'
+          ? '<span class="hol-type-nenkyuu">年休</span>'
+          : type === 'shuccho'
+            ? '<span class="hol-type-shuccho">出張</span>'
+            : '';
       row.innerHTML = `
-        <div class="hol-dot"></div>
+        <div class="hol-dot${dotClass}"></div>
         <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）</span>
         <span class="hol-name-text">${esc(name)}</span>
-        ${isNational
-          ? '<span class="hol-national-badge">国民の祝日</span>'
-          : `<button class="hol-del" data-date="${date}" title="削除">✕</button>`}
+        ${typeBadge}
+        ${!isNational ? `<button class="hol-del" data-date="${date}" title="削除">✕</button>` : ''}
       `;
       row.querySelector('.hol-del')?.addEventListener('click', () => {
         delete holidays[date];
@@ -1130,16 +1529,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     this.classList.add('active');
 
     const tab = this.dataset.tab;
-    if (tab === 'timetable') {
-      document.getElementById('pageTimetable').style.display = '';
-      document.getElementById('pageHoliday').style.display = 'none';
-      document.getElementById('navBar').style.display = '';
-    } else {
-      document.getElementById('pageTimetable').style.display = 'none';
-      document.getElementById('pageHoliday').style.display = '';
-      document.getElementById('navBar').style.display = 'none';
-      renderHolidayPage();
-    }
+    document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
+    document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
+    document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
+    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
+    if (tab === 'holiday')  renderHolidayPage();
+    if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
   });
 });
 
@@ -1147,15 +1542,17 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 document.getElementById('hSave').addEventListener('click', () => {
   const date = document.getElementById('hDate').value;
   const name = document.getElementById('hName').value.trim();
+  const type = document.getElementById('hType').value;
   if (!date || !name) {
     if (!date) document.getElementById('hDate').focus();
     else document.getElementById('hName').focus();
     return;
   }
-  holidays[date] = name;
+  holidays[date] = type === 'holiday' ? name : { name, type };
   saveHolidays();
   document.getElementById('hDate').value = '';
   document.getElementById('hName').value = '';
+  document.getElementById('hType').value = 'holiday';
   renderHolidayPage();
   renderTimetable();
 });
@@ -1232,20 +1629,196 @@ document.getElementById('eventModalClose').addEventListener('click', closeEventM
 document.getElementById('eventModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEventModal(); });
 
 /* ── 週ナビ ── */
-document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); fetchGcalEvents(); });
-document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); fetchGcalEvents(); });
-document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); fetchGcalEvents(); });
+document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
+document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
+document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
+
+const weekPicker = document.getElementById('weekDatePicker');
+document.getElementById('weekLabel').addEventListener('click', () => {
+  weekPicker.value = toDateStr(weekStart);
+  weekPicker.style.pointerEvents = 'auto';
+  weekPicker.showPicker?.();
+  weekPicker.focus();
+});
+weekPicker.addEventListener('change', function() {
+  if (this.value) { weekStart = getMonday(new Date(this.value)); renderTimetable(); }
+  this.style.pointerEvents = 'none';
+});
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
+
+/* ── Google Sheets 同期 ── */
+const SYNC_URL_KEY  = 'tt_sync_url_v1';
+const SYNC_TIME_KEY = 'tt_sync_last_v1';
+let syncTimer = null;
+
+function getSyncUrl()  { return localStorage.getItem(SYNC_URL_KEY) || ''; }
+function setSyncUrl(u) { localStorage.setItem(SYNC_URL_KEY, u); }
+
+function updateSyncBtn(state) {
+  const btn = document.getElementById('btnSync');
+  if (!btn) return;
+  const labels = { idle:'☁ 同期', syncing:'⟳ 同期中…', ok:'✓ 同期済', error:'✗ エラー' };
+  btn.textContent = labels[state] || '☁ 同期';
+  btn.style.opacity = state === 'syncing' ? '.6' : '1';
+}
+
+async function syncPush() {
+  const url = getSyncUrl();
+  if (!url) return;
+  updateSyncBtn('syncing');
+  const payload = JSON.stringify({
+    tt_overrides_v1:  overrides,
+    tt_daysched_v1:   daySchedules,
+    tt_cellsrc_v1:    cellSources,
+    tt_holidays_v1:   holidays,
+    tt_holidays_seen: JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
+    _updated: new Date().toISOString()
+  });
+  try {
+    await fetch(url, { method:'POST', body:payload, headers:{'Content-Type':'text/plain'} });
+    const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem(SYNC_TIME_KEY, now);
+    updateSyncBtn('ok');
+  } catch(e) {
+    console.error('sync push:', e);
+    updateSyncBtn('error');
+  }
+}
+
+async function syncPull() {
+  const url = getSyncUrl();
+  if (!url) return;
+  updateSyncBtn('syncing');
+  try {
+    const res = await fetch(url + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let changed = false;
+    if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
+    if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
+    if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
+    if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
+    if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
+    if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
+    const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem(SYNC_TIME_KEY, now);
+    updateSyncBtn('ok');
+  } catch(e) {
+    console.error('sync pull:', e);
+    updateSyncBtn('error');
+  }
+}
+
+function schedulePush() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncPush, 1500);
+}
+
+function openSyncModal() {
+  const url = getSyncUrl();
+  document.getElementById('syncUrlInput').value = url;
+  document.getElementById('btnSyncDisconnect').style.display = url ? '' : 'none';
+  document.getElementById('syncSetupDetails').open = !url;
+  const lastTime = localStorage.getItem(SYNC_TIME_KEY);
+  const row = document.getElementById('syncStatusRow');
+  if (url && lastTime) {
+    document.getElementById('syncLastTime').textContent = lastTime;
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+  document.getElementById('syncModal').style.display = 'flex';
+}
+
+function closeSyncModal() {
+  document.getElementById('syncModal').style.display = 'none';
+}
+
+document.getElementById('btnSync').addEventListener('click', openSyncModal);
+document.getElementById('syncModalCancel').addEventListener('click', closeSyncModal);
+document.getElementById('syncModal').addEventListener('click', e => { if (e.target === document.getElementById('syncModal')) closeSyncModal(); });
+
+document.getElementById('syncModalSave').addEventListener('click', () => {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  if (!url) return;
+  setSyncUrl(url);
+  closeSyncModal();
+  syncPull();
+});
+
+document.getElementById('btnSyncDisconnect').addEventListener('click', () => {
+  if (!confirm('同期を解除しますか？\nローカルのデータは残ります。')) return;
+  localStorage.removeItem(SYNC_URL_KEY);
+  localStorage.removeItem(SYNC_TIME_KEY);
+  closeSyncModal();
+  updateSyncBtn('idle');
+});
+
+document.getElementById('btnCopyScript').addEventListener('click', function() {
+  const code = document.querySelector('#syncModal pre').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    this.textContent = '✓ コピーしました';
+    setTimeout(() => { this.textContent = '📋 コードをコピー'; }, 2000);
+  });
+});
+
+/* ── 授業進捗 手動追加・削除 ── */
+document.addEventListener('click', function(e) {
+  // 追加ボタン
+  if (e.target.classList.contains('prog-add-btn')) {
+    const list = e.target.dataset.list;
+    const inp = e.target.closest('.prog-add-wrap').querySelector('.prog-add-inp');
+    const val = inp.value.trim();
+    if (!val) return;
+    if (list === 'prog') {
+      if (!progManual.includes(val)) { progManual.push(val); saveProgManual(); renderProgress(); }
+    } else {
+      if (!prog2Manual.includes(val)) { prog2Manual.push(val); saveProg2Manual(); renderProgress2(); }
+    }
+    inp.value = '';
+    return;
+  }
+  // 削除ボタン
+  if (e.target.classList.contains('prog-del-btn')) {
+    const list = e.target.dataset.list;
+    const key  = e.target.dataset.key;
+    if (list === 'prog') {
+      progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
+    } else {
+      prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
+    }
+  }
+});
+// Enterキーで追加
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.classList.contains('prog-add-inp')) {
+    e.target.closest('.prog-add-wrap').querySelector('.prog-add-btn').click();
+  }
+});
+
+/* ── カレンダー設定ページ イベント ── */
+document.getElementById('btnGcalRefresh').addEventListener('click', fetchGcalEvents);
+document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
+  const val = document.getElementById('gcalUrlInput').value.trim();
+  if (!val) return;
+  localStorage.setItem(GCAL_URL_KEY, val);
+  showGcalStatus('ok', 'URLを保存しました');
+});
 
 /* ── 起動 ── */
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
 loadCalEvents();
+loadProgManual();
+loadProg2Manual();
 load();
+loadGcalCache();
 renderTimetable();
 renderProgress();
-renderProgress2();
+renderProgress2(); renderChanges();
+if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
+fetchGcalEvents();
 </script>
 </body>
 </html>
