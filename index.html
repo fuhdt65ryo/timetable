@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割</title>
-  <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -454,87 +453,35 @@ const JP_HOLIDAYS = {
   '2027-03-21': '春分の日',
 };
 
-/* ── Google Calendar ── */
-const GCAL_CLIENT_ID = '766123162875-2mnl4u8kpbui9tnmvm9cep3i8aon3pj3.apps.googleusercontent.com';
-const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar.readonly';
-let tokenClient    = null;
-let gcalToken      = null;
-let gcalEvents     = {};  // { "YYYY-MM-DD": [{ title, time }] }
-
-function initGoogleAuth() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GCAL_CLIENT_ID,
-    scope: GCAL_SCOPE,
-    callback: async (resp) => {
-      if (resp.error) { console.error(resp); return; }
-      gcalToken = resp.access_token;
-      localStorage.setItem('tt_gcal_token', gcalToken);
-      updateGcalBtn();
-      await fetchGcalEvents();
-    },
-  });
-  const saved = localStorage.getItem('tt_gcal_token');
-  if (saved) { gcalToken = saved; updateGcalBtn(); fetchGcalEvents(); }
-}
-
-function updateGcalBtn() {
-  const btn = document.getElementById('gcalBtn');
-  if (!btn) return;
-  if (gcalToken) {
-    btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中';
-    btn.classList.add('connected');
-    btn.title = 'クリックで連携解除';
-  } else {
-    btn.innerHTML = '<span class="gcal-dot"></span>📅 Googleカレンダー';
-    btn.classList.remove('connected');
-    btn.title = 'Googleカレンダーと連携';
-  }
-}
+/* ── Google Calendar（Apps Script経由） ── */
+const GCAL_GAS_URL = 'https://script.google.com/macros/s/AKfycbzFvCe7ZkblGCpi5JfNt0KmrsOJCAozb3Ak5WJPuukdGIcSLpBwMJzMsAC-6exvvDvb2w/exec';
+let gcalEvents = {};
 
 async function fetchGcalEvents() {
-  if (!gcalToken) return;
   const dates   = getWeekDates();
-  const timeMin = encodeURIComponent(dates[0].toISOString());
-  const timeMax = encodeURIComponent(addDays(dates[4], 1).toISOString());
+  const timeMin = dates[0].toISOString();
+  const timeMax = addDays(dates[4], 1).toISOString();
+  const btn = document.getElementById('gcalBtn');
+  if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 取得中…'; btn.disabled = true; }
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=200`,
-      { headers: { Authorization: `Bearer ${gcalToken}` } }
-    );
-    if (res.status === 401) {
-      gcalToken = null;
-      localStorage.removeItem('tt_gcal_token');
-      updateGcalBtn();
-      return;
-    }
+    const res  = await fetch(`${GCAL_GAS_URL}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
     const data = await res.json();
     gcalEvents = {};
-    (data.items || []).forEach(ev => {
-      const start   = ev.start?.dateTime || ev.start?.date;
-      if (!start) return;
-      const dateStr = start.slice(0, 10);
-      const time    = ev.start?.dateTime ? start.slice(11, 16) : '';
+    data.forEach(ev => {
+      const dateStr = ev.start.slice(0, 10);
+      const time    = ev.allDay ? '' : ev.start.slice(11, 16);
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
-      gcalEvents[dateStr].push({ title: ev.summary || '(無題)', time });
+      gcalEvents[dateStr].push({ title: ev.title || '(無題)', time });
     });
+    if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 連携中'; btn.classList.add('connected'); btn.disabled = false; }
     renderTimetable();
-  } catch (e) { console.error('GCal fetch error:', e); }
+  } catch (e) {
+    console.error('GCal fetch error:', e);
+    if (btn) { btn.innerHTML = '<span class="gcal-dot"></span>📅 Googleカレンダー'; btn.classList.remove('connected'); btn.disabled = false; }
+  }
 }
 
-document.getElementById('gcalBtn').addEventListener('click', () => {
-  if (gcalToken) {
-    google.accounts.oauth2.revoke(gcalToken, () => {
-      gcalToken = null;
-      gcalEvents = {};
-      localStorage.removeItem('tt_gcal_token');
-      updateGcalBtn();
-      renderTimetable();
-    });
-  } else {
-    if (!tokenClient) { alert('Googleライブラリ読み込み中です。少し待ってから再試行してください。'); return; }
-    tokenClient.requestAccessToken();
-  }
-});
+document.getElementById('gcalBtn').addEventListener('click', fetchGcalEvents);
 
 /* ── 状態 ── */
 let overrides    = {};
@@ -1419,6 +1366,7 @@ renderTimetable();
 renderProgress();
 renderProgress2();
 if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
+fetchGcalEvents();
 </script>
 </body>
 </html>
