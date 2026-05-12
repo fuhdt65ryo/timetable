@@ -17,9 +17,9 @@
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
     /* ── Header ── */
-    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; position:sticky; top:0; z-index:100; }
-    .header-top { text-align:center; margin-bottom:12px; }
-    h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
+    header { background:var(--accent); color:var(--on-accent); padding:8px 20px 0; position:sticky; top:0; z-index:100; }
+    .header-top { text-align:center; margin-bottom:6px; }
+    h1 { font-size:1.1rem; font-weight:800; letter-spacing:.06em; }
     .nav-bar { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; padding:8px 8px 6px; }
     .week-label { font-size:.9rem; font-weight:600; min-width:180px; text-align:center; position:relative; cursor:pointer; color:var(--text); }
     .week-label:hover { opacity:.8; }
@@ -30,7 +30,7 @@
 
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
-    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:11px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
+    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:7px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
     .tab-btn:hover { color:#fff; background:rgba(255,255,255,.08); }
     .tab-btn.active { color:#fff; border-bottom:3px solid rgba(255,255,255,.9); background:rgba(255,255,255,.12); }
 
@@ -107,8 +107,8 @@
     .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
-    .cell-day.is-past { opacity:.5; }
-    .cell.is-past-col { opacity:.45; }
+    .cell-day.is-past { opacity:.45; }
+    .cell.is-past-col { opacity:.4; }
     .cell.is-past-col.selected { opacity:1; }
 
     /* ── 今日列のハイライト ── */
