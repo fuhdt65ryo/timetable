@@ -687,7 +687,7 @@ async function fetchGcalEvents() {
     gcalEvents = {};
     data.forEach(ev => {
       const d       = ev.allDay ? null : new Date(ev.start);
-      const dateStr = ev.allDay ? ev.start.slice(0, 10) : toDateStr(d);
+      const dateStr = ev.allDay ? toDateStr(new Date(ev.start)) : toDateStr(d);
       const time    = ev.allDay ? '' : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
       if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
       gcalEvents[dateStr].push({ title: ev.title || '(無題)', time, calendar: ev.calendar || '' });
