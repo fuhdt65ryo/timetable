@@ -106,6 +106,10 @@
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
+    .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.5rem; font-weight:800; border-radius:3px; padding:0 3px; white-space:nowrap; pointer-events:none; }
+    .cell-absence-nenkyuu { background:rgba(60,180,90,.2); color:#1a5c27; border:1px solid rgba(60,180,90,.45); }
+    .cell-absence-shuccho { background:rgba(70,100,220,.18); color:#1e3580; border:1px solid rgba(70,100,220,.38); }
+    .hol-period-range { font-size:.68rem; color:#888; margin-left:4px; }
     .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#c53030; color:#fff; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
@@ -479,6 +483,28 @@
           <option value="nenkyuu">年休</option>
           <option value="shuccho">出張</option>
         </select>
+      </div>
+      <div class="form-group" id="hPeriodGroup" style="display:none">
+        <label class="form-label">時間帯</label>
+        <select class="hol-type-sel" id="hPeriodFrom">
+          <option value="all">1日</option>
+          <option value="1">1限〜</option>
+          <option value="2">2限〜</option>
+          <option value="3">3限〜</option>
+          <option value="4">4限〜</option>
+          <option value="5">5限〜</option>
+          <option value="6">6限</option>
+        </select>
+        <span id="hPeriodToWrap" style="display:none;align-items:center;gap:4px">
+          <select class="hol-type-sel" id="hPeriodTo">
+            <option value="1">1限</option>
+            <option value="2">2限</option>
+            <option value="3">3限</option>
+            <option value="4">4限</option>
+            <option value="5">5限</option>
+            <option value="6" selected>6限</option>
+          </select>
+        </span>
       </div>
       <button class="btn btn-save" id="hSave">追加</button>
     </div>
@@ -894,7 +920,14 @@ function getHolidayEntry(dateStr) {
   const val = holidays[dateStr];
   if (!val) return null;
   if (typeof val === 'string') return { name: val, type: 'holiday' };
-  return { name: val.name, type: val.type || 'holiday' };
+  return { name: val.name, type: val.type || 'holiday', periodFrom: val.periodFrom, periodTo: val.periodTo };
+}
+function absenceCoversPeriod(holEntry, period) {
+  if (!holEntry || (holEntry.type !== 'nenkyuu' && holEntry.type !== 'shuccho')) return false;
+  const pf = holEntry.periodFrom;
+  if (!pf || pf === 'all') return true;
+  const from = +pf, to = holEntry.periodTo ? +holEntry.periodTo : 6;
+  return period >= from && period <= to;
 }
 function isActualHoliday(dateStr) {
   const e = getHolidayEntry(dateStr);
@@ -1157,6 +1190,11 @@ function renderTimetable() {
         chgBadge = `<span class="cell-chg-badge">授業変更</span>`;
       }
 
+      const absHolEntry = getHolidayEntry(dateStr);
+      const absenceBadge = absenceCoversPeriod(absHolEntry, p)
+        ? `<span class="cell-absence-badge cell-absence-${absHolEntry.type}">${absHolEntry.type === 'nenkyuu' ? '年休' : '出張'}</span>`
+        : '';
+
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
@@ -1176,10 +1214,10 @@ function renderTimetable() {
           <div class="c-class">${esc(entry.name)}</div>
           ${subjectHtml}
           ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
-          ${bottomLeft}${chgBadge}
+          ${bottomLeft}${chgBadge}${absenceBadge}
         `;
       } else {
-        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}`;
+        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}${absenceBadge}`;
       }
 
       cell.addEventListener('click', (e) => { e.stopPropagation(); selectCell(dateStr, p); });
@@ -2173,11 +2211,17 @@ function renderHolidayPage() {
           : type === 'shuccho'
             ? '<span class="hol-type-shuccho">出張</span>'
             : '';
+      const raw = holidays[date];
+      const periodLabel = (typeof raw === 'object' && (type === 'nenkyuu' || type === 'shuccho'))
+        ? (raw.periodFrom && raw.periodFrom !== 'all'
+            ? `<span class="hol-period-range">${raw.periodFrom}〜${raw.periodTo || 6}限</span>`
+            : '<span class="hol-period-range">1日</span>')
+        : '';
       row.innerHTML = `
         <div class="hol-dot${dotClass}"></div>
         <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）</span>
         <span class="hol-name-text">${esc(name)}</span>
-        ${typeBadge}
+        ${typeBadge}${periodLabel}
         ${!isNational ? `<button class="hol-del" data-date="${date}" title="削除">✕</button>` : ''}
       `;
       row.querySelector('.hol-del')?.addEventListener('click', () => {
@@ -2213,6 +2257,27 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 /* ── 祝日追加 ── */
+document.getElementById('hType').addEventListener('change', function() {
+  const show = this.value === 'nenkyuu' || this.value === 'shuccho';
+  document.getElementById('hPeriodGroup').style.display = show ? '' : 'none';
+});
+document.getElementById('hPeriodFrom').addEventListener('change', function() {
+  const toWrap = document.getElementById('hPeriodToWrap');
+  const isAll = this.value === 'all' || this.value === '6';
+  toWrap.style.display = isAll ? 'none' : 'inline-flex';
+  if (!isAll) {
+    const from = +this.value;
+    const toSel = document.getElementById('hPeriodTo');
+    toSel.innerHTML = '';
+    for (let i = from; i <= 6; i++) {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = `${i}限`;
+      if (i === 6) opt.selected = true;
+      toSel.appendChild(opt);
+    }
+  }
+});
+
 document.getElementById('hSave').addEventListener('click', () => {
   const date = document.getElementById('hDate').value;
   const name = document.getElementById('hName').value.trim();
@@ -2222,11 +2287,24 @@ document.getElementById('hSave').addEventListener('click', () => {
     else document.getElementById('hName').focus();
     return;
   }
-  holidays[date] = type === 'holiday' ? name : { name, type };
+  if (type === 'holiday') {
+    holidays[date] = name;
+  } else {
+    const pf = document.getElementById('hPeriodFrom').value;
+    const entry = { name, type };
+    if (pf !== 'all') {
+      entry.periodFrom = +pf;
+      entry.periodTo   = +document.getElementById('hPeriodTo').value;
+    }
+    holidays[date] = entry;
+  }
   saveHolidays();
   document.getElementById('hDate').value = '';
   document.getElementById('hName').value = '';
   document.getElementById('hType').value = 'holiday';
+  document.getElementById('hPeriodGroup').style.display = 'none';
+  document.getElementById('hPeriodFrom').value = 'all';
+  document.getElementById('hPeriodToWrap').style.display = 'none';
   renderHolidayPage();
   renderTimetable();
 });
