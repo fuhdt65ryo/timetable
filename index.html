@@ -1909,6 +1909,7 @@ function openAutoAssignModal(grade) {
 
   // 過去に実施済みの授業（日付 < 今日）を把握 → スロットを消費せずスキップ
   const pastDoneSet = new Set();
+  const pastSlotMap = {};   // 過去済みスロット情報（変更なし表示用）
   // 今日以降の手動割り当てスロットを把握（移動元表示用）
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
@@ -1918,8 +1919,14 @@ function openAutoAssignModal(grade) {
     const period = +parts[3];
     const date = parseDateStr(dateStr);
     if (date < _today) {
-      // 過去 → 実施済みとして記録
-      if (lessonList.includes(e.teacher)) pastDoneSet.add(`${e.teacher}__${e.name}`);
+      if (lessonList.includes(e.teacher)) {
+        const k = `${e.teacher}__${e.name}`;
+        pastDoneSet.add(k);
+        // 最新の過去スロットを保持
+        if (!pastSlotMap[k] || date > pastSlotMap[k].date) {
+          pastSlotMap[k] = { dateStr, period, date };
+        }
+      }
       return;
     }
     const k = `${e.teacher}__${e.name}`;
@@ -1931,8 +1938,12 @@ function openAutoAssignModal(grade) {
   autoAssignPlan = lessonList.map(lesson => {
     const slots = {};
     classes.forEach(cls => {
-      // 過去に実施済みならスロットを消費せずスキップ
-      if (pastDoneSet.has(`${lesson}__${cls}`)) return;
+      // 過去に実施済みならスロットを消費せずスキップ（変更なしとして表示）
+      if (pastDoneSet.has(`${lesson}__${cls}`)) {
+        const ps = pastSlotMap[`${lesson}__${cls}`];
+        if (ps) slots[cls] = { ...ps, unchanged: true, past: true };
+        return;
+      }
       const idx = classSlotIdx[cls];
       if (idx < classSlots[cls].length) {
         const newSlot = classSlots[cls][idx];
