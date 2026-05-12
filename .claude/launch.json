@@ -2,16 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Static server (Python)",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080"],
+      "name": "Static server (Node)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/serve.js"],
       "port": 8080
-    },
-    {
-      "name": "Static server (npx serve)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", ".", "-p", "3000", "--no-clipboard"],
-      "port": 3000
     }
   ]
 }

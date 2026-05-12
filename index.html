@@ -49,6 +49,7 @@
     }
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
     .cell-day.is-today.is-weekend { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
+    .cell:not(.has-entry) { background:#f8f8f8; }
     .cell.is-weekend-col:not(.has-entry) { background:#f8f8f8; }
     .cell.is-weekend-col .add-mark { color:#d8d8d8; }
     /* 細い土日列 */
@@ -104,7 +105,7 @@
 
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
-    .cell.modified::after { content:'変更あり'; position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; }
+    .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
     .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#c53030; color:#fff; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
@@ -228,7 +229,13 @@
     .prog-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; text-align:center; }
     .prog-content-cell { text-align:left !important; }
     .prog-sub { font-size:.68rem; color:var(--muted); }
-    .prog-cnt { font-weight:600; }
+    .prog-drag-handle { cursor:grab; color:#ccc; font-size:.9rem; padding:0 4px 0 0; user-select:none; flex-shrink:0; }
+    .prog-drag-handle:active { cursor:grabbing; }
+    .prog-content-cell { display:flex; align-items:center; }
+    .prog-cnt { font-weight:600; cursor:pointer; border-radius:4px; padding:1px 3px; transition:background .12s; display:inline-block; }
+    .prog-cnt:hover { background:rgba(0,0,0,.06); }
+    tr.drag-over td { border-top:2px solid var(--accent); }
+    .prog-edit-inp { font-size:.88rem; font-weight:600; font-family:inherit; border:1.5px solid var(--accent); border-radius:4px; padding:2px 6px; outline:none; width:100%; box-sizing:border-box; }
     .prog-done { }
     .prog-done-badge { display:inline-block; background:#EEEEEE; color:#9E9E9E; font-weight:500; border-radius:8px; padding:3px 8px; line-height:1.4; font-size:.82rem; }
     .prog-done-badge .prog-p { color:#BDBDBD; }
@@ -254,8 +261,9 @@
     .chg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
     .chg-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:left; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
     .chg-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; }
+    .chg-date-group { font-weight:800; font-size:.8rem; padding:8px 10px 4px; color:var(--muted); background:#f7fafc; border-bottom:1px solid var(--border); letter-spacing:.03em; }
     .chg-date  { font-weight:700; white-space:nowrap; }
-    .chg-period { text-align:center; color:var(--accent); font-weight:800; }
+    .chg-period { text-align:center; color:var(--accent); font-weight:800; width:3em; white-space:nowrap; }
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
 
@@ -339,6 +347,39 @@
     .chgmod-actions { display:flex; gap:8px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--border); }
     .chg-add-btn { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; padding:5px 14px; border-radius:14px; font-size:.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
     .chg-add-btn:hover { opacity:.85; }
+
+    /* ── 自動割り当てモーダル ── */
+    .aa-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
+    .aa-modal { background:#fff; border-radius:16px; width:min(660px,96vw); max-height:90vh; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; display:flex; flex-direction:column; }
+    .aa-head { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .aa-head h2 { font-size:.95rem; font-weight:800; margin:0; }
+    .aa-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; font-size:.9rem; cursor:pointer; }
+    .aa-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 18px; background:#fafbfc; flex-shrink:0; }
+    .aa-tab { padding:10px 18px; font-size:.85rem; font-weight:600; cursor:pointer; background:none; border:none; color:#94a3b8; border-bottom:3px solid transparent; font-family:inherit; transition:color .15s; }
+    .aa-tab.aa-tab-active { color:var(--accent); border-bottom-color:var(--accent); }
+    .aa-body { padding:14px 18px; overflow-y:auto; flex:1; }
+    .aa-desc { font-size:.82rem; color:var(--muted); margin-bottom:12px; line-height:1.6; }
+    .aa-empty { padding:24px; text-align:center; color:var(--muted); font-size:.88rem; line-height:1.8; }
+    .aa-table-wrap { overflow-x:auto; }
+    .aa-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+    .aa-table th { padding:7px 10px; background:#f7fafc; font-weight:700; text-align:center; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; white-space:nowrap; }
+    .aa-table th:first-child { text-align:left; }
+    .aa-table td { padding:7px 8px; border-bottom:1px solid #f0f2f6; text-align:center; }
+    .aa-lesson { text-align:left !important; font-weight:600; max-width:160px; word-break:break-all; }
+    .aa-new { color:#1565C0; font-weight:700; background:#E3F2FD; border-radius:4px; white-space:nowrap; }
+    .aa-existing { color:#9E9E9E; font-weight:500; background:#F5F5F5; border-radius:4px; white-space:nowrap; }
+    .aa-moved { color:#E65100; font-weight:700; background:#FFF3E0; border-radius:4px; white-space:nowrap; }
+    .aa-orig { color:#9E9E9E; font-weight:400; text-decoration:line-through; font-size:.8em; }
+    .aa-arrow { margin:0 3px; color:#E65100; }
+    .aa-leg-moved { color:#E65100; }
+    .aa-none { color:#d1d9e6; }
+    .aa-period { font-size:.68rem; display:block; opacity:.8; }
+    .aa-legend { font-size:.72rem; color:var(--muted); margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; }
+    .aa-leg-new { color:#1565C0; font-weight:700; }
+    .aa-leg-existing { color:#9E9E9E; font-weight:700; }
+    .aa-actions { display:flex; gap:8px; justify-content:flex-end; padding:12px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+    .aa-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px); background:rgba(30,40,60,.92); color:#fff; padding:10px 22px; border-radius:12px; font-size:.88rem; font-weight:600; opacity:0; transition:opacity .3s,transform .3s; pointer-events:none; z-index:300; white-space:nowrap; }
+    .aa-toast.aa-toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -369,6 +410,7 @@
   <div class="card">
     <div class="list-top">
       <span class="list-title">3年生 授業進捗</span>
+      <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
     </div>
     <div id="progressBody"></div>
   </div>
@@ -376,13 +418,14 @@
   <div class="card">
     <div class="list-top">
       <span class="list-title">2年生 授業進捗</span>
+      <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
     </div>
     <div id="progress2Body"></div>
   </div>
 
   <div class="card">
     <div class="list-top">
-      <span class="list-title">授業変更一覧（今日以降）</span>
+      <span class="list-title">授業変更一覧</span>
     </div>
     <div id="changesBody"></div>
   </div>
@@ -510,18 +553,32 @@
       </div>
       <div class="chgmod-row">
         <div class="chgmod-field" style="flex:1">
-          <span class="chgmod-label">変更前（現在）</span>
-          <div class="chgmod-from" id="chgFromDisplay">──</div>
+          <span class="chgmod-label">変更前　クラス</span>
+          <input class="form-input" id="chgFromClass" type="text" list="chgFromClassList" placeholder="例: 3-1">
+          <datalist id="chgFromClassList"></datalist>
+        </div>
+        <div class="chgmod-field" style="flex:1">
+          <span class="chgmod-label">変更前　教科</span>
+          <input class="form-input" id="chgFromSubject" type="text" list="chgFromSubjectList" placeholder="例: 理科">
+          <datalist id="chgFromSubjectList"></datalist>
         </div>
       </div>
       <div class="chgmod-row">
         <div class="chgmod-field" style="flex:1">
           <span class="chgmod-label">変更後　クラス</span>
-          <select class="form-select" id="chgToClass"></select>
+          <input class="form-input" id="chgToClass" type="text" list="chgToClassList" placeholder="例: 3-1、行事">
+          <datalist id="chgToClassList"></datalist>
         </div>
         <div class="chgmod-field" style="flex:1">
           <span class="chgmod-label">変更後　教科</span>
-          <select class="form-select" id="chgToSubject"></select>
+          <input class="form-input" id="chgToSubject" type="text" list="chgToSubjectList" placeholder="例: 理科、自習">
+          <datalist id="chgToSubjectList"></datalist>
+        </div>
+      </div>
+      <div class="chgmod-row">
+        <div class="chgmod-field" style="flex:1">
+          <span class="chgmod-label">授業内容（任意）</span>
+          <input class="form-input" id="chgToContent" type="text" placeholder="例: 光合成のまとめ">
         </div>
       </div>
       <div class="chgmod-preview" id="chgPreview">
@@ -533,6 +590,25 @@
     <div class="chgmod-actions">
       <button class="btn btn-holiday" id="chgModalCancel">キャンセル</button>
       <button class="btn btn-save" id="chgModalSave">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 自動割り当てモーダル -->
+<div class="aa-overlay" id="aaModal">
+  <div class="aa-modal">
+    <div class="aa-head">
+      <h2>🔄 授業の自動割り当て</h2>
+      <button class="aa-close" id="aaClose">✕</button>
+    </div>
+    <div class="aa-tabs">
+      <button class="aa-tab aa-tab-active" id="aaTab3">3年生</button>
+      <button class="aa-tab" id="aaTab2">2年生</button>
+    </div>
+    <div class="aa-body" id="aaBody"></div>
+    <div class="aa-actions">
+      <button class="btn btn-secondary" id="aaCancelBtn">キャンセル</button>
+      <button class="btn btn-save" id="aaConfirmBtn">確定する</button>
     </div>
   </div>
 </div>
@@ -621,7 +697,7 @@ const CLASSES = [
   { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'自習',color:'#78909C'}] },
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
-  { name:'行事',   color:'#C0392B', isEvent:true, subjects:[] },
+  { name:'行事',   color:'#9E9E9E', isEvent:true, subjects:[] },
 ];
 
 const DAY_NAMES  = ['月','火','水','木','金'];       // 平日のみ（src-grid用, di=0〜4）
@@ -701,11 +777,24 @@ async function fetchGcalEvents() {
     const data = await res.json();
     gcalEvents = {};
     data.forEach(ev => {
-      const d       = ev.allDay ? null : new Date(ev.start);
-      const dateStr = ev.allDay ? ev.start.slice(0, 10) : toDateStr(d);
-      const time    = ev.allDay ? '' : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
-      gcalEvents[dateStr].push({ title: ev.title || '(無題)', time, calendar: ev.calendar || '' });
+      const title    = ev.title || '(無題)';
+      const calendar = ev.calendar || '';
+      if (ev.allDay) {
+        // all-day: end は exclusive なので1日手前まで
+        const startD = new Date(ev.start.slice(0, 10) + 'T00:00:00');
+        const endD   = ev.end ? new Date(ev.end.slice(0, 10) + 'T00:00:00') : addDays(startD, 1);
+        for (let cur = new Date(startD); cur < endD; cur = addDays(cur, 1)) {
+          const ds = toDateStr(cur);
+          if (!gcalEvents[ds]) gcalEvents[ds] = [];
+          gcalEvents[ds].push({ title, time: '', calendar });
+        }
+      } else {
+        const d       = new Date(ev.start);
+        const dateStr = toDateStr(d);
+        const time    = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        if (!gcalEvents[dateStr]) gcalEvents[dateStr] = [];
+        gcalEvents[dateStr].push({ title, time, calendar });
+      }
     });
     saveGcalCache(gcalEvents, timeMin, timeMax);
     renderTimetable();
@@ -764,6 +853,8 @@ let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
 let progManual   = [];  // 3年生 手動追加授業名
 let prog2Manual  = [];  // 2年生 手動追加授業名
+let progOrder    = [];  // 3年生 手動並び順
+let prog2Order   = [];  // 2年生 手動並び順
 let weekStart = getWeekStart(new Date());
 let selKey    = null;
 
@@ -817,6 +908,10 @@ function loadProgManual()  { try { progManual  = JSON.parse(localStorage.getItem
 function saveProgManual()  { localStorage.setItem('tt_prog_manual',  JSON.stringify(progManual));  }
 function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem('tt_prog2_manual') || '[]'); } catch { prog2Manual = []; } }
 function saveProg2Manual() { localStorage.setItem('tt_prog2_manual', JSON.stringify(prog2Manual)); }
+function loadProgOrder()   { try { progOrder  = JSON.parse(localStorage.getItem('tt_prog_order')  || '[]'); } catch { progOrder  = []; } }
+function saveProgOrder()   { localStorage.setItem('tt_prog_order',  JSON.stringify(progOrder));  }
+function loadProg2Order()  { try { prog2Order = JSON.parse(localStorage.getItem('tt_prog2_order') || '[]'); } catch { prog2Order = []; } }
+function saveProg2Order()  { localStorage.setItem('tt_prog2_order', JSON.stringify(prog2Order)); }
 
 /* ── 日付ユーティリティ ── */
 function getWeekStart(d) {
@@ -904,7 +999,10 @@ function renderTimetable() {
   const narrowFlags = dates.map(d => {
     if (d.getDay() !== 0 && d.getDay() !== 6) return false;
     const ds = toDateStr(d);
-    return !PERIODS.some(p => !!getEntry(ds, p));
+    if (PERIODS.some(p => !!getEntry(ds, p))) return false;
+    if ((gcalEvents[ds] || []).length > 0) return false;
+    if ((calEvents[ds] || []).length > 0) return false;
+    return true;
   });
   const colWidths = narrowFlags.map(n => n ? '0.32fr' : '1fr');
   grid.style.gridTemplateColumns = `52px ${colWidths.join(' ')}`;
@@ -1028,7 +1126,7 @@ function renderTimetable() {
       if (isNarrowCol)  cls += ' narrow';
       if (ovr) {
         const ovrEntry = overrides[key];
-        if (ovrEntry !== null && ovrEntry?.name) cls += ' modified';
+        if (ovrEntry !== null && ovrEntry?.name && ovrEntry?.jugyohenkou) cls += ' modified';
         if (ovrEntry?.rinji) cls += ' rinji';
       }
       if (isSel)    cls += ' selected';
@@ -1037,30 +1135,51 @@ function renderTimetable() {
       if (entry && !isDark && !isLight && entry.teacher) cls += ' cell-with-content';
 
       const naturalDi = dayIdx(d);
+      const ok2 = overrideKey(dateStr, p);
+      const hasJugyohenkou = overrides[ok2]?.jugyohenkou;
       const src = getEffectiveSrc(dateStr, p);
-      const srcBadge = (!(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
-        ? `${DI_TO_NAME[src.di]}${src.p}` : '';
+      let srcBadge = '';
+      if (ok2 in cellSources && (src.di !== naturalDi || src.p !== p)) {
+        srcBadge = entry ? `${DI_TO_NAME[src.di]}${src.p}` : '';
+      } else if (dateStr in daySchedules && entry) {
+        srcBadge = `${DI_TO_NAME[daySchedules[dateStr]]}${p}`;
+      }
+
+      // 授業変更の変更前→変更後テキスト
+      let chgBadge = '';
+      let chgSubjectText = null;
+      if (hasJugyohenkou) {
+        const ovrEntry = overrides[ok2];
+        const baseE  = BASE[`${naturalDi}-${p}`];
+        const fromText = ovrEntry.fromRoom || ovrEntry.fromName || (baseE ? (baseE.room || baseE.name) : '空き');
+        const toText   = ovrEntry.room || ovrEntry.name;
+        chgSubjectText = `${fromText}→${toText}`;
+        chgBadge = `<span class="cell-chg-badge">授業変更</span>`;
+      }
 
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
       if (entry) {
-        const color = entry.color || '#667eea';
-        const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
+        const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
+        const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
           : isJikojiCell ? `<span class="c-event-label">行事</span>` : '';
+        const subjectHtml = chgSubjectText
+          ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText)}</div>`
+          : entry.room ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : '';
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
-          ${entry.room    ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : ''}
-          ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
-          ${bottomLeft}
+          ${subjectHtml}
+          ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
+          ${bottomLeft}${chgBadge}
         `;
       } else {
-        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
+        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}`;
       }
 
       cell.addEventListener('click', (e) => { e.stopPropagation(); selectCell(dateStr, p); });
@@ -1077,7 +1196,10 @@ function renderTimetable() {
       const selSub    = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
 
       const editRow = el('div', 'edit-inline');
-      editRow.style.cssText = `grid-column:1/-1;grid-row:${periodRow+1}`;
+      const selColIdx = dates.findIndex(d => toDateStr(d) === selDs);
+      const selCol = selColIdx + 2;
+      const spanStart = Math.max(2, Math.min(selCol - 1, 9 - 3));
+      editRow.style.cssText = `grid-column:${spanStart}/span 3;grid-row:${periodRow+1}`;
       editRow.innerHTML = `
         <div class="edit-inline-head">
           <div class="edit-inline-title">
@@ -1238,7 +1360,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
           <input type="checkbox" id="eRinji" ${entry?.rinji ? 'checked' : ''} style="accent-color:#c53030;width:14px;height:14px">臨時
         </label>
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
-        <button class="btn btn-clear" id="eBtnClear" ${!entry ? 'disabled style="opacity:.4;cursor:default"' : ''}>空欄にする</button>
+        <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
         <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
       </div>
     </div>
@@ -1285,7 +1407,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
   });
   document.getElementById('eBtnClear')?.addEventListener('click', () => {
     overrides[selKey] = null;
-    save();
+    delete cellSources[selKey];
+    save(); saveCellSources();
     schedulePush();
     renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
   });
@@ -1295,9 +1418,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
-    const [ds] = selKeyParts();
-    if (ds in daySchedules) delete daySchedules[ds];
-    saveCellSources(); saveDaySchedules();
+    saveCellSources();
     selectCell(...selKeyParts());
   });
 }
@@ -1388,6 +1509,10 @@ function renderProgress() {
   }
 
   rows.sort((a, b) => {
+    const ai = progOrder.indexOf(a.content), bi = progOrder.indexOf(b.content);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
     const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
     const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
     return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
@@ -1401,7 +1526,9 @@ function renderProgress() {
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
     const tr = document.createElement('tr');
-    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog">×</button>` : ''}</td>`;
+    tr.draggable = true;
+    tr.dataset.content = content;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1421,6 +1548,33 @@ function renderProgress() {
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
+  tbody.addEventListener('click', e => {
+    const cnt = e.target.closest('.prog-cnt');
+    if (!cnt) return;
+    const oldVal = cnt.dataset.content || cnt.textContent;
+    const manual = cnt.dataset.manual === '1';
+    const inp = document.createElement('input');
+    inp.className = 'prog-edit-inp';
+    inp.value = oldVal;
+    cnt.replaceWith(inp);
+    inp.focus(); inp.select();
+    const save = () => {
+      const newVal = inp.value.trim();
+      if (newVal && newVal !== oldVal) {
+        if (manual) {
+          const idx = progManual.indexOf(oldVal);
+          if (idx !== -1) { progManual[idx] = newVal; saveProgManual(); }
+        } else {
+          Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
+          save_(); schedulePush();
+        }
+        renderProgress(); renderProgress2();
+      } else { renderProgress(); }
+    };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
+  });
+  attachProgDrag(tbody, progOrder, saveProgOrder, renderProgress);
   container.innerHTML = '';
   container.appendChild(table);
   renderProgManualInput(container);
@@ -1508,6 +1662,10 @@ function renderProgress2() {
   }
 
   rows.sort((a, b) => {
+    const ai = prog2Order.indexOf(a.content), bi = prog2Order.indexOf(b.content);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
     const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
     const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
     return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
@@ -1521,7 +1679,9 @@ function renderProgress2() {
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
     const tr = document.createElement('tr');
-    let html = `<td class="prog-content-cell"><div class="prog-cnt">${esc(content)}</div>${manual ? `<button class="prog-del-btn" data-key="${esc(content)}" data-list="prog2">×</button>` : ''}</td>`;
+    tr.draggable = true;
+    tr.dataset.content = content;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
     PROG2_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1541,9 +1701,72 @@ function renderProgress2() {
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
+  tbody.addEventListener('click', e => {
+    const cnt = e.target.closest('.prog-cnt');
+    if (!cnt) return;
+    const oldVal = cnt.dataset.content || cnt.textContent;
+    const manual = cnt.dataset.manual === '1';
+    const inp = document.createElement('input');
+    inp.className = 'prog-edit-inp';
+    inp.value = oldVal;
+    cnt.replaceWith(inp);
+    inp.focus(); inp.select();
+    const save = () => {
+      const newVal = inp.value.trim();
+      if (newVal && newVal !== oldVal) {
+        if (manual) {
+          const idx = prog2Manual.indexOf(oldVal);
+          if (idx !== -1) { prog2Manual[idx] = newVal; saveProg2Manual(); }
+        } else {
+          Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
+          save_(); schedulePush();
+        }
+        renderProgress(); renderProgress2();
+      } else { renderProgress2(); }
+    };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
+  });
+  attachProgDrag(tbody, prog2Order, saveProg2Order, renderProgress2);
   container.innerHTML = '';
   container.appendChild(table);
   renderProg2ManualInput(container);
+}
+
+function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
+  let dragSrc = null;
+  tbody.addEventListener('dragstart', e => {
+    dragSrc = e.target.closest('tr');
+    if (!dragSrc) return;
+    e.dataTransfer.effectAllowed = 'move';
+    dragSrc.style.opacity = '0.4';
+  });
+  tbody.addEventListener('dragend', e => {
+    const tr = e.target.closest('tr');
+    if (tr) tr.style.opacity = '';
+    tbody.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+  });
+  tbody.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const tr = e.target.closest('tr');
+    tbody.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+    if (tr && tr !== dragSrc) tr.classList.add('drag-over');
+  });
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('tr');
+    if (!target || target === dragSrc || !dragSrc) return;
+    const rows = [...tbody.querySelectorAll('tr')];
+    const srcIdx = rows.indexOf(dragSrc);
+    const tgtIdx = rows.indexOf(target);
+    if (srcIdx < tgtIdx) target.after(dragSrc);
+    else target.before(dragSrc);
+    const newOrder = [...tbody.querySelectorAll('tr')].map(r => r.dataset.content);
+    orderArr.length = 0;
+    newOrder.forEach(v => orderArr.push(v));
+    saveFn();
+  });
 }
 
 function renderProg2ManualInput(container) {
@@ -1580,6 +1803,210 @@ function renderProg2ManualInput(container) {
   });
 }
 
+/* ── 自動割り当て ── */
+function getClassFutureSlots(className, isTanin, lessonList = []) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const slots = [];
+  for (let i = 0; i < 180; i++) {
+    const d = addDays(today, i);
+    const dateStr = toDateStr(d);
+    if (isActualHoliday(dateStr)) continue;
+    for (const p of PERIODS) {
+      const entry = getEntry(dateStr, p);
+      if (!entry || entry.name !== className) continue;
+      if (isTanin && entry.room !== '理科') continue;
+      const ok = overrideKey(dateStr, p);
+      const ovr = overrides[ok];
+      if (ovr === null) continue; // 空欄化済みは除外
+      // 手動入力でも進捗リスト内の授業なら再割り当て可。進捗リスト外の手動入力は固定。
+      if (ovr && ovr.teacher && !ovr.autoAssigned && !lessonList.includes(ovr.teacher)) continue;
+      slots.push({ dateStr, period: p, entry, date: new Date(d) });
+    }
+  }
+  return slots;
+}
+
+function getExistingFutureAssignment(lessonName, className) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let found = null;
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || entry.teacher !== lessonName || entry.name !== className || entry.autoAssigned) return;
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const date = parseDateStr(dateStr);
+    if (date < today) return;
+    if (!found || date < found.date) found = { dateStr, period: +parts[3], date };
+  });
+  return found;
+}
+
+let autoAssignPlan = null;
+let autoAssignGrade = 3;
+
+function openAutoAssignModal(grade) {
+  autoAssignGrade = grade;
+  document.getElementById('aaTab3').classList.toggle('aa-tab-active', grade === 3);
+  document.getElementById('aaTab2').classList.toggle('aa-tab-active', grade === 2);
+
+  const lessonList = grade === 3 ? progManual : prog2Manual;
+  const classes    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
+  const body = document.getElementById('aaBody');
+
+  if (!lessonList.length) {
+    body.innerHTML = '<div class="aa-empty">授業名が登録されていません。<br>「＋ 授業名を追加」から授業を追加してください。</div>';
+    autoAssignPlan = null;
+    document.getElementById('aaConfirmBtn').disabled = true;
+    document.getElementById('aaModal').style.display = 'flex';
+    return;
+  }
+
+  const classSlots = {};
+  classes.forEach(cls => {
+    const isTanin = !!CLASSES.find(c => c.name === cls)?.tanin;
+    classSlots[cls] = getClassFutureSlots(cls, isTanin, lessonList);
+  });
+  const classSlotIdx = {};
+  classes.forEach(cls => classSlotIdx[cls] = 0);
+
+  const _today = new Date(); _today.setHours(0,0,0,0);
+
+  // 過去に実施済みの授業（日付 < 今日）を把握 → スロットを消費せずスキップ
+  const pastDoneSet = new Set();
+  // 今日以降の手動割り当てスロットを把握（移動元表示用）
+  const currentSlotMap = {};
+  Object.entries(overrides).forEach(([key, e]) => {
+    if (!e || !e.teacher || e.autoAssigned || !classes.includes(e.name)) return;
+    const parts = key.split('-');
+    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const period = +parts[3];
+    const date = parseDateStr(dateStr);
+    if (date < _today) {
+      // 過去 → 実施済みとして記録
+      if (lessonList.includes(e.teacher)) pastDoneSet.add(`${e.teacher}__${e.name}`);
+      return;
+    }
+    const k = `${e.teacher}__${e.name}`;
+    if (!currentSlotMap[k] || date < currentSlotMap[k].date) {
+      currentSlotMap[k] = { dateStr, period, date };
+    }
+  });
+
+  autoAssignPlan = lessonList.map(lesson => {
+    const slots = {};
+    classes.forEach(cls => {
+      // 過去に実施済みならスロットを消費せずスキップ
+      if (pastDoneSet.has(`${lesson}__${cls}`)) return;
+      const idx = classSlotIdx[cls];
+      if (idx < classSlots[cls].length) {
+        const newSlot = classSlots[cls][idx];
+        classSlotIdx[cls]++;
+        const orig = currentSlotMap[`${lesson}__${cls}`] || null;
+        const unchanged = orig && orig.dateStr === newSlot.dateStr && orig.period === newSlot.period;
+        slots[cls] = { ...newSlot, originalSlot: orig && !unchanged ? orig : null, unchanged: !!unchanged };
+      }
+    });
+    return { lesson, slots };
+  });
+
+  body.innerHTML = '';
+  const desc = document.createElement('p');
+  desc.className = 'aa-desc';
+  desc.textContent = '進捗リストの授業を、空いているコマに順番に割り当てます。確定すると授業内容が自動入力されます。';
+  body.appendChild(desc);
+  renderAutoAssignPreview(autoAssignPlan, classes, body);
+  document.getElementById('aaConfirmBtn').disabled = false;
+  document.getElementById('aaModal').style.display = 'flex';
+}
+
+function renderAutoAssignPreview(plan, classes, container) {
+  const wrap = document.createElement('div');
+  wrap.className = 'aa-table-wrap';
+  let html = `<table class="aa-table"><thead><tr><th>授業内容</th>${classes.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>`;
+  plan.forEach(({ lesson, slots }) => {
+    html += `<tr><td class="aa-lesson">${esc(lesson)}</td>`;
+    classes.forEach(cls => {
+      const slot = slots[cls];
+      if (!slot) {
+        html += '<td class="aa-none">─</td>';
+      } else if (slot.unchanged) {
+        const d = slot.date;
+        html += `<td class="aa-existing">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
+      } else if (slot.originalSlot) {
+        const od = slot.originalSlot.date, nd = slot.date;
+        html += `<td class="aa-moved"><span class="aa-orig">${od.getMonth()+1}/${od.getDate()}(${DAY_JP[od.getDay()]})${slot.originalSlot.period}限</span><span class="aa-arrow">→</span>${nd.getMonth()+1}/${nd.getDate()}(${DAY_JP[nd.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
+      } else {
+        const d = slot.date;
+        html += `<td class="aa-new">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  container.appendChild(wrap);
+
+  const legend = document.createElement('div');
+  legend.className = 'aa-legend';
+  legend.innerHTML = '<span class="aa-leg-new">■</span>新規割り当て　<span class="aa-leg-moved">■</span>移動　<span class="aa-leg-existing">■</span>変更なし';
+  container.appendChild(legend);
+}
+
+function applyAutoAssign() {
+  if (!autoAssignPlan) return;
+  const classes = autoAssignGrade === 3 ? PROG_CLASSES : PROG2_CLASSES;
+  const planLessons = new Set(autoAssignPlan.map(p => p.lesson));
+  const today = new Date(); today.setHours(0,0,0,0);
+  // 自動割り当て済み + プラン内の手動入力をクリア（過去・それ以外の手動変更は残す）
+  Object.keys(overrides).forEach(key => {
+    const e = overrides[key];
+    if (!e || !classes.includes(e.name)) return;
+    if (e.autoAssigned || planLessons.has(e.teacher)) {
+      const parts = key.split('-');
+      const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
+      if (date >= today) delete overrides[key];
+    }
+  });
+  let count = 0;
+  autoAssignPlan.forEach(({ lesson, slots }) => {
+    classes.forEach(cls => {
+      const slot = slots[cls];
+      if (!slot) return;
+      const ok = overrideKey(slot.dateStr, slot.period);
+      const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
+      if (!currentEntry) return;
+      overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true };
+      count++;
+    });
+  });
+  save();
+  renderTimetable();
+  renderProgress();
+  renderProgress2();
+  renderChanges();
+  closeAutoAssignModal();
+  if (count > 0) showAutoAssignToast(`${count}件のコマに授業を割り当てました`);
+}
+
+function closeAutoAssignModal() {
+  document.getElementById('aaModal').style.display = 'none';
+  autoAssignPlan = null;
+}
+
+let aaToastTimer = null;
+function showAutoAssignToast(msg) {
+  let toast = document.getElementById('aaToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'aaToast';
+    toast.className = 'aa-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('aa-toast-show');
+  clearTimeout(aaToastTimer);
+  aaToastTimer = setTimeout(() => toast.classList.remove('aa-toast-show'), 2800);
+}
+
 /* ── 授業変更一覧 ── */
 function renderChanges() {
   const container = document.getElementById('changesBody');
@@ -1594,11 +2021,16 @@ function renderChanges() {
     if (date < today) return;
 
     const naturalDi = dayIdx(date);
-    const origEntry = BASE[`${naturalDi}-${period}`] || null;
+    const baseEntry = BASE[`${naturalDi}-${period}`] || null;
+    const origEntry = (newEntry?.fromName || newEntry?.fromRoom)
+      ? { name: newEntry.fromName || '', room: newEntry.fromRoom || '', color: getColor(newEntry.fromName||'', newEntry.fromRoom||'') }
+      : baseEntry;
 
-    // 空欄・行事は授業変更一覧に不要
+    // 授業変更ボタン経由以外・空欄・行事は一覧に不要
     if (newEntry === null) return;
+    if (!newEntry?.jugyohenkou) return;
     if (newEntry?.name === '行事') return;
+    if (newEntry?.autoAssigned) return;
 
     changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
   });
@@ -1610,28 +2042,37 @@ function renderChanges() {
     return;
   }
 
+  // 日付でグルーピング
+  const byDate = [];
+  changes.forEach(c => {
+    const last = byDate[byDate.length - 1];
+    if (last && last.dateStr === c.dateStr) last.items.push(c);
+    else byDate.push({ dateStr: c.dateStr, date: c.date, items: [c] });
+  });
+
   const table = document.createElement('table');
   table.className = 'chg-table';
-  table.innerHTML = '<thead><tr><th>日付</th><th>時</th><th>変更内容</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>時</th><th>変更内容</th></tr></thead>';
   const tbody = document.createElement('tbody');
 
-  changes.forEach(({ dateStr, date, period, from, to }) => {
-    const tr = document.createElement('tr');
+  byDate.forEach(({ date, items }) => {
     const dayLabel = `${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})`;
     const isToday  = isSameDay(date, today);
-    const dateCell = `<td class="chg-date">${isToday ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>` : dayLabel}</td>`;
-    const periodCell = `<td class="chg-period">${period}限</td>`;
+    const headTr = document.createElement('tr');
+    headTr.innerHTML = `<td colspan="2" class="chg-date-group">${isToday ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>` : dayLabel}</td>`;
+    tbody.appendChild(headTr);
 
-    const fromHtml = from
-      ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
-      : '<span style="color:#aaa">なし</span>';
-
-    const toHtml = to
-      ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`
-      : '<span style="color:#aaa">なし</span>';
-
-    tr.innerHTML = `${dateCell}${periodCell}<td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
-    tbody.appendChild(tr);
+    items.forEach(({ period, from, to }) => {
+      const tr = document.createElement('tr');
+      const fromHtml = from
+        ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+        : '<span style="color:#aaa">なし</span>';
+      const toHtml = to
+        ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`
+        : '<span style="color:#aaa">なし</span>';
+      tr.innerHTML = `<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
+      tbody.appendChild(tr);
+    });
   });
 
   table.appendChild(tbody);
@@ -1827,7 +2268,7 @@ weekPicker.addEventListener('change', function() {
   if (this.value) { weekStart = getWeekStart(new Date(this.value)); renderTimetable(); }
   this.style.pointerEvents = 'none';
 });
-document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); closeAutoAssignModal(); } });
 document.addEventListener('click', e => {
   if (!selKey) return;
   if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('.cell-sched')) return;
@@ -2002,8 +2443,9 @@ function closeChangeModal() {
 }
 
 function buildChgToClassOptions() {
-  const sel = document.getElementById('chgToClass');
-  sel.innerHTML = CLASSES.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  const opts = CLASSES.map(c => `<option value="${c.name}">`).join('');
+  document.getElementById('chgToClassList').innerHTML = opts;
+  document.getElementById('chgFromClassList').innerHTML = opts;
 }
 
 function updateChgFrom() {
@@ -2012,47 +2454,38 @@ function updateChgFrom() {
   if (!dateStr || !period) return;
 
   const d = parseDateStr(dateStr);
-  const naturalDi = dayIdx(d);
-  const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
-  const entry = BASE[`${di}-${period}`] || null;
+  const ok = overrideKey(dateStr, period);
+  const existing = overrides[ok];
 
-  const fromEl = document.getElementById('chgFromDisplay');
-  if (entry) {
-    fromEl.textContent = entry.name + (entry.room ? ' ' + entry.room : '');
-    fromEl.style.color = entry.color || '#333';
-  } else {
-    fromEl.textContent = '（授業なし）';
-    fromEl.style.color = '#aaa';
-  }
-
-  // 現在セルに表示されている内容（override/cellSource/daySchedule考慮）を変更後の初期値に反映
+  // 既存の授業変更があればその変更前を、なければ現在表示されている内容を初期値に
   const currentEntry = getEntry(dateStr, period);
+  const fromClass = existing?.fromName ?? (currentEntry?.name || '');
+  const fromRoom  = existing?.fromRoom ?? (currentEntry?.room || '');
+  document.getElementById('chgFromClass').value = fromClass;
+  document.getElementById('chgFromSubjectList').innerHTML = getSubjects(fromClass).map(s => `<option value="${s.name}">`).join('');
+  document.getElementById('chgFromSubject').value = fromRoom;
+
+  // 変更後の初期値
   const toClassEl = document.getElementById('chgToClass');
-  toClassEl.value = currentEntry ? currentEntry.name : (CLASSES[0]?.name || '');
+  toClassEl.value = currentEntry?.name || (CLASSES[0]?.name || '');
   updateChgToSubjects(currentEntry?.room);
+  document.getElementById('chgToContent').value = currentEntry?.teacher || '';
 }
 
 function updateChgToSubjects(preselectRoom) {
   const cls = document.getElementById('chgToClass').value;
   const subs = getSubjects(cls);
-  const sel = document.getElementById('chgToSubject');
-  if (subs.length) {
-    sel.innerHTML = subs.map(s =>
-      `<option value="${s.name}"${s.name === preselectRoom ? ' selected' : ''}>${s.name}</option>`
-    ).join('');
-    sel.disabled = false;
-  } else {
-    sel.innerHTML = '<option value="">──</option>';
-    sel.disabled = true;
-  }
+  document.getElementById('chgToSubjectList').innerHTML = subs.map(s => `<option value="${s.name}">`).join('');
+  if (preselectRoom !== undefined) document.getElementById('chgToSubject').value = preselectRoom || '';
   updateChgPreview();
 }
 
 function updateChgPreview() {
-  const fromText = document.getElementById('chgFromDisplay').textContent;
+  const fromClass = document.getElementById('chgFromClass').value;
+  const fromSubject = document.getElementById('chgFromSubject').value || '';
+  const fromText = fromClass + (fromSubject ? ' ' + fromSubject : '');
   const toClass = document.getElementById('chgToClass').value;
-  const toSubjectEl = document.getElementById('chgToSubject');
-  const toSubject = toSubjectEl.disabled ? '' : (toSubjectEl.value || '');
+  const toSubject = document.getElementById('chgToSubject').value || '';
   const toColor = getColor(toClass, toSubject);
   const toText = toClass + (toSubject && toSubject !== '──' ? ' ' + toSubject : '');
 
@@ -2070,17 +2503,25 @@ document.getElementById('chgModal').addEventListener('click', e => {
 });
 document.getElementById('chgDate').addEventListener('change', updateChgFrom);
 document.getElementById('chgPeriod').addEventListener('change', updateChgFrom);
-document.getElementById('chgToClass').addEventListener('change', () => updateChgToSubjects());
-document.getElementById('chgToSubject').addEventListener('change', updateChgPreview);
+document.getElementById('chgFromClass').addEventListener('input', () => {
+  const cls = document.getElementById('chgFromClass').value;
+  document.getElementById('chgFromSubjectList').innerHTML = getSubjects(cls).map(s => `<option value="${s.name}">`).join('');
+  updateChgPreview();
+});
+document.getElementById('chgFromSubject').addEventListener('input', updateChgPreview);
+document.getElementById('chgToClass').addEventListener('input', () => updateChgToSubjects());
+document.getElementById('chgToSubject').addEventListener('input', updateChgPreview);
 document.getElementById('chgModalSave').addEventListener('click', () => {
   const dateStr = document.getElementById('chgDate').value;
   const period = +document.getElementById('chgPeriod').value;
+  const fromClass = document.getElementById('chgFromClass').value.trim();
+  const fromSubject = document.getElementById('chgFromSubject').value.trim() || '';
   const toClass = document.getElementById('chgToClass').value;
-  const toSubjectEl = document.getElementById('chgToSubject');
-  const toSubject = toSubjectEl.disabled ? '' : (toSubjectEl.value || '');
+  const toSubject = document.getElementById('chgToSubject').value || '';
+  const toContent = document.getElementById('chgToContent').value.trim() || '';
   if (!dateStr || !period || !toClass) return;
   const ok = overrideKey(dateStr, period);
-  overrides[ok] = { name: toClass, room: toSubject, teacher: '', color: getColor(toClass, toSubject) };
+  overrides[ok] = { name: toClass, room: toSubject, teacher: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
   save();
   renderTimetable();
   renderProgress();
@@ -2089,6 +2530,16 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
   closeChangeModal();
 });
 
+/* ── 自動割り当てモーダル イベント ── */
+document.getElementById('aaClose').addEventListener('click', closeAutoAssignModal);
+document.getElementById('aaCancelBtn').addEventListener('click', closeAutoAssignModal);
+document.getElementById('aaConfirmBtn').addEventListener('click', applyAutoAssign);
+document.getElementById('aaModal').addEventListener('click', e => { if (e.target === document.getElementById('aaModal')) closeAutoAssignModal(); });
+document.getElementById('aaTab3').addEventListener('click', () => openAutoAssignModal(3));
+document.getElementById('aaTab2').addEventListener('click', () => openAutoAssignModal(2));
+document.getElementById('btnAutoAssign3').addEventListener('click', () => openAutoAssignModal(3));
+document.getElementById('btnAutoAssign2').addEventListener('click', () => openAutoAssignModal(2));
+
 /* ── 起動 ── */
 loadDaySchedules();
 loadCellSources();
@@ -2096,6 +2547,8 @@ loadHolidays();
 loadCalEvents();
 loadProgManual();
 loadProg2Manual();
+loadProgOrder();
+loadProg2Order();
 load();
 loadGcalCache();
 renderTimetable();
