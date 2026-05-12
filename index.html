@@ -17,25 +17,34 @@
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
     /* ── Header ── */
-    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; }
-    .header-top { text-align:center; margin-bottom:12px; }
-    h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
-    .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
-    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; position:relative; cursor:pointer; }
+    header { background:var(--accent); color:var(--on-accent); padding:8px 20px 0; position:sticky; top:0; z-index:100; }
+    .header-top { text-align:center; margin-bottom:6px; }
+    h1 { font-size:1.1rem; font-weight:800; letter-spacing:.06em; }
+    .nav-bar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:8px 8px 6px; gap:4px; }
+    .nav-left { display:flex; align-items:center; justify-content:flex-start; }
+    .nav-center { display:flex; align-items:center; gap:6px; justify-content:center; }
+    .nav-right { display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+    .week-label { font-size:.9rem; font-weight:600; min-width:180px; text-align:center; position:relative; cursor:pointer; color:var(--text); }
     .week-label:hover { opacity:.8; }
     #weekDatePicker { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; top:0; left:50%; }
-    .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-    .nav-btn:hover { background:rgba(255,255,255,.25); }
-    .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#D87840; border-color:transparent; }
+    .nav-btn { background:#f0f3fa; border:1px solid var(--border); color:var(--text); padding:5px 13px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .nav-btn:hover { background:#e2e8f0; }
+    .nav-btn.today-btn { background:var(--accent); color:#fff; border-color:transparent; }
 
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
-    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:11px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
+    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:7px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
     .tab-btn:hover { color:#fff; background:rgba(255,255,255,.08); }
     .tab-btn.active { color:#fff; border-bottom:3px solid rgba(255,255,255,.9); background:rgba(255,255,255,.12); }
 
     /* ── Layout ── */
     .container { max-width:1200px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
+    @media (min-width:700px) {
+      #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
+      #pageTimetable > .tt-wrap { flex:1 1 0; overflow:auto; height:100%; box-sizing:border-box; min-width:0; }
+      #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
+    }
+    #progressPane { display:flex; flex-direction:column; gap:14px; }
     .card { background:var(--surface); border-radius:14px; box-shadow:var(--shadow); }
 
     /* ── Timetable ── */
@@ -49,9 +58,9 @@
     }
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
     .cell-day.is-today.is-weekend { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
-    .cell:not(.has-entry) { background:#f8f8f8; }
-    .cell.is-weekend-col:not(.has-entry) { background:#f8f8f8; }
-    .cell.is-weekend-col .add-mark { color:#d8d8d8; }
+    .cell:not(.has-entry) { background:#fff; border-color:#d0d7e3; }
+    .cell.is-weekend-col:not(.has-entry) { background:#edf1f8; }
+    .cell.is-weekend-col .add-mark { color:#c0c8d8; }
     /* 細い土日列 */
     .cell-day.is-weekend.narrow { padding:4px 2px; }
     .cell-day.is-weekend.narrow .day-date { font-size:.72rem; }
@@ -77,7 +86,7 @@
     .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events ── */
-    .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
+    .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; max-height:120px; overflow-y:auto; }
     .day-event-item { font-size:.56rem; font-weight:600; color:#444; background:#f0f4ff; border:1px solid #c8d4ee; border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
     .day-event-item.ev-type-event { background:#FFF8E0; border-color:#D4A017; color:#7A5A00; }
     .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
@@ -95,12 +104,15 @@
     .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:70px; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
-    .cell.has-content { border-style:solid; border-width:2.5px; }
-    .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+    .cell.has-entry:not(.has-content) { opacity:.55; }
+    .cell.has-entry:not(.has-content):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
-    .cell-day.is-past { opacity:.5; }
-    .cell.is-past-col { opacity:.45; }
+    .cell-day.is-past { opacity:.25; }
+    .cell.is-past-col { opacity:.22; }
+    .cell.has-entry.is-past-col:not(.has-content) { opacity:.22; }
     .cell.is-past-col.selected { opacity:1; }
 
     /* ── 今日列のハイライト ── */
@@ -111,6 +123,8 @@
     .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
     .hol-period-range { font-size:.68rem; color:#888; margin-left:4px; }
     .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#fff; color:#1565C0; border-radius:3px; padding:0 4px; line-height:1.6; border:1.5px solid #1565C0; }
+    .cell.has-top-badge { padding-top:1.3rem; }
+    .cell.has-btm-badge { padding-bottom:1.3rem; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
     /* ── 祝日列（全体ブロック） ── */
@@ -154,9 +168,9 @@
     .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
     .btn-src-clear { padding:4px 10px; border:1px solid var(--border); border-radius:8px; font-size:.75rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; margin-top:4px; }
     .btn-src-clear:hover { background:#f1f5f9; }
-    .src-grid-wrap { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+    .src-grid-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
     .src-grid-label { font-size:.72rem; font-weight:700; color:#64748b; letter-spacing:.03em; }
-    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; }
+    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; width:100%; }
     .src-gh { font-size:.65rem; font-weight:700; color:#64748b; text-align:center; padding:1px 0; }
     .src-gh-corner { }
     .src-gp { font-size:.62rem; color:#94a3b8; display:flex; align-items:center; justify-content:center; }
@@ -390,13 +404,6 @@
 
 <header>
   <div class="header-top"><h1>時間割</h1></div>
-  <div class="nav-bar" id="navBar">
-    <button class="nav-btn" id="btnPrev">‹ 前の週</button>
-    <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
-    <button class="nav-btn today-btn" id="btnToday">今週</button>
-    <button class="nav-btn" id="btnNext">次の週 ›</button>
-    <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
-  </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
@@ -408,30 +415,43 @@
 <div id="pageTimetable" class="container">
 
   <div class="card tt-wrap">
+    <div class="nav-bar" id="navBar">
+      <div class="nav-left"><button class="nav-btn" id="btnPrev">‹ 前の週</button></div>
+      <div class="nav-center">
+        <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
+        <button class="nav-btn today-btn" id="btnToday">今週</button>
+      </div>
+      <div class="nav-right">
+        <button class="nav-btn" id="btnNext">次の週 ›</button>
+        <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
+      </div>
+    </div>
     <div class="timetable" id="timetable"></div>
   </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">3年生 授業進捗</span>
-      <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
+  <div id="progressPane">
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">3年生 授業進捗</span>
+        <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
+      </div>
+      <div id="progressBody"></div>
     </div>
-    <div id="progressBody"></div>
-  </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">2年生 授業進捗</span>
-      <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">2年生 授業進捗</span>
+        <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
+      </div>
+      <div id="progress2Body"></div>
     </div>
-    <div id="progress2Body"></div>
-  </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">授業変更一覧</span>
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">授業変更一覧</span>
+      </div>
+      <div id="changesBody"></div>
     </div>
-    <div id="changesBody"></div>
   </div>
 
 </div>
@@ -1037,7 +1057,7 @@ function renderTimetable() {
     if ((calEvents[ds] || []).length > 0) return false;
     return true;
   });
-  const colWidths = narrowFlags.map(n => n ? '0.32fr' : '1fr');
+  const colWidths = dates.map(d => (d.getDay() === 0 || d.getDay() === 6) ? 'minmax(0,.5fr)' : 'minmax(0,1fr)');
   grid.style.gridTemplateColumns = `52px ${colWidths.join(' ')}`;
 
   // コーナー（空白）
@@ -1195,6 +1215,11 @@ function renderTimetable() {
         ? `<span class="cell-absence-badge cell-absence-${absHolEntry.type}">${absHolEntry.type === 'nenkyuu' ? '年休' : '出張'}</span>`
         : '';
 
+      const hasTopBadge = !!(ovr && overrides[key]?.rinji) || hasJugyohenkou;
+      const hasBtmBadge = !!(srcBadge || absenceBadge || (entry && entry.name === '行事'));
+      if (hasTopBadge) cls += ' has-top-badge';
+      if (hasBtmBadge) cls += ' has-btm-badge';
+
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
@@ -1203,6 +1228,7 @@ function renderTimetable() {
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
+        if (!isDark && !isLight && !entry.teacher) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
@@ -1234,10 +1260,9 @@ function renderTimetable() {
       const selSub    = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
 
       const editRow = el('div', 'edit-inline');
-      const selColIdx = dates.findIndex(d => toDateStr(d) === selDs);
-      const selCol = selColIdx + 2;
-      const spanStart = Math.max(2, Math.min(selCol - 1, 9 - 3));
-      editRow.style.cssText = `grid-column:${spanStart}/span 3;grid-row:${periodRow+1}`;
+      const monCol = dates.findIndex(d => d.getDay() === 1) + 2;
+      const friCol = dates.findIndex(d => d.getDay() === 5) + 2;
+      editRow.style.cssText = `grid-column:${monCol}/${friCol+1};grid-row:${periodRow+1}`;
       editRow.innerHTML = `
         <div class="edit-inline-head">
           <div class="edit-inline-title">
@@ -1356,7 +1381,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     const cells = DAY_NAMES.map((_, di) => {
       const e2 = BASE[`${di}-${pp}`];
       const name = e2?.name || '';
-      const subj = e2?.room ? e2.room[0] : '';
+      const subj = e2?.room || '';
       const isSel = curSrcDi === di && curSrcP === pp;
       return `<div class="src-gc${isSel ? ' src-active' : ''}" data-di="${di}" data-p="${pp}">${esc(name)}${subj ? `<span style="font-size:.75em;opacity:.7">${esc(subj)}</span>` : ''}</div>`;
     }).join('');
@@ -1953,7 +1978,7 @@ function openAutoAssignModal(grade) {
   // 今日以降の手動割り当てスロットを把握（移動元表示用）
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
-    if (!e || !e.teacher || e.autoAssigned || !classes.includes(e.name)) return;
+    if (!e || !e.teacher || !classes.includes(e.name)) return;
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period = +parts[3];
@@ -2248,9 +2273,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
     const tab = this.dataset.tab;
     document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
+    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
     document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
     document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
-    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
     if (tab === 'holiday')  renderHolidayPage();
     if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
   });
@@ -2688,6 +2713,13 @@ loadGcalCache();
 renderTimetable();
 renderProgress();
 renderProgress2(); renderChanges();
+(function() {
+  function setHeaderH() {
+    document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');
+  }
+  setHeaderH();
+  window.addEventListener('resize', setHeaderH);
+})();
 if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
 fetchGcalEvents();
 </script>
