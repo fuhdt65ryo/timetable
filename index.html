@@ -1818,6 +1818,8 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
       const ok = overrideKey(dateStr, p);
       const ovr = overrides[ok];
       if (ovr === null) continue; // 空欄化済みは除外
+      // 授業変更で理科以外に変更されたコマは割り当て不可
+      if (ovr && ovr.jugyohenkou && ovr.room !== '理科') continue;
       // 手動入力でも進捗リスト内の授業なら再割り当て可。進捗リスト外の手動入力は固定。
       if (ovr && ovr.teacher && !ovr.autoAssigned && !lessonList.includes(ovr.teacher)) continue;
       slots.push({ dateStr, period: p, entry, date: new Date(d) });
