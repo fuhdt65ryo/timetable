@@ -1843,12 +1843,49 @@ function getExistingFutureAssignment(lessonName, className) {
 let autoAssignPlan = null;
 let autoAssignGrade = 3;
 
+// 進捗テーブルと同じ順序・同じ授業リストを返す（progOrder反映・overrides含む）
+function buildEffectiveLessonList(grade) {
+  const progM    = grade === 3 ? progManual   : prog2Manual;
+  const progC    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
+  const orderArr = grade === 3 ? progOrder    : prog2Order;
+  const today    = new Date(); today.setHours(0,0,0,0);
+
+  const map = {};
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || !entry.teacher || entry.rinji) return;
+    if (!progC.includes(entry.name)) return;
+    const cls = CLASSES.find(c => c.name === entry.name);
+    if (cls?.tanin && entry.room !== '理科') return;
+    if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
+    const parts = key.split('-');
+    const d = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
+    if (!map[entry.teacher].classes[entry.name] || d < map[entry.teacher].classes[entry.name].date) {
+      map[entry.teacher].classes[entry.name] = { date: d };
+    }
+  });
+  progM.forEach(name => { if (!map[name]) map[name] = { content: name, classes: {} }; });
+
+  const rows = Object.values(map).filter(({ classes: cls }) =>
+    !progC.every(c => cls[c] && cls[c].date < today)
+  );
+  rows.sort((a, b) => {
+    const ai = orderArr.indexOf(a.content), bi = orderArr.indexOf(b.content);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    const aMin = Math.min(...Object.values(a.classes).map(c => c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c => c.date.getTime()));
+    return (isFinite(aMin) ? aMin : Infinity) - (isFinite(bMin) ? bMin : Infinity);
+  });
+  return rows.map(r => r.content);
+}
+
 function openAutoAssignModal(grade) {
   autoAssignGrade = grade;
   document.getElementById('aaTab3').classList.toggle('aa-tab-active', grade === 3);
   document.getElementById('aaTab2').classList.toggle('aa-tab-active', grade === 2);
 
-  const lessonList = grade === 3 ? progManual : prog2Manual;
+  const lessonList = buildEffectiveLessonList(grade);
   const classes    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
   const body = document.getElementById('aaBody');
 
