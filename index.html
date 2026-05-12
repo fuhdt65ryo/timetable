@@ -103,8 +103,8 @@
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
     .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
-    .cell.is-aki { background:#edf1f8 !important; border-style:dashed !important; border-color:#bec9db !important; box-shadow:none !important; }
-    .cell.is-aki .c-class { color:#98aac4 !important; font-weight:600; }
+    .cell.is-aki { background:#f5efe4 !important; border-style:dashed !important; border-color:#c8b49a !important; box-shadow:none !important; }
+    .cell.is-aki .c-class { color:#a88c6e !important; font-weight:600; }
     .cell.is-aki:hover { border-color:var(--accent) !important; }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
@@ -165,9 +165,9 @@
     .src-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
     .btn-src-clear { padding:4px 10px; border:1px solid var(--border); border-radius:8px; font-size:.75rem; font-weight:600; background:#f8fafc; color:#64748b; cursor:pointer; font-family:inherit; margin-top:4px; }
     .btn-src-clear:hover { background:#f1f5f9; }
-    .src-grid-wrap { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+    .src-grid-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
     .src-grid-label { font-size:.72rem; font-weight:700; color:#64748b; letter-spacing:.03em; }
-    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; }
+    .src-grid { display:grid; grid-template-columns:14px repeat(5,1fr); gap:2px; width:100%; }
     .src-gh { font-size:.65rem; font-weight:700; color:#64748b; text-align:center; padding:1px 0; }
     .src-gh-corner { }
     .src-gp { font-size:.62rem; color:#94a3b8; display:flex; align-items:center; justify-content:center; }
@@ -1222,6 +1222,7 @@ function renderTimetable() {
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
+        if (!isDark && !isLight && !entry.teacher) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
@@ -1371,7 +1372,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
   const srcChanged = existSrc || (srcDateStr in daySchedules);
 
-  const srcGridCells = PERIODS.map(pp => {
+  const srcGridCells = [1,2,3,4,5].map(pp => {
     const cells = DAY_NAMES.map((_, di) => {
       const e2 = BASE[`${di}-${pp}`];
       const name = e2?.name || '';
