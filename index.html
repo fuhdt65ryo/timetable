@@ -102,7 +102,9 @@
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
-    .cell.has-entry:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.has-entry:not(.has-content):not(.is-aki) { opacity:.55; }
+    .cell.has-entry:not(.has-content):not(.is-aki):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.is-aki { background:#f5efe4 !important; border-style:dashed !important; border-color:#c8b49a !important; box-shadow:none !important; }
     .cell.is-aki .c-class { color:#a88c6e !important; font-weight:600; }
     .cell.is-aki:hover { border-color:var(--accent) !important; }
@@ -1375,7 +1377,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     const cells = DAY_NAMES.map((_, di) => {
       const e2 = BASE[`${di}-${pp}`];
       const name = e2?.name || '';
-      const subj = e2?.room ? e2.room[0] : '';
+      const subj = e2?.room || '';
       const isSel = curSrcDi === di && curSrcP === pp;
       return `<div class="src-gc${isSel ? ' src-active' : ''}" data-di="${di}" data-p="${pp}">${esc(name)}${subj ? `<span style="font-size:.75em;opacity:.7">${esc(subj)}</span>` : ''}</div>`;
     }).join('');
