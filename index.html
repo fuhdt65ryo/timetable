@@ -1604,7 +1604,7 @@ function renderProgress() {
           if (idx !== -1) { progManual[idx] = newVal; saveProgManual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save_(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress(); }
@@ -1757,7 +1757,7 @@ function renderProgress2() {
           if (idx !== -1) { prog2Manual[idx] = newVal; saveProg2Manual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save_(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress2(); }
@@ -2526,11 +2526,9 @@ document.addEventListener('click', function(e) {
     const list   = e.target.dataset.list;
     const key    = e.target.dataset.key;
     const manual = e.target.dataset.manual === '1';
-    if (!manual) {
-      // overrides経由の授業: teacher フィールドを削除
-      Object.values(overrides).forEach(ov => { if (ov && ov.teacher === key) delete ov.teacher; });
-      save_(); schedulePush();
-    }
+    // 該当授業が入っているコマの授業名をすべて削除
+    Object.values(overrides).forEach(ov => { if (ov && ov.teacher === key) delete ov.teacher; });
+    save(); schedulePush();
     if (list === 'prog') {
       progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
     } else {
