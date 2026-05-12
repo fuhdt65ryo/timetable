@@ -67,13 +67,13 @@
     .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
     .cell-day.is-today .day-sched-sel { background:#fff; border-color:rgba(0,0,0,.12); color:#666; }
     .cell-day.is-holiday  { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
-    .cell-day.is-nenkyuu { background:#f0f8f0 !important; color:#2d7a3a !important; border-color:#b8dfc0 !important; }
-    .cell-day.is-shuccho { background:#f0f4ff !important; color:#2c47a0 !important; border-color:#b8c8ef !important; }
+    .cell-day.is-nenkyuu { background:#fff0f0 !important; color:#c62828 !important; border-color:#ffcdd2 !important; }
+    .cell-day.is-shuccho { background:#f0f8f0 !important; color:#2e7d32 !important; border-color:#b8dfc0 !important; }
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
     .day-hol-badge     { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
-    .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2d7a3a; background:rgba(60,180,90,.15); border:1px solid rgba(60,180,90,.35); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
-    .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2c47a0; background:rgba(70,100,220,.12); border:1px solid rgba(70,100,220,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#E53935; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#388E3C; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events ── */
@@ -107,8 +107,8 @@
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.5rem; font-weight:800; border-radius:3px; padding:0 3px; white-space:nowrap; pointer-events:none; }
-    .cell-absence-nenkyuu { background:rgba(60,180,90,.2); color:#1a5c27; border:1px solid rgba(60,180,90,.45); }
-    .cell-absence-shuccho { background:rgba(70,100,220,.18); color:#1e3580; border:1px solid rgba(70,100,220,.38); }
+    .cell-absence-nenkyuu { background:#E53935; color:#fff; }
+    .cell-absence-shuccho { background:#388E3C; color:#fff; }
     .hol-period-range { font-size:.68rem; color:#888; margin-left:4px; }
     .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#c53030; color:#fff; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
@@ -286,10 +286,10 @@
     .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
     .hol-del:hover { color:#e53e3e; background:#fff5f5; }
     .hol-national-badge  { font-size:.68rem; font-weight:600; color:#5b7fa0; background:#eaf2f8; border:1px solid #c5dff0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-type-nenkyuu   { font-size:.68rem; font-weight:600; color:#2d7a3a; background:#e8f8eb; border:1px solid #b8dfc0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-type-shuccho   { font-size:.68rem; font-weight:600; color:#2c47a0; background:#eaf0ff; border:1px solid #b8c8ef; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-dot-nenkyuu    { background:rgba(60,180,90,.7) !important; }
-    .hol-dot-shuccho    { background:rgba(70,100,220,.7) !important; }
+    .hol-type-nenkyuu   { font-size:.68rem; font-weight:600; color:#fff; background:#E53935; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-type-shuccho   { font-size:.68rem; font-weight:600; color:#fff; background:#388E3C; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-dot-nenkyuu    { background:#E53935 !important; }
+    .hol-dot-shuccho    { background:#388E3C !important; }
     .hol-type-sel { padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none; background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; }
     .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
 
