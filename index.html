@@ -42,11 +42,15 @@
     .tt-wrap { padding:12px; overflow-x:auto; }
     .timetable {
       display:grid;
-      grid-template-columns:52px repeat(5,1fr);
+      grid-template-columns:52px repeat(7,1fr);
       gap:5px;
       position:relative;
-      min-width:460px;
+      min-width:620px;
     }
+    .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
+    .cell-day.is-today.is-weekend { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
+    .cell.is-weekend-col:not(.has-entry) { background:#f8f8f8; }
+    .cell.is-weekend-col .add-mark { color:#d8d8d8; }
 
     .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; border:1.5px solid var(--border); display:flex; flex-direction:column; }
     .cell-sched { display:flex; align-items:center; padding:2px 2px 0; }
@@ -62,6 +66,7 @@
     .day-hol-badge     { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2d7a3a; background:rgba(60,180,90,.15); border:1px solid rgba(60,180,90,.35); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2c47a0; background:rgba(70,100,220,.12); border:1px solid rgba(70,100,220,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events ── */
     .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
@@ -92,7 +97,8 @@
 
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
-    .cell.modified::after { content:'変'; position:absolute; top:3px; right:4px; font-size:.55rem; font-weight:800; background:rgba(255,255,255,.85); color:#333; border-radius:3px; padding:0 3px; }
+    .cell.modified::after { content:'変更あり'; position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; }
+    .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#c53030; color:#fff; border-radius:3px; padding:0 3px; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
     /* ── 祝日列（全体ブロック） ── */
@@ -128,6 +134,7 @@
     .cell-dark .c-content { color:rgba(255,255,255,.6); }
     .cell-dark .c-src { background:#fff; color:#333; border:1.5px solid #757575; }
     .c-src { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#fff; color:#333; border-radius:3px; padding:0 4px; line-height:1.6; border:1.5px solid #757575; }
+    .c-event-label { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#C0392B; color:#fff; border-radius:3px; padding:0 4px; line-height:1.6; }
     .cell.is-today-col .c-src { background:#fff; color:#333; }
 
     /* ── Source selector in edit panel ── */
@@ -610,10 +617,11 @@ const CLASSES = [
   { name:'行事',   color:'#C0392B', isEvent:true, subjects:[] },
 ];
 
-const DAY_NAMES = ['月','火','水','木','金'];
-const DAY_JP    = ['日','月','火','水','木','金','土'];
-const PERIODS   = [1,2,3,4,5,6];
-const TIMES     = ['8:50〜9:40','9:50〜10:40','10:50〜11:40','13:00〜13:50','14:00〜14:50','15:00〜15:50'];
+const DAY_NAMES  = ['月','火','水','木','金'];       // 平日のみ（src-grid用, di=0〜4）
+const DAY_JP     = ['日','月','火','水','木','金','土']; // getDay()のインデックスと対応
+const DI_TO_NAME = ['月','火','水','木','金','土','日']; // dayIdx()のインデックスと対応（0=月…4=金,5=土,6=日）
+const PERIODS    = [1,2,3,4,5,6];
+const TIMES      = ['8:50〜9:40','9:50〜10:40','10:50〜11:40','13:00〜13:50','14:00〜14:50','15:00〜15:50'];
 
 /* ── 日本の祝日（2026〜2027年3月） ── */
 const JP_HOLIDAYS = {
@@ -749,7 +757,7 @@ let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
 let progManual   = [];  // 3年生 手動追加授業名
 let prog2Manual  = [];  // 2年生 手動追加授業名
-let weekStart = getMonday(new Date());
+let weekStart = getWeekStart(new Date());
 let selKey    = null;
 
 /* ── 永続化 ── */
@@ -804,20 +812,21 @@ function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem
 function saveProg2Manual() { localStorage.setItem('tt_prog2_manual', JSON.stringify(prog2Manual)); }
 
 /* ── 日付ユーティリティ ── */
-function getMonday(d) {
+function getWeekStart(d) {
   const r=new Date(d); r.setHours(0,0,0,0);
-  const dw=r.getDay(); r.setDate(r.getDate()+(dw===0?-6:1-dw)); return r;
+  r.setDate(r.getDate()-r.getDay()); return r; // 日曜始まり
 }
 function addDays(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function pad(n)       { return String(n).padStart(2,'0'); }
 function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
-function getWeekDates(){ return Array.from({length:5},(_,i)=>addDays(weekStart,i)); }
+function getWeekDates(){ return Array.from({length:7},(_,i)=>addDays(weekStart,i)); }
 function parseDateStr(s){ const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d); }
-function dayIdx(d)     { return d.getDay()-1; }
+// dayIdx: 月=0, 火=1, 水=2, 木=3, 金=4, 土=5, 日=6（既存データと後方互換）
+function dayIdx(d)     { const dw=d.getDay(); return dw===0?6:dw-1; }
 
 function formatWeekLabel() {
-  const [s,e]=[getWeekDates()[0],getWeekDates()[4]];
+  const [s,e]=[getWeekDates()[0],getWeekDates()[6]];
   return s.getMonth()===e.getMonth()
     ? `${s.getFullYear()}年${s.getMonth()+1}月${s.getDate()}日 〜 ${e.getDate()}日`
     : `${s.getFullYear()}年${s.getMonth()+1}月${s.getDate()}日 〜 ${e.getMonth()+1}月${e.getDate()}日`;
@@ -836,7 +845,7 @@ function getEntry(dateStr, period) {
   }
   const d  = parseDateStr(dateStr);
   const di = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
-  if (di < 0 || di > 4) return null;
+  if (di < 0 || di > 6) return null;
   return BASE[`${di}-${period}`] || null;
 }
 
@@ -890,16 +899,24 @@ function renderTimetable() {
   corner.style.cssText = 'grid-column:1;grid-row:1';
   grid.appendChild(corner);
 
-  // 曜日ヘッダー行
+  // 曜日ヘッダー行（日〜土の7列）
+  // 日曜セレクタ用: 日曜始まり順 [{name, di}]
+  const ALL_DAY_OPTIONS = [
+    {name:'日',di:6},{name:'月',di:0},{name:'火',di:1},{name:'水',di:2},
+    {name:'木',di:3},{name:'金',di:4},{name:'土',di:5}
+  ];
   dates.forEach((d, i) => {
     const col = i + 2;
-    const dateStr = toDateStr(d);
+    const dateStr   = toDateStr(d);
+    const naturalDi = dayIdx(d); // 月=0...金=4,土=5,日=6
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
     const hasSched  = dateStr in daySchedules;
-    const schedDi   = hasSched ? daySchedules[dateStr] : i;
+    const schedDi   = hasSched ? daySchedules[dateStr] : naturalDi;
     const holEntry   = getHolidayEntry(dateStr);
     const isHoliday  = !!holEntry;
     const isActHol   = isHoliday && holEntry.type === 'holiday';
     const holClass   = isActHol ? ' is-holiday' : holEntry?.type === 'nenkyuu' ? ' is-nenkyuu' : holEntry?.type === 'shuccho' ? ' is-shuccho' : '';
+    const weekendClass = (!isActHol && isWeekend) ? ' is-weekend' : '';
     const holBadge   = isActHol
       ? `<div class="day-hol-badge">祝</div>`
       : holEntry?.type === 'nenkyuu'
@@ -909,7 +926,7 @@ function renderTimetable() {
           : '';
 
     const isPastDay = d < today && !isSameDay(d, today);
-    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isPastDay ? ' is-past' : '') + holClass);
+    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isPastDay ? ' is-past' : '') + holClass + weekendClass);
     div.style.cssText = `grid-column:${col};grid-row:1`;
     const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
     const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
@@ -919,7 +936,10 @@ function renderTimetable() {
       const cls   = ev.src === 'gcal' ? 'day-event-item' : 'day-event-item ev-type-event';
       return `<div class="${cls}" style="${style}" title="${esc(ev.calendar||'')} ${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`;
     }).join('');
-    div.innerHTML = `<div class="day-name">${DAY_NAMES[i]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${holBadge}<div class="day-events">${evHtml}</div>`;
+    const schedChangeBadge = (hasSched && schedDi !== naturalDi)
+      ? `<div class="day-sched-change-badge">→${DI_TO_NAME[schedDi]}曜日課</div>`
+      : '';
+    div.innerHTML = `<div class="day-name">${DAY_JP[d.getDay()]}</div><div class="day-date">${d.getMonth()+1}/${d.getDate()}</div>${holBadge}${schedChangeBadge}<div class="day-events">${evHtml}</div>`;
 
     // 予定追加ボタン（祝日でない場合のみ）
     if (!isActHol) {
@@ -932,20 +952,20 @@ function renderTimetable() {
     }
     grid.appendChild(div);
 
-    // 日課セレクタ（行2・セルの外）
-    if (!isActHol) {
-      const schedDiv = el('div', 'cell-sched');
-      schedDiv.style.cssText = `grid-column:${col};grid-row:2`;
+    // 日課セレクタ（行2）— 土日はスキップ（空divで行高を維持）
+    const schedDiv = el('div', 'cell-sched');
+    schedDiv.style.cssText = `grid-column:${col};grid-row:2`;
+    if (!isActHol && !isWeekend) {
       const sel = document.createElement('select');
-      const isChanged = hasSched && schedDi !== i;
+      const isChanged = hasSched && schedDi !== naturalDi;
       sel.className = 'day-sched-sel' + (isChanged ? ' is-changed' : '');
-      sel.innerHTML = DAY_NAMES.map((n,j) =>
-        `<option value="${j}"${(hasSched ? schedDi : i) === j ? ' selected' : ''}>${n}曜</option>`
+      sel.innerHTML = ALL_DAY_OPTIONS.map(({name,di}) =>
+        `<option value="${di}"${(hasSched ? schedDi : naturalDi) === di ? ' selected' : ''}>${name}曜</option>`
       ).join('');
       sel.addEventListener('change', function(e) {
         e.stopPropagation();
         const v = +this.value;
-        if (v === i) delete daySchedules[dateStr];
+        if (v === naturalDi) delete daySchedules[dateStr];
         else daySchedules[dateStr] = v;
         saveDaySchedules();
         renderTimetable();
@@ -953,8 +973,8 @@ function renderTimetable() {
         renderProgress2(); renderChanges();
       });
       schedDiv.appendChild(sel);
-      grid.appendChild(schedDiv);
     }
+    grid.appendChild(schedDiv);
   });
 
   // 選択中の時限を取得
@@ -982,6 +1002,7 @@ function renderTimetable() {
       const ovr    = isOverride(dateStr, p);
       const isSel  = key === selKey;
 
+      const isWeekendCol = d.getDay() === 0 || d.getDay() === 6;
       const isDark  = entry && DARK_CLASSES.has(entry.name);
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
@@ -989,11 +1010,13 @@ function renderTimetable() {
       if (entry && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
+      if (isWeekendCol) cls += ' is-weekend-col';
       if (ovr) {
         const ovrEntry = overrides[key];
         const baseDi = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
         const baseE  = BASE[`${baseDi}-${p}`];
-        if (ovrEntry === null || ovrEntry?.name !== baseE?.name || ovrEntry?.room !== baseE?.room) cls += ' modified';
+        if (ovrEntry !== null && ovrEntry?.name && (ovrEntry?.name !== baseE?.name || ovrEntry?.room !== baseE?.room)) cls += ' modified';
+        if (ovrEntry?.rinji) cls += ' rinji';
       }
       if (isSel)    cls += ' selected';
       if (isDark)   cls += ' cell-dark';
@@ -1003,7 +1026,7 @@ function renderTimetable() {
       const naturalDi = dayIdx(d);
       const src = getEffectiveSrc(dateStr, p);
       const srcBadge = (!(overrideKey(dateStr,p) in overrides) && (src.di !== naturalDi || src.p !== p))
-        ? `${DAY_NAMES[src.di]}${src.p}` : '';
+        ? `${DI_TO_NAME[src.di]}${src.p}` : '';
 
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
@@ -1013,11 +1036,15 @@ function renderTimetable() {
         const bg = isDark ? (entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
+        const isJikojiCell = entry.name === '行事';
+        const bottomLeft = srcBadge
+          ? `<span class="c-src">${srcBadge}</span>`
+          : isJikojiCell ? `<span class="c-event-label">行事</span>` : '';
         cell.innerHTML = `
           <div class="c-class">${esc(entry.name)}</div>
           ${entry.room    ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>` : ''}
           ${entry.teacher ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
-          ${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}
+          ${bottomLeft}
         `;
       } else {
         cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}`;
@@ -1119,7 +1146,12 @@ function refreshEditForm() {
 }
 
 function renderEditForm(entry, isOvr, baseEntry) {
-  const pastContents = [...new Set(Object.values(overrides).filter(Boolean).map(v=>v.teacher).filter(Boolean))];
+  const isGrade3Class = PROG_CLASSES.includes(currentClass);
+  const isGrade2Class = PROG2_CLASSES.includes(currentClass);
+  const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
+  const pastContents = targetClasses
+    ? [...new Set(Object.values(overrides).filter(e => e && e.teacher && !e.rinji && targetClasses.includes(e.name)).map(e => e.teacher))]
+    : [];
   const currentClass   = entry?.name    || '';
   const currentSubject = entry?.room    || '';
   const currentContent = entry?.teacher || '';
@@ -1172,7 +1204,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
         ${classSelectVal === '__other__' ? `<input class="form-input" id="eClassOther" type="text" placeholder="クラス名を入力" value="${esc(currentClass)}" style="margin-top:4px">` : ''}
       </div>
       ${showSubject ? `
-      <div class="form-group fg-subject">
+      <div class="form-group fg-subject" style="${isJikoji ? 'flex:1;min-width:180px' : ''}">
         <label class="form-label">${subjectLabel}</label>
         ${isTanin && !isJikoji && !isKenkyu
           ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
@@ -1196,7 +1228,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
         </div>
         ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
       </div>
-      <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end">
+      <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;color:#c53030;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:6px 10px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="eRinji" ${entry?.rinji ? 'checked' : ''} style="accent-color:#c53030;width:14px;height:14px">臨時
+        </label>
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear" ${!entry ? 'disabled style="opacity:.4;cursor:default"' : ''}>空欄にする</button>
         <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
@@ -1252,6 +1287,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     attachConfirmSync(contentEl);
   }
 
+  document.getElementById('eRinji')?.addEventListener('change', () => { clearTimeout(contentTimer); autoSave(); });
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
 
   document.querySelectorAll('.src-gc').forEach(gc => {
@@ -1306,7 +1342,8 @@ function autoSave() {
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
   document.getElementById('eClass')?.classList.remove('err');
-  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject) };
+  const rinji = document.getElementById('eRinji')?.checked || false;
+  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}) };
   save();
   renderTimetable();
   refreshEditForm();
@@ -1334,6 +1371,7 @@ function renderProgress() {
   const map = {};
   Object.entries(overrides).forEach(([key, entry]) => {
     if (!entry || !entry.teacher) return;
+    if (entry.rinji) return;
     if (!PROG_CLASSES.includes(entry.name)) return;
     // 担任クラス(3-1)は理科のみ対象、他教科は除外
     const cls = CLASSES.find(c => c.name === entry.name);
@@ -1456,6 +1494,7 @@ function renderProgress2() {
   const map = {};
   Object.entries(overrides).forEach(([key, entry]) => {
     if (!entry || !entry.teacher) return;
+    if (entry.rinji) return;
     if (!PROG2_CLASSES.includes(entry.name)) return;
     const mk = entry.teacher;
     if (!map[mk]) map[mk] = { content: entry.teacher, classes: {} };
@@ -1583,12 +1622,14 @@ function renderChanges() {
     const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
     const origEntry = BASE[`${di}-${period}`] || null;
 
-    // 元と同じ場合はスキップ（内容入力のみの変更は除外）
+    // 空欄・行事・同一クラス/教科は授業変更一覧に不要
+    if (newEntry === null) return;
+    if (newEntry?.name === '行事') return;
     const fromName = origEntry ? origEntry.name : null;
     const toName   = newEntry  ? newEntry.name  : null;
     const fromRoom = origEntry ? origEntry.room : null;
     const toRoom   = newEntry  ? newEntry.room  : null;
-    if (fromName === toName && fromRoom === toRoom && newEntry !== null) return;
+    if (fromName === toName && fromRoom === toRoom) return;
 
     changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
   });
@@ -1804,7 +1845,7 @@ document.getElementById('eventModal').addEventListener('click', e => { if (e.tar
 /* ── 週ナビ ── */
 document.getElementById('btnPrev').addEventListener('click',  () => { weekStart=addDays(weekStart,-7); renderTimetable(); });
 document.getElementById('btnNext').addEventListener('click',  () => { weekStart=addDays(weekStart, 7); renderTimetable(); });
-document.getElementById('btnToday').addEventListener('click', () => { weekStart=getMonday(new Date()); renderTimetable(); });
+document.getElementById('btnToday').addEventListener('click', () => { weekStart=getWeekStart(new Date()); renderTimetable(); });
 
 const weekPicker = document.getElementById('weekDatePicker');
 document.getElementById('weekLabel').addEventListener('click', () => {
@@ -1814,10 +1855,15 @@ document.getElementById('weekLabel').addEventListener('click', () => {
   weekPicker.focus();
 });
 weekPicker.addEventListener('change', function() {
-  if (this.value) { weekStart = getMonday(new Date(this.value)); renderTimetable(); }
+  if (this.value) { weekStart = getWeekStart(new Date(this.value)); renderTimetable(); }
   this.style.pointerEvents = 'none';
 });
 document.addEventListener('keydown', e => { if(e.key==='Escape') { clearSelect(); closeEventModal(); } });
+document.addEventListener('click', e => {
+  if (!selKey) return;
+  if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('.cell-sched')) return;
+  clearSelect();
+});
 
 /* ── Google Sheets 同期 ── */
 const SYNC_URL_KEY  = 'tt_sync_url_v1';
@@ -2010,14 +2056,11 @@ function updateChgFrom() {
     fromEl.style.color = '#aaa';
   }
 
-  // 既存オーバーライドがあれば変更後の初期値に反映
-  const ok = overrideKey(dateStr, period);
-  const hasOvr = ok in overrides && overrides[ok] !== null;
-  const targetEntry = hasOvr ? overrides[ok] : entry;
-
+  // 現在セルに表示されている内容（override/cellSource/daySchedule考慮）を変更後の初期値に反映
+  const currentEntry = getEntry(dateStr, period);
   const toClassEl = document.getElementById('chgToClass');
-  toClassEl.value = targetEntry ? targetEntry.name : (CLASSES[0]?.name || '');
-  updateChgToSubjects(targetEntry?.room);
+  toClassEl.value = currentEntry ? currentEntry.name : (CLASSES[0]?.name || '');
+  updateChgToSubjects(currentEntry?.room);
 }
 
 function updateChgToSubjects(preselectRoom) {
