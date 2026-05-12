@@ -1254,10 +1254,9 @@ function renderTimetable() {
       const selSub    = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
 
       const editRow = el('div', 'edit-inline');
-      const selColIdx = dates.findIndex(d => toDateStr(d) === selDs);
-      const selCol = selColIdx + 2;
-      const spanStart = Math.max(2, Math.min(selCol - 1, 9 - 3));
-      editRow.style.cssText = `grid-column:${spanStart}/span 3;grid-row:${periodRow+1}`;
+      const monCol = dates.findIndex(d => d.getDay() === 1) + 2;
+      const friCol = dates.findIndex(d => d.getDay() === 5) + 2;
+      editRow.style.cssText = `grid-column:${monCol}/${friCol+1};grid-row:${periodRow+1}`;
       editRow.innerHTML = `
         <div class="edit-inline-head">
           <div class="edit-inline-title">
@@ -1372,7 +1371,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
   const srcChanged = existSrc || (srcDateStr in daySchedules);
 
-  const srcGridCells = [1,2,3,4,5].map(pp => {
+  const srcGridCells = PERIODS.map(pp => {
     const cells = DAY_NAMES.map((_, di) => {
       const e2 = BASE[`${di}-${pp}`];
       const name = e2?.name || '';
