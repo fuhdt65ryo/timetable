@@ -17,7 +17,7 @@
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
     /* ── Header ── */
-    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; }
+    header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; position:sticky; top:0; z-index:100; }
     .header-top { text-align:center; margin-bottom:12px; }
     h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
     .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
@@ -36,6 +36,12 @@
 
     /* ── Layout ── */
     .container { max-width:1200px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
+    @media (min-width:700px) {
+      #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
+      #pageTimetable > .tt-wrap { flex:0 0 auto; max-width:62vw; overflow:auto; height:100%; box-sizing:border-box; }
+      #progressPane { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:260px; padding-bottom:20px; box-sizing:border-box; }
+    }
+    #progressPane { display:flex; flex-direction:column; gap:14px; }
     .card { background:var(--surface); border-radius:14px; box-shadow:var(--shadow); }
 
     /* ── Timetable ── */
@@ -413,27 +419,29 @@
     <div class="timetable" id="timetable"></div>
   </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">3年生 授業進捗</span>
-      <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
+  <div id="progressPane">
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">3年生 授業進捗</span>
+        <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
+      </div>
+      <div id="progressBody"></div>
     </div>
-    <div id="progressBody"></div>
-  </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">2年生 授業進捗</span>
-      <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">2年生 授業進捗</span>
+        <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
+      </div>
+      <div id="progress2Body"></div>
     </div>
-    <div id="progress2Body"></div>
-  </div>
 
-  <div class="card">
-    <div class="list-top">
-      <span class="list-title">授業変更一覧</span>
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">授業変更一覧</span>
+      </div>
+      <div id="changesBody"></div>
     </div>
-    <div id="changesBody"></div>
   </div>
 
 </div>
@@ -2695,6 +2703,13 @@ loadGcalCache();
 renderTimetable();
 renderProgress();
 renderProgress2(); renderChanges();
+(function() {
+  function setHeaderH() {
+    document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');
+  }
+  setHeaderH();
+  window.addEventListener('resize', setHeaderH);
+})();
 if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
 fetchGcalEvents();
 </script>
