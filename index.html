@@ -1528,7 +1528,7 @@ function renderProgress() {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1681,7 +1681,7 @@ function renderProgress2() {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog2" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
     PROG2_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -2445,13 +2445,20 @@ document.getElementById('btnCopyScript').addEventListener('click', function() {
 document.addEventListener('click', function(e) {
   // 削除ボタン
   if (e.target.classList.contains('prog-del-btn')) {
-    const list = e.target.dataset.list;
-    const key  = e.target.dataset.key;
+    const list   = e.target.dataset.list;
+    const key    = e.target.dataset.key;
+    const manual = e.target.dataset.manual === '1';
+    if (!manual) {
+      // overrides経由の授業: teacher フィールドを削除
+      Object.values(overrides).forEach(ov => { if (ov && ov.teacher === key) delete ov.teacher; });
+      save_(); schedulePush();
+    }
     if (list === 'prog') {
       progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
     } else {
       prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
     }
+    renderTimetable();
   }
 });
 // Enterキー → detailsを閉じる（toggleハンドラで確定＋同期）
