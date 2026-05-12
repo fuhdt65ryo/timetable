@@ -20,13 +20,13 @@
     header { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); padding:16px 20px 0; position:sticky; top:0; z-index:100; }
     .header-top { text-align:center; margin-bottom:12px; }
     h1 { font-size:1.4rem; font-weight:800; letter-spacing:.06em; }
-    .nav-bar { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
-    .week-label { font-size:.9rem; font-weight:600; min-width:200px; text-align:center; position:relative; cursor:pointer; }
+    .nav-bar { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; padding:8px 8px 6px; }
+    .week-label { font-size:.9rem; font-weight:600; min-width:180px; text-align:center; position:relative; cursor:pointer; color:var(--text); }
     .week-label:hover { opacity:.8; }
     #weekDatePicker { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; top:0; left:50%; }
-    .nav-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-    .nav-btn:hover { background:rgba(255,255,255,.25); }
-    .nav-btn.today-btn { background:rgba(255,255,255,.9); color:#D87840; border-color:transparent; }
+    .nav-btn { background:#f0f3fa; border:1px solid var(--border); color:var(--text); padding:5px 13px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+    .nav-btn:hover { background:#e2e8f0; }
+    .nav-btn.today-btn { background:var(--accent); color:#fff; border-color:transparent; }
 
     /* ── Tab bar ── */
     .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
@@ -102,12 +102,9 @@
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
-    .cell.has-entry:not(.has-content):not(.is-aki) { opacity:.55; }
-    .cell.has-entry:not(.has-content):not(.is-aki):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .cell.has-entry:not(.has-content) { opacity:.55; }
+    .cell.has-entry:not(.has-content):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
-    .cell.is-aki { background:#f5efe4 !important; border-style:dashed !important; border-color:#c8b49a !important; box-shadow:none !important; }
-    .cell.is-aki .c-class { color:#a88c6e !important; font-weight:600; }
-    .cell.is-aki:hover { border-color:var(--accent) !important; }
     .cell.is-today-col { background:var(--today); border-color:transparent; }
     .cell.has-entry.is-today-col { background:unset; }
     .cell-day.is-past { opacity:.5; }
@@ -403,13 +400,6 @@
 
 <header>
   <div class="header-top"><h1>時間割</h1></div>
-  <div class="nav-bar" id="navBar">
-    <button class="nav-btn" id="btnPrev">‹ 前の週</button>
-    <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
-    <button class="nav-btn today-btn" id="btnToday">今週</button>
-    <button class="nav-btn" id="btnNext">次の週 ›</button>
-    <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
-  </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
@@ -421,6 +411,13 @@
 <div id="pageTimetable" class="container">
 
   <div class="card tt-wrap">
+    <div class="nav-bar" id="navBar">
+      <button class="nav-btn" id="btnPrev">‹ 前の週</button>
+      <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
+      <button class="nav-btn today-btn" id="btnToday">今週</button>
+      <button class="nav-btn" id="btnNext">次の週 ›</button>
+      <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
+    </div>
     <div class="timetable" id="timetable"></div>
   </div>
 
@@ -1223,8 +1220,8 @@ function renderTimetable() {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
-        if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
-        if (!isDark && !isLight && !entry.teacher) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
+        if (!isDark && (entry.teacher || (isLight && entry.name !== '空き'))) cell.style.borderColor = color;
+        if (!isDark && !(entry.teacher || (isLight && entry.name !== '空き'))) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
@@ -2271,7 +2268,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
     document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
     document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
-    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
     if (tab === 'holiday')  renderHolidayPage();
     if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
   });
