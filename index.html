@@ -1028,9 +1028,7 @@ function renderTimetable() {
       if (isNarrowCol)  cls += ' narrow';
       if (ovr) {
         const ovrEntry = overrides[key];
-        const baseDi = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
-        const baseE  = BASE[`${baseDi}-${p}`];
-        if (ovrEntry !== null && ovrEntry?.name && (ovrEntry?.name !== baseE?.name || ovrEntry?.room !== baseE?.room)) cls += ' modified';
+        if (ovrEntry !== null && ovrEntry?.name) cls += ' modified';
         if (ovrEntry?.rinji) cls += ' rinji';
       }
       if (isSel)    cls += ' selected';
@@ -1171,14 +1169,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const currentSubject = entry?.room    || '';
   const currentContent = entry?.teacher || '';
 
-  const knownClasses  = CLASSES.map(c => c.name);
-  const isOtherClass  = currentClass && !knownClasses.includes(currentClass);
-  const classSelectVal = isOtherClass ? '__other__' : currentClass;
-
-  const classOpts = '<option value="">── 選択 ──</option>' +
-    CLASSES.map(c=>`<option value="${c.name}"${c.name===classSelectVal?' selected':''}>${c.name}</option>`).join('') +
-    `<option value="__other__"${classSelectVal==='__other__'?' selected':''}>その他...</option>`;
-  const subjectOpts = getSubjectOptions(currentClass, currentSubject);
+  const classDatalist = CLASSES.map(c => `<option value="${esc(c.name)}">`).join('');
+  const subjectDatalist = getSubjects(currentClass).map(s => `<option value="${esc(s.name)}">`).join('');
   const datalistHtml = pastContents.map(v=>`<option value="${esc(v)}">`).join('');
 
   const isJikoji   = currentClass === '行事';
@@ -1215,15 +1207,13 @@ function renderEditForm(entry, isOvr, baseEntry) {
     <div class="edit-form">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
-        <select class="form-select" id="eClass">${classOpts}</select>
-        ${classSelectVal === '__other__' ? `<input class="form-input" id="eClassOther" type="text" placeholder="クラス名を入力" value="${esc(currentClass)}" style="margin-top:4px">` : ''}
+        <input class="form-input" id="eClass" type="text" list="eClassList" placeholder="例: 3-1、行事" value="${esc(currentClass)}">
+        <datalist id="eClassList">${classDatalist}</datalist>
       </div>
       ${showSubject ? `
       <div class="form-group fg-subject" style="${isJikoji ? 'flex:1;min-width:180px' : ''}">
         <label class="form-label">${subjectLabel}</label>
-        ${isTanin && !isJikoji && !isKenkyu
-          ? `<select class="form-select" id="eSubject">${subjectOpts}</select>`
-          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList"><option value="自習"><option value="理科"></datalist>`}
+        <input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList">${subjectDatalist}</datalist>
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
@@ -1254,48 +1244,19 @@ function renderEditForm(entry, isOvr, baseEntry) {
     </div>
   `;
 
-  const attachOtherInput = (fg) => {
-    if (document.getElementById('eClassOther')) return;
-    const inp = document.createElement('input');
-    inp.className = 'form-input';
-    inp.id = 'eClassOther';
-    inp.type = 'text';
-    inp.placeholder = 'クラス名を入力';
-    inp.style.marginTop = '4px';
-    inp.addEventListener('input', () => {
-      clearTimeout(contentTimer);
-      contentTimer = setTimeout(autoSave, 600);
-    });
-    fg.appendChild(inp);
-    inp.focus();
-  };
-
   const attachConfirmSync = (el) => {
     if (!el) return;
     el.addEventListener('blur', () => { clearTimeout(contentTimer); autoSave(); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(contentTimer); autoSave(); schedulePush(); } });
   };
 
-  document.getElementById('eClass').addEventListener('change', function() {
-    if (this.value === '__other__') {
-      attachOtherInput(this.closest('.form-group'));
-      return;
-    }
-    document.getElementById('eClassOther')?.remove();
-    autoSave();
-  });
-  // 既にその他で保存済みの場合はリスナーを付け直す
-  const classOtherEl = document.getElementById('eClassOther');
-  if (classOtherEl) {
-    classOtherEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 600); });
-    attachConfirmSync(classOtherEl);
-  }
+  const classEl = document.getElementById('eClass');
+  classEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
+  attachConfirmSync(classEl);
+
   const subjectEl = document.getElementById('eSubject');
-  subjectEl?.addEventListener('change', () => { autoSave(); });
-  if (subjectEl?.tagName === 'INPUT') {
-    subjectEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
-    attachConfirmSync(subjectEl);
-  }
+  subjectEl?.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
+  attachConfirmSync(subjectEl);
   const contentEl = document.getElementById('eContent');
   if (contentEl) {
     contentEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(autoSave, 500); });
@@ -1351,8 +1312,7 @@ let contentTimer = null;
 
 function autoSave() {
   if (!selKey) return;
-  let klass     = document.getElementById('eClass')?.value;
-  if (klass === '__other__') klass = document.getElementById('eClassOther')?.value.trim() || '';
+  const klass = document.getElementById('eClass')?.value.trim() || '';
   const subject = document.getElementById('eSubject')?.value || '';
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
@@ -1634,17 +1594,11 @@ function renderChanges() {
     if (date < today) return;
 
     const naturalDi = dayIdx(date);
-    const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
-    const origEntry = BASE[`${di}-${period}`] || null;
+    const origEntry = BASE[`${naturalDi}-${period}`] || null;
 
-    // 空欄・行事・同一クラス/教科は授業変更一覧に不要
+    // 空欄・行事は授業変更一覧に不要
     if (newEntry === null) return;
     if (newEntry?.name === '行事') return;
-    const fromName = origEntry ? origEntry.name : null;
-    const toName   = newEntry  ? newEntry.name  : null;
-    const fromRoom = origEntry ? origEntry.room : null;
-    const toRoom   = newEntry  ? newEntry.room  : null;
-    if (fromName === toName && fromRoom === toRoom) return;
 
     changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
   });
