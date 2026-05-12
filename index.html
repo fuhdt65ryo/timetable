@@ -67,13 +67,13 @@
     .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
     .cell-day.is-today .day-sched-sel { background:#fff; border-color:rgba(0,0,0,.12); color:#666; }
     .cell-day.is-holiday  { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
-    .cell-day.is-nenkyuu { background:#f0f8f0 !important; color:#2d7a3a !important; border-color:#b8dfc0 !important; }
-    .cell-day.is-shuccho { background:#f0f4ff !important; color:#2c47a0 !important; border-color:#b8c8ef !important; }
+    .cell-day.is-nenkyuu { background:#fff8f0 !important; color:#E65100 !important; border-color:#ffe0b2 !important; }
+    .cell-day.is-shuccho { background:#f0f8f0 !important; color:#2e7d32 !important; border-color:#b8dfc0 !important; }
     .day-name { font-size:.78rem; }
     .day-date { font-size:.9rem; font-weight:800; margin-top:1px; }
     .day-hol-badge     { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
-    .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2d7a3a; background:rgba(60,180,90,.15); border:1px solid rgba(60,180,90,.35); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
-    .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#2c47a0; background:rgba(70,100,220,.12); border:1px solid rgba(70,100,220,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#FB8C00; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
+    .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#388E3C; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events ── */
@@ -105,8 +105,14 @@
 
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
-    .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.5rem; font-weight:800; background:rgba(255,255,255,.9); color:#333; border-radius:3px; padding:0 3px; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
-    .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#c53030; color:#fff; border-radius:3px; padding:0 3px; }
+    .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
+    .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
+    .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
+    .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
+    .hol-period-range { font-size:.68rem; color:#888; margin-left:4px; }
+    .cell.rinji::before { content:'臨'; position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#fff; color:#1565C0; border-radius:3px; padding:0 4px; line-height:1.6; border:1.5px solid #1565C0; }
+    .cell.has-top-badge { padding-top:1.3rem; }
+    .cell.has-btm-badge { padding-bottom:1.3rem; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
     /* ── 祝日列（全体ブロック） ── */
@@ -142,7 +148,7 @@
     .cell-dark .c-content { color:rgba(255,255,255,.6); }
     .cell-dark .c-src { background:#fff; color:#333; border:1.5px solid #757575; }
     .c-src { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#fff; color:#333; border-radius:3px; padding:0 4px; line-height:1.6; border:1.5px solid #757575; }
-    .c-event-label { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#C0392B; color:#fff; border-radius:3px; padding:0 4px; line-height:1.6; }
+    .c-event-label { position:absolute; bottom:2px; left:3px; font-size:.55rem; font-weight:800; background:#fff; color:#C0392B; border:1.5px solid #C0392B; border-radius:3px; padding:0 4px; line-height:1.6; }
     .cell.is-today-col .c-src { background:#fff; color:#333; }
 
     /* ── Source selector in edit panel ── */
@@ -282,10 +288,10 @@
     .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
     .hol-del:hover { color:#e53e3e; background:#fff5f5; }
     .hol-national-badge  { font-size:.68rem; font-weight:600; color:#5b7fa0; background:#eaf2f8; border:1px solid #c5dff0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-type-nenkyuu   { font-size:.68rem; font-weight:600; color:#2d7a3a; background:#e8f8eb; border:1px solid #b8dfc0; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-type-shuccho   { font-size:.68rem; font-weight:600; color:#2c47a0; background:#eaf0ff; border:1px solid #b8c8ef; border-radius:10px; padding:2px 8px; white-space:nowrap; }
-    .hol-dot-nenkyuu    { background:rgba(60,180,90,.7) !important; }
-    .hol-dot-shuccho    { background:rgba(70,100,220,.7) !important; }
+    .hol-type-nenkyuu   { font-size:.68rem; font-weight:600; color:#fff; background:#FB8C00; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-type-shuccho   { font-size:.68rem; font-weight:600; color:#fff; background:#388E3C; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+    .hol-dot-nenkyuu    { background:#FB8C00 !important; }
+    .hol-dot-shuccho    { background:#388E3C !important; }
     .hol-type-sel { padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none; background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; }
     .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
 
@@ -480,6 +486,28 @@
           <option value="shuccho">出張</option>
         </select>
       </div>
+      <div class="form-group" id="hPeriodGroup" style="display:none">
+        <label class="form-label">時間帯</label>
+        <select class="hol-type-sel" id="hPeriodFrom">
+          <option value="all">1日</option>
+          <option value="1">1限〜</option>
+          <option value="2">2限〜</option>
+          <option value="3">3限〜</option>
+          <option value="4">4限〜</option>
+          <option value="5">5限〜</option>
+          <option value="6">6限</option>
+        </select>
+        <span id="hPeriodToWrap" style="display:none;align-items:center;gap:4px">
+          <select class="hol-type-sel" id="hPeriodTo">
+            <option value="1">1限</option>
+            <option value="2">2限</option>
+            <option value="3">3限</option>
+            <option value="4">4限</option>
+            <option value="5">5限</option>
+            <option value="6" selected>6限</option>
+          </select>
+        </span>
+      </div>
       <button class="btn btn-save" id="hSave">追加</button>
     </div>
     <div id="holidayList"></div>
@@ -661,14 +689,14 @@ const BASE = {
   '0-1':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '0-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
   '0-3':{ name:'2-4',  room:'理科', color:'#E06010' },
-  '0-4':{ name:'3-1',  room:'道徳', color:'#E85555' },
+  '0-4':{ name:'3-1',  room:'道徳', color:'#9C6ADE' },
   '0-5':{ name:'3-1',  room:'理科', color:'#D44545' },
   '0-6':{ name:'空き',  room:'',    color:'#B07D4E' },
   '1-1':{ name:'2-4',  room:'理科', color:'#E06010' },
   '1-2':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '1-3':{ name:'3-1',  room:'理科', color:'#D44545' },
   '1-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
-  '1-5':{ name:'3-1',  room:'学活', color:'#BF3939' },
+  '1-5':{ name:'3-1',  room:'学活', color:'#9C6ADE' },
   '1-6':{ name:'裁量',  room:'',    color:'#546E7A' },
   '2-1':{ name:'3-4',  room:'理科', color:'#3DAE65' },
   '2-2':{ name:'2-4',  room:'理科', color:'#E06010' },
@@ -686,12 +714,12 @@ const BASE = {
   '4-3':{ name:'2-4',  room:'理科', color:'#E06010' },
   '4-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
   '4-5':{ name:'3-1',  room:'理科', color:'#D44545' },
-  '4-6':{ name:'3-1',  room:'総合', color:'#C84242' },
+  '4-6':{ name:'3-1',  room:'総合', color:'#9C6ADE' },
 };
 
 const CLASSES = [
   { name:'2-4',  subjects:[{name:'理科',color:'#E06010'},{name:'自習',color:'#78909C'}] },
-  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#BF3939'},{name:'道徳',color:'#E85555'},{name:'総合',color:'#C84242'},{name:'自習',color:'#78909C'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#9C6ADE'},{name:'道徳',color:'#9C6ADE'},{name:'総合',color:'#9C6ADE'},{name:'自習',color:'#78909C'}] },
   { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'},{name:'自習',color:'#78909C'}] },
   { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'},{name:'自習',color:'#78909C'}] },
   { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'自習',color:'#78909C'}] },
@@ -894,7 +922,14 @@ function getHolidayEntry(dateStr) {
   const val = holidays[dateStr];
   if (!val) return null;
   if (typeof val === 'string') return { name: val, type: 'holiday' };
-  return { name: val.name, type: val.type || 'holiday' };
+  return { name: val.name, type: val.type || 'holiday', periodFrom: val.periodFrom, periodTo: val.periodTo };
+}
+function absenceCoversPeriod(holEntry, period) {
+  if (!holEntry || (holEntry.type !== 'nenkyuu' && holEntry.type !== 'shuccho')) return false;
+  const pf = holEntry.periodFrom;
+  if (!pf || pf === 'all') return true;
+  const from = +pf, to = holEntry.periodTo ? +holEntry.periodTo : 6;
+  return period >= from && period <= to;
 }
 function isActualHoliday(dateStr) {
   const e = getHolidayEntry(dateStr);
@@ -1157,6 +1192,16 @@ function renderTimetable() {
         chgBadge = `<span class="cell-chg-badge">授業変更</span>`;
       }
 
+      const absHolEntry = getHolidayEntry(dateStr);
+      const absenceBadge = absenceCoversPeriod(absHolEntry, p)
+        ? `<span class="cell-absence-badge cell-absence-${absHolEntry.type}">${absHolEntry.type === 'nenkyuu' ? '年休' : '出張'}</span>`
+        : '';
+
+      const hasTopBadge = !!(ovr && overrides[key]?.rinji) || hasJugyohenkou;
+      const hasBtmBadge = !!(srcBadge || absenceBadge || (entry && entry.name === '行事'));
+      if (hasTopBadge) cls += ' has-top-badge';
+      if (hasBtmBadge) cls += ' has-btm-badge';
+
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
@@ -1176,10 +1221,10 @@ function renderTimetable() {
           <div class="c-class">${esc(entry.name)}</div>
           ${subjectHtml}
           ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
-          ${bottomLeft}${chgBadge}
+          ${bottomLeft}${chgBadge}${absenceBadge}
         `;
       } else {
-        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}`;
+        cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}${absenceBadge}`;
       }
 
       cell.addEventListener('click', (e) => { e.stopPropagation(); selectCell(dateStr, p); });
@@ -1528,7 +1573,7 @@ function renderProgress() {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
     PROG_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1566,7 +1611,7 @@ function renderProgress() {
           if (idx !== -1) { progManual[idx] = newVal; saveProgManual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save_(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress(); }
@@ -1681,7 +1726,7 @@ function renderProgress2() {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div></td>`;
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog2" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
     PROG2_CLASSES.forEach(cls => {
       const info = classes[cls];
       if (info && info.date < today) {
@@ -1719,7 +1764,7 @@ function renderProgress2() {
           if (idx !== -1) { prog2Manual[idx] = newVal; saveProg2Manual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save_(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress2(); }
@@ -1818,6 +1863,8 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
       const ok = overrideKey(dateStr, p);
       const ovr = overrides[ok];
       if (ovr === null) continue; // 空欄化済みは除外
+      // 授業変更で理科以外に変更されたコマは割り当て不可
+      if (ovr && ovr.jugyohenkou && ovr.room !== '理科') continue;
       // 手動入力でも進捗リスト内の授業なら再割り当て可。進捗リスト外の手動入力は固定。
       if (ovr && ovr.teacher && !ovr.autoAssigned && !lessonList.includes(ovr.teacher)) continue;
       slots.push({ dateStr, period: p, entry, date: new Date(d) });
@@ -1843,12 +1890,49 @@ function getExistingFutureAssignment(lessonName, className) {
 let autoAssignPlan = null;
 let autoAssignGrade = 3;
 
+// 進捗テーブルと同じ順序・同じ授業リストを返す（progOrder反映・overrides含む）
+function buildEffectiveLessonList(grade) {
+  const progM    = grade === 3 ? progManual   : prog2Manual;
+  const progC    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
+  const orderArr = grade === 3 ? progOrder    : prog2Order;
+  const today    = new Date(); today.setHours(0,0,0,0);
+
+  const map = {};
+  Object.entries(overrides).forEach(([key, entry]) => {
+    if (!entry || !entry.teacher || entry.rinji) return;
+    if (!progC.includes(entry.name)) return;
+    const cls = CLASSES.find(c => c.name === entry.name);
+    if (cls?.tanin && entry.room !== '理科') return;
+    if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
+    const parts = key.split('-');
+    const d = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
+    if (!map[entry.teacher].classes[entry.name] || d < map[entry.teacher].classes[entry.name].date) {
+      map[entry.teacher].classes[entry.name] = { date: d };
+    }
+  });
+  progM.forEach(name => { if (!map[name]) map[name] = { content: name, classes: {} }; });
+
+  const rows = Object.values(map).filter(({ classes: cls }) =>
+    !progC.every(c => cls[c] && cls[c].date < today)
+  );
+  rows.sort((a, b) => {
+    const ai = orderArr.indexOf(a.content), bi = orderArr.indexOf(b.content);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    const aMin = Math.min(...Object.values(a.classes).map(c => c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c => c.date.getTime()));
+    return (isFinite(aMin) ? aMin : Infinity) - (isFinite(bMin) ? bMin : Infinity);
+  });
+  return rows.map(r => r.content);
+}
+
 function openAutoAssignModal(grade) {
   autoAssignGrade = grade;
   document.getElementById('aaTab3').classList.toggle('aa-tab-active', grade === 3);
   document.getElementById('aaTab2').classList.toggle('aa-tab-active', grade === 2);
 
-  const lessonList = grade === 3 ? progManual : prog2Manual;
+  const lessonList = buildEffectiveLessonList(grade);
   const classes    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
   const body = document.getElementById('aaBody');
 
@@ -1872,6 +1956,7 @@ function openAutoAssignModal(grade) {
 
   // 過去に実施済みの授業（日付 < 今日）を把握 → スロットを消費せずスキップ
   const pastDoneSet = new Set();
+  const pastSlotMap = {};   // 過去済みスロット情報（変更なし表示用）
   // 今日以降の手動割り当てスロットを把握（移動元表示用）
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
@@ -1881,8 +1966,14 @@ function openAutoAssignModal(grade) {
     const period = +parts[3];
     const date = parseDateStr(dateStr);
     if (date < _today) {
-      // 過去 → 実施済みとして記録
-      if (lessonList.includes(e.teacher)) pastDoneSet.add(`${e.teacher}__${e.name}`);
+      if (lessonList.includes(e.teacher)) {
+        const k = `${e.teacher}__${e.name}`;
+        pastDoneSet.add(k);
+        // 最新の過去スロットを保持
+        if (!pastSlotMap[k] || date > pastSlotMap[k].date) {
+          pastSlotMap[k] = { dateStr, period, date };
+        }
+      }
       return;
     }
     const k = `${e.teacher}__${e.name}`;
@@ -1894,8 +1985,12 @@ function openAutoAssignModal(grade) {
   autoAssignPlan = lessonList.map(lesson => {
     const slots = {};
     classes.forEach(cls => {
-      // 過去に実施済みならスロットを消費せずスキップ
-      if (pastDoneSet.has(`${lesson}__${cls}`)) return;
+      // 過去に実施済みならスロットを消費せずスキップ（変更なしとして表示）
+      if (pastDoneSet.has(`${lesson}__${cls}`)) {
+        const ps = pastSlotMap[`${lesson}__${cls}`];
+        if (ps) slots[cls] = { ...ps, unchanged: true, past: true };
+        return;
+      }
       const idx = classSlotIdx[cls];
       if (idx < classSlots[cls].length) {
         const newSlot = classSlots[cls][idx];
@@ -2123,11 +2218,17 @@ function renderHolidayPage() {
           : type === 'shuccho'
             ? '<span class="hol-type-shuccho">出張</span>'
             : '';
+      const raw = holidays[date];
+      const periodLabel = (typeof raw === 'object' && (type === 'nenkyuu' || type === 'shuccho'))
+        ? (raw.periodFrom && raw.periodFrom !== 'all'
+            ? `<span class="hol-period-range">${raw.periodFrom}〜${raw.periodTo || 6}限</span>`
+            : '<span class="hol-period-range">1日</span>')
+        : '';
       row.innerHTML = `
         <div class="hol-dot${dotClass}"></div>
         <span class="hol-date">${d.getMonth()+1}月${d.getDate()}日（${DAY_JP[d.getDay()]}）</span>
         <span class="hol-name-text">${esc(name)}</span>
-        ${typeBadge}
+        ${typeBadge}${periodLabel}
         ${!isNational ? `<button class="hol-del" data-date="${date}" title="削除">✕</button>` : ''}
       `;
       row.querySelector('.hol-del')?.addEventListener('click', () => {
@@ -2163,6 +2264,27 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 /* ── 祝日追加 ── */
+document.getElementById('hType').addEventListener('change', function() {
+  const show = this.value === 'nenkyuu' || this.value === 'shuccho';
+  document.getElementById('hPeriodGroup').style.display = show ? '' : 'none';
+});
+document.getElementById('hPeriodFrom').addEventListener('change', function() {
+  const toWrap = document.getElementById('hPeriodToWrap');
+  const isAll = this.value === 'all' || this.value === '6';
+  toWrap.style.display = isAll ? 'none' : 'inline-flex';
+  if (!isAll) {
+    const from = +this.value;
+    const toSel = document.getElementById('hPeriodTo');
+    toSel.innerHTML = '';
+    for (let i = from; i <= 6; i++) {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = `${i}限`;
+      if (i === 6) opt.selected = true;
+      toSel.appendChild(opt);
+    }
+  }
+});
+
 document.getElementById('hSave').addEventListener('click', () => {
   const date = document.getElementById('hDate').value;
   const name = document.getElementById('hName').value.trim();
@@ -2172,11 +2294,24 @@ document.getElementById('hSave').addEventListener('click', () => {
     else document.getElementById('hName').focus();
     return;
   }
-  holidays[date] = type === 'holiday' ? name : { name, type };
+  if (type === 'holiday') {
+    holidays[date] = name;
+  } else {
+    const pf = document.getElementById('hPeriodFrom').value;
+    const entry = { name, type };
+    if (pf !== 'all') {
+      entry.periodFrom = +pf;
+      entry.periodTo   = +document.getElementById('hPeriodTo').value;
+    }
+    holidays[date] = entry;
+  }
   saveHolidays();
   document.getElementById('hDate').value = '';
   document.getElementById('hName').value = '';
   document.getElementById('hType').value = 'holiday';
+  document.getElementById('hPeriodGroup').style.display = 'none';
+  document.getElementById('hPeriodFrom').value = 'all';
+  document.getElementById('hPeriodToWrap').style.display = 'none';
   renderHolidayPage();
   renderTimetable();
 });
@@ -2395,13 +2530,19 @@ document.getElementById('btnCopyScript').addEventListener('click', function() {
 document.addEventListener('click', function(e) {
   // 削除ボタン
   if (e.target.classList.contains('prog-del-btn')) {
-    const list = e.target.dataset.list;
-    const key  = e.target.dataset.key;
+    const list   = e.target.dataset.list;
+    const key    = e.target.dataset.key;
+    const manual = e.target.dataset.manual === '1';
+    if (!confirm(`「${key}」を削除しますか？\n該当する授業コマの授業名もすべて削除されます。`)) return;
+    // 該当授業が入っているコマの授業名をすべて削除
+    Object.values(overrides).forEach(ov => { if (ov && ov.teacher === key) delete ov.teacher; });
+    save(); schedulePush();
     if (list === 'prog') {
       progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
     } else {
       prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
     }
+    renderTimetable();
   }
 });
 // Enterキー → detailsを閉じる（toggleハンドラで確定＋同期）
