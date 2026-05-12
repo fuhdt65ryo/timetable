@@ -1164,8 +1164,7 @@ function renderTimetable() {
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
       let cls = 'cell';
       if (entry) cls += ' has-entry';
-      if (entry && entry.name === '空き') cls += ' is-aki';
-      if (entry && (entry.teacher || isLight) && entry.name !== '空き') cls += ' has-content';
+      if (entry && (entry.teacher || isLight)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
       if (isWeekendCol) cls += ' is-weekend-col';
@@ -1220,8 +1219,8 @@ function renderTimetable() {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
-        if (!isDark && (entry.teacher || (isLight && entry.name !== '空き'))) cell.style.borderColor = color;
-        if (!isDark && !(entry.teacher || (isLight && entry.name !== '空き'))) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
+        if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
+        if (!isDark && !isLight && !entry.teacher) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
