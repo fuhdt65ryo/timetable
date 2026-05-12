@@ -83,7 +83,7 @@
     .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events ── */
-    .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; }
+    .day-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; width:100%; max-height:72px; overflow-y:auto; }
     .day-event-item { font-size:.56rem; font-weight:600; color:#444; background:#f0f4ff; border:1px solid #c8d4ee; border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
     .day-event-item.ev-type-event { background:#FFF8E0; border-color:#D4A017; color:#7A5A00; }
     .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
@@ -1049,7 +1049,7 @@ function renderTimetable() {
     if ((calEvents[ds] || []).length > 0) return false;
     return true;
   });
-  const colWidths = narrowFlags.map(n => n ? '0.32fr' : '1fr');
+  const colWidths = dates.map(d => (d.getDay() === 0 || d.getDay() === 6) ? '0.5fr' : '1fr');
   grid.style.gridTemplateColumns = `52px ${colWidths.join(' ')}`;
 
   // コーナー（空白）
@@ -1970,7 +1970,7 @@ function openAutoAssignModal(grade) {
   // 今日以降の手動割り当てスロットを把握（移動元表示用）
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
-    if (!e || !e.teacher || e.autoAssigned || !classes.includes(e.name)) return;
+    if (!e || !e.teacher || !classes.includes(e.name)) return;
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period = +parts[3];
@@ -2265,6 +2265,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
     const tab = this.dataset.tab;
     document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
+    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
     document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
     document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
     if (tab === 'holiday')  renderHolidayPage();
