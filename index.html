@@ -60,8 +60,8 @@
     .container { max-width:1200px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
-      #pageTimetable > .tt-wrap { flex:1 1 0; overflow:visible; height:100%; box-sizing:border-box; min-width:0; display:flex; flex-direction:column; }
-      #pageTimetable > .tt-wrap > .tt-scroll { flex:1 1 0; overflow-y:auto; scrollbar-gutter:stable; min-height:0; }
+      #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
+      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
     }
     #progressPane { display:flex; flex-direction:column; gap:14px; }
@@ -558,12 +558,15 @@
 
   <div class="card tt-wrap">
     <div class="nav-bar" id="navBar">
-      <div class="nav-left"></div>
+      <div class="nav-left">
+        <button class="nav-btn" id="btnPrev">◀</button>
+      </div>
       <div class="nav-center">
         <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
         <button class="nav-btn today-btn" id="btnToday">今週</button>
       </div>
       <div class="nav-right">
+        <button class="nav-btn" id="btnNext">▶</button>
         <button class="nav-btn sync-btn" id="btnSync">☁ 同期</button>
       </div>
     </div>
@@ -1908,18 +1911,17 @@ function selectCell(dateStr, period) {
         ttScrollEl.scrollTo({ left: cellLeft - 52, behavior: 'instant' });
       }
     }
-    // 縦スクロール：選択セルが編集パネルのすぐ上に来るよう調整
+    // 縦スクロール：編集パネルが見えるよう調整
     const editPanel = document.getElementById('editPanel');
     if (!editPanel) return;
     const panelRect = editPanel.getBoundingClientRect();
-    // デスクトップ: .tt-scroll が縦横スクロールコンテナ
-    const ttScrollEl = document.getElementById('ttScroll');
-    const isDesktop = ttScrollEl && window.innerWidth >= 700;
+    const isDesktop = window.innerWidth >= 700;
     if (isDesktop) {
-      const wrapRect = ttScrollEl.getBoundingClientRect();
-      // パネル上端がttScroll表示領域の45%の位置に来るようにスクロール
-      const desiredPanelTop = wrapRect.top + ttScrollEl.clientHeight * 0.45;
-      ttScrollEl.scrollBy({ top: panelRect.top - desiredPanelTop, behavior: 'smooth' });
+      const wrapEl = document.querySelector('#pageTimetable > .tt-wrap');
+      if (!wrapEl) return;
+      const wrapRect = wrapEl.getBoundingClientRect();
+      const desiredPanelTop = wrapRect.top + wrapEl.clientHeight * 0.55;
+      wrapEl.scrollBy({ top: panelRect.top - desiredPanelTop, behavior: 'smooth' });
     } else {
       // モバイル: window スクロール
       const desiredPanelTop = window.innerHeight * 0.5;
@@ -3122,7 +3124,9 @@ function navScrollWeek(delta) {
   renderTimetable();
   renderProgress(); renderProgress2();
 }
-document.getElementById('btnToday').addEventListener('click', () => navScrollWeek( 0));
+document.getElementById('btnToday').addEventListener('click', () => navScrollWeek(0));
+document.getElementById('btnPrev').addEventListener('click', () => navScrollWeek(-7));
+document.getElementById('btnNext').addEventListener('click', () => navScrollWeek(7));
 
 const weekPicker = document.getElementById('weekDatePicker');
 document.getElementById('weekLabel').addEventListener('click', () => {
