@@ -61,10 +61,10 @@
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
-      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; height:100%; }
-      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { height:100%; grid-template-rows: auto auto auto repeat(6, 1fr auto) auto; }
+      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
-      #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; height:100%; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
     }
     #progressPane { display:flex; flex-direction:column; gap:14px; }
@@ -84,7 +84,7 @@
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
     .cell-day.is-saturday { background:#dbeafe !important; border-color:#93c5fd !important; color:#1d4ed8 !important; }
     .cell-day.is-sunday   { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#b91c1c !important; }
-    .cell-day.is-today.is-weekend { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
+
     .cell:not(.has-entry) { background:#fff; border-color:#d0d7e3; }
     .cell.is-weekend-col:not(.has-entry) { background:#edf1f8; }
     .cell.is-weekend-col .add-mark { color:#c0c8d8; }
@@ -1387,9 +1387,9 @@ function loadHolidays() {
 }
 function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); schedulePush(); }
 function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
-function saveBukatsuOverrides() { localStorage.setItem('tt_bukatsu_v1', JSON.stringify(bukatsuOverrides)); }
+function saveBukatsuOverrides() { localStorage.setItem('tt_bukatsu_v1', JSON.stringify(bukatsuOverrides)); schedulePush(); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
-function saveWeekendClassDays() { localStorage.setItem('tt_weekend_classes_v1', JSON.stringify(weekendClassDays)); }
+function saveWeekendClassDays() { localStorage.setItem('tt_weekend_classes_v1', JSON.stringify(weekendClassDays)); schedulePush(); }
 
 function getHolidayEntry(dateStr) {
   const val = holidays[dateStr];
@@ -1545,7 +1545,7 @@ function renderTimetable() {
 
   const grid = document.getElementById('timetable');
   const _ep = document.getElementById('editPanel');
-  if (_ep && _ep.parentNode === grid) grid.removeChild(_ep);
+  if (_ep && _ep.parentNode === grid) grid.parentNode.parentNode.appendChild(_ep);
   grid.innerHTML = '';
 
   // 土日列: エントリがなければ細く
@@ -1915,19 +1915,25 @@ function positionEditPanel() {
 }
 
 /* ── セル選択・インライン編集 ── */
-function selectCell(dateStr, period) {
-  selKey = overrideKey(dateStr, period);
+function rerender() {
   renderTimetable();
   refreshEditForm();
   renderProgress();
-  renderProgress2(); renderChanges();
+  renderProgress2();
+  renderChanges();
+}
+
+function selectCell(dateStr, period) {
+  selKey = overrideKey(dateStr, period);
+  rerender();
 }
 
 function clearSelect() {
   selKey = null;
   renderTimetable();
   renderProgress();
-  renderProgress2(); renderChanges();
+  renderProgress2();
+  renderChanges();
 }
 
 function refreshEditForm() {
@@ -2046,7 +2052,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
         cellSources[selKey] = { di, p };
       }
       saveCellSources();
-      renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
+      rerender();
     });
   });
   document.getElementById('eBtnClear')?.addEventListener('click', () => {
@@ -2054,7 +2060,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     delete cellSources[selKey];
     save(); saveCellSources();
     schedulePush();
-    renderTimetable(); refreshEditForm(); renderProgress(); renderProgress2(); renderChanges();
+    rerender();
   });
   document.getElementById('eBtnChg')?.addEventListener('click', () => {
     const [ds, pStr] = selKeyParts();
@@ -2075,7 +2081,7 @@ function getSubjectOptions(className, currentSubject) {
 }
 
 
-function autoSave(rerender = true) {
+function autoSave(doRerender = true) {
   if (!selKey) return;
   const klass = document.getElementById('eClass')?.value.trim() || '';
   const subject = document.getElementById('eSubject')?.value || '';
@@ -2087,11 +2093,8 @@ function autoSave(rerender = true) {
   const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
   overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
-  if (!rerender) return;
-  renderTimetable();
-  refreshEditForm();
-  renderProgress();
-  renderProgress2(); renderChanges();
+  if (!doRerender) return;
+  rerender();
 }
 
 function restoreBase() {
@@ -2214,7 +2217,7 @@ function renderProgress() {
           if (idx !== -1) { progManual[idx] = newVal; saveProgManual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          saveOverrides(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress(); }
@@ -2370,7 +2373,7 @@ function renderProgress2() {
           if (idx !== -1) { prog2Manual[idx] = newVal; saveProg2Manual(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          saveOverrides(); schedulePush();
+          save(); schedulePush();
         }
         renderProgress(); renderProgress2();
       } else { renderProgress2(); }
@@ -3260,7 +3263,7 @@ function closeSyncModal() {
 
 document.getElementById('btnSync').addEventListener('click', openSyncModal);
 document.getElementById('syncModalCancel').addEventListener('click', closeSyncModal);
-document.getElementById('syncModal').addEventListener('click', e => { if (e.target === document.getElementById('syncModal')) closeSyncModal(); });
+document.getElementById('syncModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSyncModal(); });
 document.getElementById('syncModalPull').addEventListener('click', () => {
   closeSyncModal();
   updateSyncBtn('syncing');
@@ -3409,11 +3412,7 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
   overrides[ok] = { name: toClass, room: toSubject, teacher: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
   save();
   schedulePush();
-  renderTimetable();
-  refreshEditForm();
-  renderProgress();
-  renderProgress2();
-  renderChanges();
+  rerender();
   closeChangeModal();
 });
 
@@ -3450,6 +3449,11 @@ renderProgress2(); renderChanges();
   }
   setHeaderH();
   window.addEventListener('resize', setHeaderH);
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => { renderTimetable(); }, 150);
+  });
 })();
 initFirebaseSync();
 fetchGcalEvents();
