@@ -388,21 +388,20 @@
         padding:0 0 12px;
         overflow-x: scroll;
         -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x proximity;
+        scroll-snap-type: x mandatory;
       }
       .timetable {
-        grid-template-columns: 44px repeat(7, 68px);
+        grid-template-columns: 44px repeat(5, calc((100vw - 56px) / 2)) repeat(2, 40px);
         gap: 3px;
         min-width: max-content;
       }
-      /* 土日列はさらに細く */
-      .timetable { grid-template-columns: 44px repeat(5, 68px) repeat(2, 44px); }
-      .cell-day { font-size:.78rem; padding:4px 2px; }
+      .cell-day { font-size:.78rem; padding:4px 3px; scroll-snap-align: start; }
       .day-name { font-size:.7rem; }
-      .day-date { font-size:.82rem; }
-      .cell { min-height:68px; }
-      /* 今日列をスナップ対象に */
-      .cell-day, .cell { scroll-snap-align: start; }
+      .day-date { font-size:.85rem; }
+      .cell { min-height:76px; scroll-snap-align: start; }
+      .c-class   { font-size:.78rem; }
+      .c-subject { font-size:.64rem; display:block !important; }
+      .c-content { display:none; }
     }
 
     /* ── カレンダー設定ページ ── */
