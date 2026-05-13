@@ -79,6 +79,8 @@
     /* 時限列sticky */
     .cell-period-corner { position:sticky; left:0; z-index:4; background:var(--bg); }
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
+    .cell-day.is-saturday .day-date { color:#2563eb; }
+    .cell-day.is-sunday   .day-date { color:#dc2626; }
     .cell-day.is-today.is-weekend { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
     .cell:not(.has-entry) { background:#fff; border-color:#d0d7e3; }
     .cell.is-weekend-col:not(.has-entry) { background:#edf1f8; }
@@ -1664,7 +1666,8 @@ function renderTimetable() {
           : '';
 
     const isPastDay = d < today && !isSameDay(d, today);
-    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isPastDay ? ' is-past' : '') + holClass + weekendClass);
+    const dowClass = d.getDay() === 6 ? ' is-saturday' : d.getDay() === 0 ? ' is-sunday' : '';
+    const div = el('div', 'cell-day' + (isSameDay(d,today) ? ' is-today' : '') + (isPastDay ? ' is-past' : '') + holClass + weekendClass + dowClass);
     div.dataset.date = dateStr;
     div.style.cssText = `grid-column:${col};grid-row:1`;
     const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
