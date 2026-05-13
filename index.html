@@ -2157,7 +2157,9 @@ function autoSave(rerender = true) {
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
   document.getElementById('eClass')?.classList.remove('err');
   const rinji = document.getElementById('eRinji')?.checked || false;
-  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}) };
+  const prev = overrides[selKey];
+  const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
+  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
   if (!rerender) return;
   renderTimetable();
