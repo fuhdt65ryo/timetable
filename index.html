@@ -2169,6 +2169,7 @@ function autoSave(rerender = true) {
 function restoreBase() {
   delete overrides[selKey];
   save();
+  schedulePush();
   selectCell(...selKeyParts());
 }
 
@@ -3258,7 +3259,7 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
+  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v._x) ? null : v; localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); changed = true; }
   if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
   if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
@@ -3266,10 +3267,16 @@ function _applyFbData(data) {
   if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
+function _encodeOverrides(ovr) {
+  const out = {};
+  for (const [k, v] of Object.entries(ovr)) out[k] = v === null ? {_x:1} : v;
+  return out;
+}
+
 async function syncPush() {
   updateSyncBtn('syncing');
   const payload = {
-    tt_overrides_v1:  overrides,
+    tt_overrides_v1:  _encodeOverrides(overrides),
     tt_daysched_v1:   daySchedules,
     tt_cellsrc_v1:    cellSources,
     tt_holidays_v1:   holidays,
