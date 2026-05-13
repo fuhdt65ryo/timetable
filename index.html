@@ -372,6 +372,34 @@
       .period-time { display:none; }
       .hol-span-icon { font-size:1.1rem; }
       .hol-span-name { font-size:.7rem; }
+
+      /* ── モバイル横スクロール改善 ── */
+      header { padding:6px 10px 0; }
+      h1 { font-size:1rem; }
+      .nav-bar { padding:5px 4px 4px; gap:2px; }
+      .nav-btn { padding:5px 10px; font-size:.76rem; }
+      .week-label { font-size:.82rem; min-width:140px; }
+      .tab-btn { font-size:.8rem; padding:6px 4px; }
+
+      .tt-scroll {
+        padding:0 0 12px;
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+      }
+      .timetable {
+        grid-template-columns: 44px repeat(7, 68px);
+        gap: 3px;
+        min-width: max-content;
+      }
+      /* 土日列はさらに細く */
+      .timetable { grid-template-columns: 44px repeat(5, 68px) repeat(2, 44px); }
+      .cell-day { font-size:.78rem; padding:4px 2px; }
+      .day-name { font-size:.7rem; }
+      .day-date { font-size:.82rem; }
+      .cell { min-height:68px; }
+      /* 今日列をスナップ対象に */
+      .cell-day, .cell { scroll-snap-align: start; }
     }
 
     /* ── カレンダー設定ページ ── */
@@ -3502,7 +3530,11 @@ initTTRange();
 loadGcalCache();
 renderTimetable();
 setupTTScroll();
-requestAnimationFrame(() => scrollToDate(toDateStr(weekStart), 'instant'));
+requestAnimationFrame(() => {
+  const isMobile = window.innerWidth <= 640;
+  const initDate = isMobile ? toDateStr(new Date()) : toDateStr(weekStart);
+  scrollToDate(initDate, 'instant');
+});
 renderProgress();
 renderProgress2(); renderChanges();
 (function() {
