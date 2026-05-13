@@ -3252,6 +3252,9 @@ function updateSyncBtn(state) {
 }
 
 function _applyFbData(data) {
+  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem(SYNC_TIME_KEY, now);
+  updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
   if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
@@ -3260,9 +3263,6 @@ function _applyFbData(data) {
   if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
   if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
   if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
-  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
-  localStorage.setItem(SYNC_TIME_KEY, now);
-  updateSyncBtn('ok');
 }
 
 async function syncPush() {
