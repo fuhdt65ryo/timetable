@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割</title>
+  <style>
+    #pw-screen { position:fixed; inset:0; background:#f0f2f8; z-index:9999; display:flex; align-items:center; justify-content:center; }
+    #pw-screen.hidden { display:none; }
+    .pw-card { background:#fff; border-radius:20px; box-shadow:0 8px 32px rgba(0,0,0,.12); padding:40px 32px; width:320px; max-width:90vw; text-align:center; }
+    .pw-icon { font-size:2.4rem; margin-bottom:8px; }
+    .pw-title { font-size:1.1rem; font-weight:800; color:#1a202c; margin-bottom:4px; }
+    .pw-sub { font-size:.82rem; color:#718096; margin-bottom:24px; }
+    .pw-input { width:100%; padding:12px 16px; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem; font-family:inherit; outline:none; text-align:center; letter-spacing:.1em; transition:border-color .15s; }
+    .pw-input:focus { border-color:#F0A870; }
+    .pw-input.error { border-color:#e53e3e; animation:shake .3s; }
+    .pw-btn { width:100%; margin-top:14px; padding:13px; background:#F0A870; color:#fff; border:none; border-radius:12px; font-size:1rem; font-weight:700; font-family:inherit; cursor:pointer; transition:background .15s; }
+    .pw-btn:hover { background:#D87840; }
+    .pw-err { font-size:.82rem; color:#e53e3e; margin-top:10px; height:18px; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  </style>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23F0A870'/><rect x='4' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.6'/><rect x='4' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/><rect x='17' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/></svg>">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -482,6 +497,16 @@
   </style>
 </head>
 <body>
+<div id="pw-screen">
+  <div class="pw-card">
+    <div class="pw-icon">🔒</div>
+    <div class="pw-title">時間割アプリ</div>
+    <div class="pw-sub">パスワードを入力してください</div>
+    <input class="pw-input" id="pw-input" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="pw-btn" id="pw-btn">ログイン</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
 
 <header>
   <div class="header-top"><h1>時間割</h1></div>
@@ -3489,6 +3514,42 @@ renderProgress2(); renderChanges();
 })();
 if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
 fetchGcalEvents();
+</script>
+<script>
+(function() {
+  const HASH = 'eb96d6bdeea48deebb09843d4db032916cb1dff0a8dfef586c6bc2f24c1d9fdc';
+  const KEY  = 'tt_auth_v1';
+
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function unlock() {
+    document.getElementById('pw-screen').classList.add('hidden');
+  }
+
+  if (sessionStorage.getItem(KEY) === '1') { unlock(); return; }
+
+  async function attempt() {
+    const val = document.getElementById('pw-input').value;
+    const h   = await sha256(val);
+    if (h === HASH) {
+      sessionStorage.setItem(KEY, '1');
+      unlock();
+    } else {
+      const inp = document.getElementById('pw-input');
+      const err = document.getElementById('pw-err');
+      inp.classList.add('error');
+      err.textContent = 'パスワードが違います';
+      inp.value = '';
+      setTimeout(() => inp.classList.remove('error'), 400);
+    }
+  }
+
+  document.getElementById('pw-btn').addEventListener('click', attempt);
+  document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
+})();
 </script>
 </body>
 </html>
