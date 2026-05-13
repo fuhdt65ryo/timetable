@@ -1127,45 +1127,18 @@
 <!-- 同期設定モーダル -->
 <div class="sync-overlay" id="syncModal">
   <div class="sync-modal">
-    <h2>☁ Googleスプレッドシートで同期</h2>
-    <p class="sync-desc">入力した時間割データを複数の端末で共有できます。<br>初回のみ以下のセットアップが必要です（約5分）。</p>
+    <h2>☁ リアルタイム同期</h2>
+    <p class="sync-desc">Firebase を使って複数の端末でデータをリアルタイム同期します。<br>変更は自動的に他の端末に反映されます。</p>
     <div class="sync-status-row" id="syncStatusRow" style="display:none">最終同期: <span id="syncLastTime">-</span></div>
-    <details id="syncSetupDetails" open>
-      <summary>▶ 初回セットアップ手順</summary>
-      <ol class="sync-steps">
-        <li><a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">Googleスプレッドシート</a>で新しいシートを作成する</li>
-        <li>メニューの「拡張機能」→「Apps Script」を開く</li>
-        <li>表示されたコードをすべて削除し、下のコードを貼り付ける</li>
-        <li>「保存」してから「デプロイ」→「新しいデプロイ」をクリック</li>
-        <li>種類:「ウェブアプリ」、アクセス:「全員」に設定して「デプロイ」</li>
-        <li>表示されたウェブアプリURLをコピーして下の欄に貼り付ける</li>
-      </ol>
-      <pre>function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  return ContentService.createTextOutput(sheet.getRange('A1').getValue() || '{}')
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  sheet.getRange('A1').setValue(e.postData.contents);
-  return ContentService.createTextOutput('{"ok":true}')
-    .setMimeType(ContentService.MimeType.JSON);
-}</pre>
-      <button class="btn btn-secondary" id="btnCopyScript" style="font-size:.78rem;padding:6px 14px;margin-bottom:12px">📋 コードをコピー</button>
-    </details>
-    <div class="form-group" style="margin-top:14px">
-      <label class="form-label">ウェブアプリURL</label>
-      <input type="url" class="form-input" id="syncUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-size:.8rem;margin-top:4px">
-    </div>
     <div class="sync-modal-actions">
-      <button class="btn btn-danger" id="btnSyncDisconnect" style="display:none;margin-right:auto">接続解除</button>
-      <button class="btn btn-secondary" id="syncModalCancel">キャンセル</button>
-      <button class="btn btn-save" id="syncModalSave">保存して同期</button>
+      <button class="btn btn-secondary" id="syncModalCancel">閉じる</button>
+      <button class="btn btn-save" id="syncModalPull">今すぐ取得</button>
     </div>
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
 const BASE = {
@@ -3253,13 +3226,22 @@ document.addEventListener('click', e => {
   clearSelect();
 });
 
-/* ── Google Sheets 同期 ── */
-const SYNC_URL_KEY  = 'tt_sync_url_v1';
+/* ── Firebase リアルタイム同期 ── */
 const SYNC_TIME_KEY = 'tt_sync_last_v1';
 let syncTimer = null;
+let fbPushing = false;
 
-function getSyncUrl()  { return localStorage.getItem(SYNC_URL_KEY) || ''; }
-function setSyncUrl(u) { localStorage.setItem(SYNC_URL_KEY, u); }
+const _fbConfig = {
+  apiKey: "AIzaSyBK8aZpB0O1HCbUzXk8A4bz95k8hW-MIKo",
+  authDomain: "timetable-a17e2.firebaseapp.com",
+  databaseURL: "https://timetable-a17e2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "timetable-a17e2",
+  storageBucket: "timetable-a17e2.firebasestorage.app",
+  messagingSenderId: "936420205250",
+  appId: "1:936420205250:web:168446baa909186f1c515b"
+};
+if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+const _fbRef = firebase.database().ref('timetable_data');
 
 function updateSyncBtn(state) {
   const btn = document.getElementById('btnSync');
@@ -3269,50 +3251,41 @@ function updateSyncBtn(state) {
   btn.style.opacity = state === 'syncing' ? '.6' : '1';
 }
 
+function _applyFbData(data) {
+  if (!data) return;
+  let changed = false;
+  if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
+  if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
+  if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
+  if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
+  if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
+  if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
+  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem(SYNC_TIME_KEY, now);
+  updateSyncBtn('ok');
+}
+
 async function syncPush() {
-  const url = getSyncUrl();
-  if (!url) return;
   updateSyncBtn('syncing');
-  const payload = JSON.stringify({
+  const payload = {
     tt_overrides_v1:  overrides,
     tt_daysched_v1:   daySchedules,
     tt_cellsrc_v1:    cellSources,
     tt_holidays_v1:   holidays,
     tt_holidays_seen: JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
     _updated: new Date().toISOString()
-  });
+  };
   try {
-    await fetch(url, { method:'POST', body:payload, headers:{'Content-Type':'text/plain'} });
+    fbPushing = true;
+    await _fbRef.set(payload);
     const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
     localStorage.setItem(SYNC_TIME_KEY, now);
     updateSyncBtn('ok');
   } catch(e) {
     console.error('sync push:', e);
     updateSyncBtn('error');
-  }
-}
-
-async function syncPull() {
-  const url = getSyncUrl();
-  if (!url) return;
-  updateSyncBtn('syncing');
-  try {
-    const res = await fetch(url + '?t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let changed = false;
-    if (data.tt_overrides_v1 !== undefined)  { overrides    = data.tt_overrides_v1 || {};  localStorage.setItem('tt_overrides_v1',  JSON.stringify(overrides));   changed = true; }
-    if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
-    if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
-    if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
-    if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
-    if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
-    const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
-    localStorage.setItem(SYNC_TIME_KEY, now);
-    updateSyncBtn('ok');
-  } catch(e) {
-    console.error('sync pull:', e);
-    updateSyncBtn('error');
+  } finally {
+    setTimeout(() => { fbPushing = false; }, 500);
   }
 }
 
@@ -3321,14 +3294,21 @@ function schedulePush() {
   syncTimer = setTimeout(syncPush, 1500);
 }
 
+function initFirebaseSync() {
+  updateSyncBtn('syncing');
+  _fbRef.on('value', snapshot => {
+    if (fbPushing) return;
+    _applyFbData(snapshot.val());
+  }, err => {
+    console.error('firebase sync:', err);
+    updateSyncBtn('error');
+  });
+}
+
 function openSyncModal() {
-  const url = getSyncUrl();
-  document.getElementById('syncUrlInput').value = url;
-  document.getElementById('btnSyncDisconnect').style.display = url ? '' : 'none';
-  document.getElementById('syncSetupDetails').open = !url;
   const lastTime = localStorage.getItem(SYNC_TIME_KEY);
   const row = document.getElementById('syncStatusRow');
-  if (url && lastTime) {
+  if (lastTime) {
     document.getElementById('syncLastTime').textContent = lastTime;
     row.style.display = '';
   } else {
@@ -3344,28 +3324,12 @@ function closeSyncModal() {
 document.getElementById('btnSync').addEventListener('click', openSyncModal);
 document.getElementById('syncModalCancel').addEventListener('click', closeSyncModal);
 document.getElementById('syncModal').addEventListener('click', e => { if (e.target === document.getElementById('syncModal')) closeSyncModal(); });
-
-document.getElementById('syncModalSave').addEventListener('click', () => {
-  const url = document.getElementById('syncUrlInput').value.trim();
-  if (!url) return;
-  setSyncUrl(url);
+document.getElementById('syncModalPull').addEventListener('click', () => {
   closeSyncModal();
-  syncPull();
-});
-
-document.getElementById('btnSyncDisconnect').addEventListener('click', () => {
-  if (!confirm('同期を解除しますか？\nローカルのデータは残ります。')) return;
-  localStorage.removeItem(SYNC_URL_KEY);
-  localStorage.removeItem(SYNC_TIME_KEY);
-  closeSyncModal();
-  updateSyncBtn('idle');
-});
-
-document.getElementById('btnCopyScript').addEventListener('click', function() {
-  const code = document.querySelector('#syncModal pre').textContent;
-  navigator.clipboard.writeText(code).then(() => {
-    this.textContent = '✓ コピーしました';
-    setTimeout(() => { this.textContent = '📋 コードをコピー'; }, 2000);
+  updateSyncBtn('syncing');
+  _fbRef.once('value').then(snap => _applyFbData(snap.val())).catch(e => {
+    console.error('manual pull:', e);
+    updateSyncBtn('error');
   });
 });
 
@@ -3554,7 +3518,7 @@ renderProgress2(); renderChanges();
   setHeaderH();
   window.addEventListener('resize', setHeaderH);
 })();
-if (getSyncUrl()) { updateSyncBtn('idle'); syncPull(); }
+initFirebaseSync();
 fetchGcalEvents();
 </script>
 <script>
