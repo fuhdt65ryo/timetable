@@ -61,23 +61,22 @@
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow:visible; height:100%; box-sizing:border-box; min-width:0; display:flex; flex-direction:column; }
-      #pageTimetable > .tt-wrap > .tt-scroll { flex:1 1 0; overflow-x:auto; overflow-y:auto; scrollbar-gutter:stable; min-height:0; }
+      #pageTimetable > .tt-wrap > .tt-scroll { flex:1 1 0; overflow-y:auto; scrollbar-gutter:stable; min-height:0; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
     }
     #progressPane { display:flex; flex-direction:column; gap:14px; }
     .card { background:var(--surface); border-radius:14px; box-shadow:var(--shadow); }
 
     /* ── Timetable ── */
-    .tt-wrap { padding:0; overflow-x:hidden; }
-    .tt-scroll { padding:0 12px 12px; overflow-x:auto; scrollbar-gutter:stable; }
+    .tt-wrap { padding:0; }
+    .tt-scroll { padding:0 12px 12px; scrollbar-gutter:stable; }
     .timetable {
       display:grid;
       grid-template-columns:52px repeat(7,1fr);
       gap:5px;
       position:relative;
     }
-    /* 時限列：translateXで固定（CSS Grid内でstickyが効かないためJS制御） */
-    .cell-period-corner { z-index:4; background:var(--bg); transform:translateX(var(--tt-sx,0px)); will-change:transform; }
+    .cell-period-corner { z-index:4; background:var(--bg); }
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
     .cell-day.is-saturday { background:#dbeafe !important; border-color:#93c5fd !important; color:#1d4ed8 !important; }
     .cell-day.is-sunday   { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#b91c1c !important; }
@@ -123,8 +122,8 @@
     .day-event-add { display:inline-block; margin-top:3px; font-size:.58rem; color:rgba(255,255,255,.4); background:none; border:1px dashed rgba(255,255,255,.2); border-radius:4px; padding:1px 7px; cursor:pointer; font-family:inherit; transition:all .15s; }
     .day-event-add:hover { color:rgba(255,255,255,.85); border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.1); }
 
-    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); z-index:3; transform:translateX(var(--tt-sx,0px)); will-change:transform; }
-    .bukatsu-label { display:flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:700; color:#aaa; z-index:3; background:var(--bg); transform:translateX(var(--tt-sx,0px)); will-change:transform; }
+    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); z-index:3; }
+    .bukatsu-label { display:flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:700; color:#aaa; z-index:3; background:var(--bg); }
     .bukatsu-cell  { display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:.65rem; font-weight:800; min-height:22px; }
     .bukatsu-ari   { background:#DCEEFB; color:#1565C0; }
     .bukatsu-nashi { background:#EEEEEE; color:#9E9E9E; letter-spacing:.02em; }
@@ -1431,12 +1430,7 @@ function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(
 function pad(n)       { return String(n).padStart(2,'0'); }
 function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 function getWeekDates(){ return Array.from({length:7},(_,i)=>addDays(weekStart,i)); }
-function getTimetableDates(){
-  if (!ttStart || !ttEnd) return getWeekDates();
-  const result = [];
-  for (let d = new Date(ttStart); d <= ttEnd; d = addDays(d,1)) result.push(new Date(d));
-  return result;
-}
+function getTimetableDates(){ return getWeekDates(); }
 function parseDateStr(s){ const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d); }
 // dayIdx: 月=0, 火=1, 水=2, 木=3, 金=4, 土=5, 日=6（既存データと後方互換）
 function dayIdx(d)     { const dw=d.getDay(); return dw===0?6:dw-1; }
@@ -1458,11 +1452,11 @@ function initTTRange() {
   ttEnd   = addDays(today,  7 * 14);  // 14週後
 }
 
-function scrollToDate(dateStr, behavior = 'smooth') {
-  const wrap = document.getElementById('ttScroll');
-  if (!wrap) return;
-  const el = wrap.querySelector(`.cell-day[data-date="${dateStr}"]`);
-  if (el) wrap.scrollTo({ left: Math.max(0, el.offsetLeft - 52), behavior });
+function scrollToDate(dateStr) {
+  const d = parseDateStr(dateStr);
+  weekStart = getWeekStart(d);
+  document.getElementById('weekLabel').textContent = formatWeekLabel();
+  renderTimetable();
 }
 
 function getVisibleLeftDate() {
@@ -1479,50 +1473,6 @@ function getVisibleLeftDate() {
 }
 
 function setupTTScroll() {
-  if (ttScrollReady) return;
-  ttScrollReady = true;
-  const wrap = document.getElementById('ttScroll');
-  if (!wrap) return;
-  let scrollTimer = null;
-  wrap.addEventListener('scroll', () => {
-    wrap.style.setProperty('--tt-sx', wrap.scrollLeft + 'px');
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      if (ttRendering) return;
-      // ── 週ラベル更新 ──
-      const sl = wrap.scrollLeft;
-      const headers = [...wrap.querySelectorAll('.cell-day[data-date]')];
-      for (const h of headers) {
-        if (h.offsetLeft >= sl + 50) {
-          const d = parseDateStr(h.dataset.date);
-          weekStart = d;
-          document.getElementById('weekLabel').textContent = formatWeekLabel();
-          break;
-        }
-      }
-      const rangeMs = ttEnd - ttStart;
-      // ── 右端 → 未来方向に延長 ──
-      if (wrap.scrollLeft + wrap.clientWidth > wrap.scrollWidth - 600) {
-        if (rangeMs / 86400000 < TT_MAX) {
-          ttRendering = true;
-          ttEnd = addDays(ttEnd, TT_CHUNK);
-          renderTimetable();
-          ttRendering = false;
-        }
-      }
-      // ── 左端 → 過去方向に延長 ──
-      if (wrap.scrollLeft < 600) {
-        if (rangeMs / 86400000 < TT_MAX) {
-          ttRendering = true;
-          const visDate = getVisibleLeftDate();
-          ttStart = addDays(ttStart, -TT_CHUNK);
-          renderTimetable();
-          ttRendering = false;
-          if (visDate) requestAnimationFrame(() => scrollToDate(visDate, 'instant'));
-        }
-      }
-    }, 120);
-  });
 }
 
 /* ── スケジュールロジック ── */
@@ -1583,9 +1533,7 @@ function renderTimetable() {
   const dates = getTimetableDates();
   document.getElementById('weekLabel').textContent = formatWeekLabel();
 
-  // スクロール位置をアンカー日付で保持（再描画後に同じ位置に戻す）
   const ttScroll = document.getElementById('ttScroll');
-  const scrollAnchor = (ttScroll && ttScroll.scrollLeft > 10) ? getVisibleLeftDate() : null;
 
   const grid = document.getElementById('timetable');
   grid.innerHTML = '';
@@ -1921,7 +1869,6 @@ function renderTimetable() {
 
   // 今日列ハイライト枠（レンダリング後に座標取得して配置）、スクロール復元
   requestAnimationFrame(() => {
-    if (scrollAnchor) scrollToDate(scrollAnchor, 'instant');
     grid.querySelectorAll('.col-today-hl').forEach(e => e.remove());
     const todayHeader = grid.querySelector('.cell-day.is-today');
     const todayCells  = [...grid.querySelectorAll('.cell.is-today-col, .cell-day.is-today')];
@@ -3167,26 +3114,13 @@ document.getElementById('eventModal').addEventListener('click', e => { if (e.tar
 /* ── 週ナビ ── */
 function navScrollWeek(delta) {
   if (delta === 0) {
-    // 今週ボタン: 今日にスクロール
     weekStart = getTodayStart();
-    document.getElementById('weekLabel').textContent = formatWeekLabel();
-    if (weekStart < ttStart || weekStart > ttEnd) {
-      if (weekStart < ttStart) ttStart = addDays(weekStart, -TT_CHUNK);
-      if (weekStart > ttEnd)   ttEnd   = addDays(weekStart,  TT_CHUNK);
-      renderTimetable();
-    }
-    requestAnimationFrame(() => scrollToDate(toDateStr(weekStart), 'smooth'));
   } else {
-    // 前/次ボタン: ラベル更新＋対象週へスクロール
     weekStart = getWeekStart(addDays(weekStart, delta));
-    document.getElementById('weekLabel').textContent = formatWeekLabel();
-    if (weekStart < ttStart || addDays(weekStart, 6) > ttEnd) {
-      if (weekStart < ttStart) ttStart = addDays(weekStart, -TT_CHUNK);
-      if (addDays(weekStart, 6) > ttEnd) ttEnd = addDays(weekStart, TT_CHUNK);
-      renderTimetable();
-    }
-    requestAnimationFrame(() => scrollToDate(toDateStr(weekStart), 'smooth'));
   }
+  document.getElementById('weekLabel').textContent = formatWeekLabel();
+  renderTimetable();
+  renderProgress(); renderProgress2();
 }
 document.getElementById('btnToday').addEventListener('click', () => navScrollWeek( 0));
 
@@ -3507,15 +3441,9 @@ loadProg2Manual();
 loadProgOrder();
 loadProg2Order();
 load();
-initTTRange();
 loadGcalCache();
 renderTimetable();
 setupTTScroll();
-requestAnimationFrame(() => {
-  const isMobile = window.innerWidth <= 640;
-  const initDate = isMobile ? toDateStr(new Date()) : toDateStr(weekStart);
-  scrollToDate(initDate, 'instant');
-});
 renderProgress();
 renderProgress2(); renderChanges();
 (function() {
