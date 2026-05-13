@@ -3493,7 +3493,9 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
   const ok = overrideKey(dateStr, period);
   overrides[ok] = { name: toClass, room: toSubject, teacher: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
   save();
+  schedulePush();
   renderTimetable();
+  refreshEditForm();
   renderProgress();
   renderProgress2();
   renderChanges();
