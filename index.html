@@ -1137,8 +1137,8 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
 const BASE = {
@@ -3295,14 +3295,24 @@ function schedulePush() {
 }
 
 function initFirebaseSync() {
-  updateSyncBtn('syncing');
-  _fbRef.on('value', snapshot => {
-    if (fbPushing) return;
-    _applyFbData(snapshot.val());
-  }, err => {
-    console.error('firebase sync:', err);
+  if (typeof firebase === 'undefined') {
+    console.error('Firebase SDK not loaded');
     updateSyncBtn('error');
-  });
+    return;
+  }
+  updateSyncBtn('syncing');
+  try {
+    _fbRef.on('value', snapshot => {
+      if (fbPushing) return;
+      _applyFbData(snapshot.val());
+    }, err => {
+      console.error('firebase sync error:', err.code, err.message);
+      updateSyncBtn('error');
+    });
+  } catch(e) {
+    console.error('firebase init failed:', e);
+    updateSyncBtn('error');
+  }
 }
 
 function openSyncModal() {
