@@ -2081,29 +2081,13 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
         <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
+        <button class="btn btn-save" id="eBtnSave">保存</button>
       </div>
     </div>
   `;
 
-  const attachConfirmSync = (el) => {
-    if (!el) return;
-    el.addEventListener('blur', () => { clearTimeout(contentTimer); autoSave(); schedulePush(); });
-  };
-
-  const classEl = document.getElementById('eClass');
-  classEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(() => autoSave(false), 500); });
-  attachConfirmSync(classEl);
-
-  const subjectEl = document.getElementById('eSubject');
-  subjectEl?.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(() => autoSave(false), 500); });
-  attachConfirmSync(subjectEl);
-  const contentEl = document.getElementById('eContent');
-  if (contentEl) {
-    contentEl.addEventListener('input', () => { clearTimeout(contentTimer); contentTimer = setTimeout(() => autoSave(false), 500); });
-    attachConfirmSync(contentEl);
-  }
-
-  document.getElementById('eRinji')?.addEventListener('change', () => { clearTimeout(contentTimer); autoSave(); });
+  document.getElementById('eBtnSave')?.addEventListener('click', () => { autoSave(); schedulePush(); });
+  document.getElementById('eRinji')?.addEventListener('change', () => {});
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
 
   document.querySelectorAll('.src-gc').forEach(gc => {
@@ -2147,7 +2131,6 @@ function getSubjectOptions(className, currentSubject) {
   return subs.map(s=>`<option value="${s.name}"${s.name===currentSubject?' selected':''}>${s.name}</option>`).join('');
 }
 
-let contentTimer = null;
 
 function autoSave(rerender = true) {
   if (!selKey) return;
