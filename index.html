@@ -1490,7 +1490,7 @@ function scrollToDate(dateStr, behavior = 'smooth') {
   const wrap = document.getElementById('ttScroll');
   if (!wrap) return;
   const el = wrap.querySelector(`.cell-day[data-date="${dateStr}"]`);
-  if (el) wrap.scrollTo({ left: el.offsetLeft, behavior });
+  if (el) wrap.scrollTo({ left: Math.max(0, el.offsetLeft - 52), behavior });
 }
 
 function getVisibleLeftDate() {
