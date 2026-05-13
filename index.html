@@ -61,7 +61,10 @@
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
-      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; }
+      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; height:100%; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { height:100%; grid-template-rows: auto auto auto repeat(6, 1fr auto) auto; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; height:100%; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
     }
     #progressPane { display:flex; flex-direction:column; gap:14px; }
@@ -72,9 +75,10 @@
     .tt-scroll { padding:0 12px 12px; scrollbar-gutter:stable; }
     .timetable {
       display:grid;
-      grid-template-columns:52px repeat(7,1fr);
-      gap:5px;
+      grid-template-columns:clamp(36px,5vw,52px) repeat(7,1fr);
+      gap:clamp(3px,0.5vw,5px);
       position:relative;
+      padding-bottom:8px;
     }
     .cell-period-corner { z-index:4; background:var(--bg); }
     .cell-day.is-weekend { background:#f5f5f5; color:#888; border-color:#ddd; }
@@ -132,10 +136,10 @@
     .bukatsu-nashi.bukatsu-manual { background:#FFF3E0; color:#E65100; outline:2px solid #FB8C00; outline-offset:-2px; font-weight:900; }
     /* カレンダーで部活なしが指定されている場合は強調 */
     .bukatsu-nashi.bukatsu-calendar { background:#FCE4EC; color:#C62828; outline:2px solid #E53935; outline-offset:-2px; font-weight:900; }
-    .period-num  { font-size:1rem; font-weight:800; color:var(--accent); }
-    .period-time { font-size:.5rem; color:var(--muted); white-space:nowrap; }
+    .period-num  { font-size:clamp(.7rem,1.6vw,1rem); font-weight:800; color:var(--accent); }
+    .period-time { font-size:clamp(.38rem,0.8vw,.5rem); color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:90px; align-self:stretch; }
+    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(55px,10vh); align-self:stretch; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
@@ -199,9 +203,9 @@
 
     .add-mark { font-size:1.4rem; color:#c8d2e0; transition:color .18s; }
     .cell:hover .add-mark { color:var(--accent); }
-    .c-class   { font-weight:800; font-size:.82rem; color:rgba(255,255,255,.97); line-height:1.3; }
-    .c-subject { font-size:.65rem; color:rgba(0,0,0,.55); margin-top:2px; font-weight:600; }
-    .c-content { font-size:.72rem; color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
+    .c-class   { font-weight:800; font-size:clamp(.6rem,1.6vw,.82rem); color:rgba(255,255,255,.97); line-height:1.3; }
+    .c-subject { font-size:clamp(.5rem,1.2vw,.65rem); color:rgba(0,0,0,.55); margin-top:2px; font-weight:600; }
+    .c-content { font-size:clamp(.55rem,1.3vw,.72rem); color:rgba(255,255,255,.68); margin-top:2px; line-height:1.3; word-break:break-all; }
     .cell-with-content .c-class   { color:rgba(0,0,0,.8); }
     .cell-with-content .c-subject { color:rgba(0,0,0,.55); }
     .cell-with-content .c-content { color:rgba(0,0,0,.45); }
@@ -233,13 +237,14 @@
 
     /* ── インライン編集行 ── */
     .edit-inline {
-      grid-column:1/-1;
       background:#f0f4ff;
       border:2px solid #b8c8ef;
       border-radius:10px;
       overflow:hidden;
       animation:inlineOpen .15s ease;
-      position:relative; z-index:2;
+      box-shadow:0 4px 16px rgba(0,0,0,.14);
+      margin:2px 0 4px;
+      grid-column:1 / -1;
     }
     @keyframes inlineOpen {
       from { opacity:0; transform:translateY(-4px); }
@@ -573,7 +578,7 @@
     <div id="ttScroll" class="tt-scroll">
       <div class="timetable" id="timetable"></div>
     </div>
-    <div id="editPanel" class="edit-inline" style="display:none;margin:8px 12px 12px;"></div>
+    <div id="editPanel" class="edit-inline" style="display:none;"></div>
   </div>
 
   <div id="progressPane">
@@ -1539,6 +1544,8 @@ function renderTimetable() {
   const ttScroll = document.getElementById('ttScroll');
 
   const grid = document.getElementById('timetable');
+  const _ep = document.getElementById('editPanel');
+  if (_ep && _ep.parentNode === grid) grid.removeChild(_ep);
   grid.innerHTML = '';
 
   // 土日列: エントリがなければ細く
@@ -1655,7 +1662,7 @@ function renderTimetable() {
 
   // 時限ラベル列・授業セル
   PERIODS.forEach((p, pi) => {
-    const periodRow = pi + 4;
+    const periodRow = pi * 2 + 4;
 
     const pc = el('div', 'cell-period');
     pc.style.cssText = `grid-column:1;grid-row:${periodRow}`;
@@ -1791,7 +1798,7 @@ function renderTimetable() {
   }
 
   // 部活行（6限の下）
-  const bukatsuRow = PERIODS.length + 4;
+  const bukatsuRow = PERIODS.length * 2 + 4;
   const bukatsuLabel = el('div', 'bukatsu-label');
   bukatsuLabel.style.cssText = `grid-column:1;grid-row:${bukatsuRow}`;
   bukatsuLabel.textContent = '部活';
@@ -1887,7 +1894,24 @@ function renderTimetable() {
     hl.style.width  = t.width + 'px';
     hl.style.height = (b.bottom - t.top) + 'px';
     grid.appendChild(hl);
+    // editPanelをグリッド内に再配置して位置を更新
+    const ep2 = document.getElementById('editPanel');
+    if (ep2) { grid.appendChild(ep2); positionEditPanel(); }
   });
+}
+
+function positionEditPanel() {
+  const ep = document.getElementById('editPanel');
+  if (!ep || !selKey) { if (ep) ep.style.display = 'none'; return; }
+  const [, pStr] = selKeyParts();
+  const pi = +pStr - 1; // 0-indexed
+  const editSlotRow = pi * 2 + 5;
+  ep.style.gridRow    = String(editSlotRow);
+  ep.style.gridColumn = '1 / -1';
+  ep.style.top   = '';
+  ep.style.left  = '';
+  ep.style.width = '';
+  ep.style.display = '';
 }
 
 /* ── セル選択・インライン編集 ── */
@@ -1897,37 +1921,6 @@ function selectCell(dateStr, period) {
   refreshEditForm();
   renderProgress();
   renderProgress2(); renderChanges();
-  // renderTimetable内のrAFが先にscrollAnchorへ戻すため、double-rAFで後から確実に上書き
-  const ttScrollEl = document.getElementById('ttScroll');
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    // 横スクロール：該当列を表示
-    const selHeader = ttScrollEl?.querySelector(`.cell-day[data-date="${dateStr}"]`);
-    if (selHeader && ttScrollEl) {
-      const cellLeft  = selHeader.offsetLeft;
-      const cellRight = cellLeft + selHeader.offsetWidth;
-      const visLeft   = ttScrollEl.scrollLeft + 52;
-      const visRight  = ttScrollEl.scrollLeft + ttScrollEl.clientWidth;
-      if (cellLeft < visLeft || cellRight > visRight) {
-        ttScrollEl.scrollTo({ left: cellLeft - 52, behavior: 'instant' });
-      }
-    }
-    // 縦スクロール：編集パネルが見えるよう調整
-    const editPanel = document.getElementById('editPanel');
-    if (!editPanel) return;
-    const panelRect = editPanel.getBoundingClientRect();
-    const isDesktop = window.innerWidth >= 700;
-    if (isDesktop) {
-      const wrapEl = document.querySelector('#pageTimetable > .tt-wrap');
-      if (!wrapEl) return;
-      const wrapRect = wrapEl.getBoundingClientRect();
-      const desiredPanelTop = wrapRect.top + wrapEl.clientHeight * 0.55;
-      wrapEl.scrollBy({ top: panelRect.top - desiredPanelTop, behavior: 'smooth' });
-    } else {
-      // モバイル: window スクロール
-      const desiredPanelTop = window.innerHeight * 0.5;
-      window.scrollBy({ top: panelRect.top - desiredPanelTop, behavior: 'smooth' });
-    }
-  }));
 }
 
 function clearSelect() {
@@ -2072,6 +2065,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     saveCellSources();
     selectCell(...selKeyParts());
   });
+  positionEditPanel();
 }
 
 function getSubjectOptions(className, currentSubject) {
