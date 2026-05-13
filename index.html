@@ -34,7 +34,10 @@
 
     /* ── Header ── */
     header { background:var(--accent); color:var(--on-accent); padding:8px 20px 0; position:sticky; top:0; z-index:100; }
-    .header-top { text-align:center; margin-bottom:6px; }
+    .header-top { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:6px; }
+    .reload-btn { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); color:#fff; width:32px; height:32px; border-radius:50%; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .18s; justify-self:end; }
+    .reload-btn:hover { background:rgba(255,255,255,.32); transform:rotate(30deg); }
+    .reload-btn:active { transform:rotate(180deg); }
     h1 { font-size:1.1rem; font-weight:800; letter-spacing:.06em; }
     .nav-bar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:8px 8px 6px; gap:4px; }
     .nav-left { display:flex; align-items:center; justify-content:flex-start; }
@@ -537,7 +540,11 @@
 </div>
 
 <header>
-  <div class="header-top"><h1>時間割</h1></div>
+  <div class="header-top">
+    <div></div>
+    <h1>時間割</h1>
+    <button class="reload-btn" onclick="location.reload()" title="更新">↻</button>
+  </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
