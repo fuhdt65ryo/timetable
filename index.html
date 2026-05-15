@@ -146,7 +146,7 @@
     .cell.has-entry:not(.has-content) { opacity:.55; }
     .cell.has-entry:not(.has-content):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
-    .cell.is-today-col { background:var(--today); border-color:transparent; }
+    .cell.is-today-col { background:unset; }
     .cell.has-entry.is-today-col { background:unset; }
     .cell-day.is-past { opacity:.25; }
     .cell.is-past-col { opacity:.22; }
@@ -245,6 +245,8 @@
       box-shadow:0 4px 16px rgba(0,0,0,.14);
       margin:2px 0 4px;
       grid-column:1 / -1;
+      position:relative;
+      z-index:10;
     }
     @keyframes inlineOpen {
       from { opacity:0; transform:translateY(-4px); }
@@ -2669,6 +2671,7 @@ function applyAutoAssign() {
   Object.keys(overrides).forEach(key => {
     const e = overrides[key];
     if (!e || !classes.includes(e.name)) return;
+    if (e.jugyohenkou && !e.autoAssigned) return; // 手動入力の授業変更は保護
     if (e.autoAssigned || planLessons.has(e.teacher)) {
       const parts = key.split('-');
       const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
@@ -2683,7 +2686,11 @@ function applyAutoAssign() {
       const ok = overrideKey(slot.dateStr, slot.period);
       const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
       if (!currentEntry) return;
-      overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true };
+      const existingOvr = overrides[ok];
+      const chgProps = (existingOvr && existingOvr.jugyohenkou)
+        ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
+        : {};
+      overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
       count++;
     });
   });
