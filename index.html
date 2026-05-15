@@ -1373,7 +1373,8 @@ function loadHolidays() {
     seen[date] = true;
   });
   if (changed) {
-    saveHolidays();
+    // 組み込み祝日の初期化はローカル保存のみ（schedulePush不要：全端末で同じデータが追加されるため）
+    localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays));
     localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
   }
 }
@@ -3257,11 +3258,24 @@ function initFirebaseSync() {
   }
   updateSyncBtn('syncing');
   try {
-    _fbRef.on('value', snapshot => {
-      if (fbPushing || localDirty) return;
-      _applyFbData(snapshot.val());
-    }, err => {
-      console.error('firebase sync error:', err.code, err.message);
+    // 起動時に一度強制取得：新端末でlocalDirtyが残っていても必ずFirebaseデータを適用する
+    _fbRef.once('value').then(snap => {
+      const data = snap.val();
+      if (data) {
+        clearTimeout(syncTimer); // 起動直後のpushをキャンセル
+        localDirty = false;
+        _applyFbData(data);
+      }
+      // 以降はリアルタイムリスナー（自分の編集中は無視）
+      _fbRef.on('value', snapshot => {
+        if (fbPushing || localDirty) return;
+        _applyFbData(snapshot.val());
+      }, err => {
+        console.error('firebase sync error:', err.code, err.message);
+        updateSyncBtn('error');
+      });
+    }).catch(e => {
+      console.error('firebase init failed:', e);
       updateSyncBtn('error');
     });
   } catch(e) {
