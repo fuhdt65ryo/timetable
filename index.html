@@ -1881,6 +1881,10 @@ function renderTimetable() {
 
   // 今日列ハイライト枠（レンダリング後に座標取得して配置）、スクロール復元
   requestAnimationFrame(() => {
+    // editPanelをグリッド内に再配置して位置を更新（今日列の有無に関わらず実行）
+    const ep2 = document.getElementById('editPanel');
+    if (ep2) { grid.appendChild(ep2); positionEditPanel(); }
+
     grid.querySelectorAll('.col-today-hl').forEach(e => e.remove());
     const todayHeader = grid.querySelector('.cell-day.is-today');
     const todayCells  = [...grid.querySelectorAll('.cell.is-today-col, .cell-day.is-today')];
@@ -1896,9 +1900,6 @@ function renderTimetable() {
     hl.style.width  = t.width + 'px';
     hl.style.height = (b.bottom - t.top) + 'px';
     grid.appendChild(hl);
-    // editPanelをグリッド内に再配置して位置を更新
-    const ep2 = document.getElementById('editPanel');
-    if (ep2) { grid.appendChild(ep2); positionEditPanel(); }
   });
 }
 
