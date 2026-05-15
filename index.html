@@ -1927,11 +1927,13 @@ function rerender() {
 }
 
 function selectCell(dateStr, period) {
+  autoSave(false); schedulePush();
   selKey = overrideKey(dateStr, period);
   rerender();
 }
 
 function clearSelect() {
+  autoSave(false); schedulePush();
   selKey = null;
   renderTimetable();
   renderProgress();
@@ -2032,13 +2034,15 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
         <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
-        <button class="btn btn-save" id="eBtnSave">保存</button>
       </div>
     </div>
   `;
 
-  document.getElementById('eBtnSave')?.addEventListener('click', () => { autoSave(); schedulePush(); });
-  document.getElementById('eRinji')?.addEventListener('change', () => {});
+  const _as = () => { autoSave(false); schedulePush(); };
+  document.getElementById('eClass')?.addEventListener('blur', _as);
+  document.getElementById('eSubject')?.addEventListener('blur', _as);
+  document.getElementById('eContent')?.addEventListener('blur', _as);
+  document.getElementById('eRinji')?.addEventListener('change', _as);
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
 
   document.querySelectorAll('.src-gc').forEach(gc => {
