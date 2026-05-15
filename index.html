@@ -301,6 +301,7 @@
     .list-empty { padding:28px; text-align:center; color:var(--muted); font-size:.88rem; }
 
     /* ── 進捗テーブル ── */
+    .prog-grade-sep { font-size:.72rem; font-weight:700; color:var(--accent); padding:4px 0 2px; border-bottom:1px solid var(--border); margin-bottom:4px; }
     .prog-table-wrap { overflow-x:auto; overflow-y:auto; max-height:280px; }
     .prog-table { width:100%; border-collapse:collapse; font-size:.75rem; }
     .prog-table thead { position:sticky; top:0; z-index:1; }
@@ -506,11 +507,9 @@
     .aa-head { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
     .aa-head h2 { font-size:.95rem; font-weight:800; margin:0; }
     .aa-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; font-size:.9rem; cursor:pointer; }
-    .aa-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 18px; background:#fafbfc; flex-shrink:0; }
-    .aa-tab { padding:10px 18px; font-size:.85rem; font-weight:600; cursor:pointer; background:none; border:none; color:#94a3b8; border-bottom:3px solid transparent; font-family:inherit; transition:color .15s; }
-    .aa-tab.aa-tab-active { color:var(--accent); border-bottom-color:var(--accent); }
-    .aa-body { padding:14px 18px; overflow-y:auto; flex:1; }
+.aa-body { padding:14px 18px; overflow-y:auto; flex:1; }
     .aa-desc { font-size:.82rem; color:var(--muted); margin-bottom:12px; line-height:1.6; }
+    .aa-grade-label { font-size:.82rem; font-weight:700; color:var(--accent); margin:14px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
     .aa-empty { padding:24px; text-align:center; color:var(--muted); font-size:.88rem; line-height:1.8; }
     .aa-table-wrap { overflow-x:auto; }
     .aa-table { width:100%; border-collapse:collapse; font-size:.8rem; }
@@ -586,17 +585,12 @@
   <div id="progressPane">
     <div class="card">
       <div class="list-top">
-        <span class="list-title">3年生 授業進捗</span>
-        <button class="chg-add-btn" id="btnAutoAssign3">🔄 自動割り当て</button>
+        <span class="list-title">授業進捗</span>
+        <button class="chg-add-btn" id="btnAutoAssign">🔄 自動割り当て</button>
       </div>
+      <div class="prog-grade-sep">3年生</div>
       <div id="progressBody"></div>
-    </div>
-
-    <div class="card">
-      <div class="list-top">
-        <span class="list-title">2年生 授業進捗</span>
-        <button class="chg-add-btn" id="btnAutoAssign2">🔄 自動割り当て</button>
-      </div>
+      <div class="prog-grade-sep" style="margin-top:12px">2年生</div>
       <div id="progress2Body"></div>
     </div>
 
@@ -1120,10 +1114,6 @@
     <div class="aa-head">
       <h2>🔄 授業の自動割り当て</h2>
       <button class="aa-close" id="aaClose">✕</button>
-    </div>
-    <div class="aa-tabs">
-      <button class="aa-tab aa-tab-active" id="aaTab3">3年生</button>
-      <button class="aa-tab" id="aaTab2">2年生</button>
     </div>
     <div class="aa-body" id="aaBody"></div>
     <div class="aa-actions">
@@ -2509,7 +2499,6 @@ function getExistingFutureAssignment(lessonName, className) {
 }
 
 let autoAssignPlan = null;
-let autoAssignGrade = 3;
 
 // 進捗テーブルと同じ順序・同じ授業リストを返す（progOrder反映・overrides含む）
 function buildEffectiveLessonList(grade) {
@@ -2548,22 +2537,10 @@ function buildEffectiveLessonList(grade) {
   return rows.map(r => r.content);
 }
 
-function openAutoAssignModal(grade) {
-  autoAssignGrade = grade;
-  document.getElementById('aaTab3').classList.toggle('aa-tab-active', grade === 3);
-  document.getElementById('aaTab2').classList.toggle('aa-tab-active', grade === 2);
-
+function buildGradePlan(grade) {
   const lessonList = buildEffectiveLessonList(grade);
   const classes    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
-  const body = document.getElementById('aaBody');
-
-  if (!lessonList.length) {
-    body.innerHTML = '<div class="aa-empty">授業名が登録されていません。<br>「＋ 授業名を追加」から授業を追加してください。</div>';
-    autoAssignPlan = null;
-    document.getElementById('aaConfirmBtn').disabled = true;
-    document.getElementById('aaModal').style.display = 'flex';
-    return;
-  }
+  if (!lessonList.length) return { lessonList, classes, plan: [] };
 
   const classSlots = {};
   classes.forEach(cls => {
@@ -2574,11 +2551,8 @@ function openAutoAssignModal(grade) {
   classes.forEach(cls => classSlotIdx[cls] = 0);
 
   const _today = new Date(); _today.setHours(0,0,0,0);
-
-  // 過去に実施済みの授業（日付 < 今日）を把握 → スロットを消費せずスキップ
   const pastDoneSet = new Set();
-  const pastSlotMap = {};   // 過去済みスロット情報（変更なし表示用）
-  // 今日以降の手動割り当てスロットを把握（移動元表示用）
+  const pastSlotMap = {};
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
     if (!e || !e.teacher || !classes.includes(e.name)) return;
@@ -2590,7 +2564,6 @@ function openAutoAssignModal(grade) {
       if (lessonList.includes(e.teacher)) {
         const k = `${e.teacher}__${e.name}`;
         pastDoneSet.add(k);
-        // 最新の過去スロットを保持
         if (!pastSlotMap[k] || date > pastSlotMap[k].date) {
           pastSlotMap[k] = { dateStr, period, date };
         }
@@ -2603,10 +2576,9 @@ function openAutoAssignModal(grade) {
     }
   });
 
-  autoAssignPlan = lessonList.map(lesson => {
+  const plan = lessonList.map(lesson => {
     const slots = {};
     classes.forEach(cls => {
-      // 過去に実施済みならスロットを消費せずスキップ（変更なしとして表示）
       if (pastDoneSet.has(`${lesson}__${cls}`)) {
         const ps = pastSlotMap[`${lesson}__${cls}`];
         if (ps) slots[cls] = { ...ps, unchanged: true, past: true };
@@ -2623,13 +2595,44 @@ function openAutoAssignModal(grade) {
     });
     return { lesson, slots };
   });
+  return { lessonList, classes, plan };
+}
 
+function openAutoAssignModal() {
+  const grade3 = buildGradePlan(3);
+  const grade2 = buildGradePlan(2);
+  autoAssignPlan = { grade3, grade2 };
+
+  const body = document.getElementById('aaBody');
   body.innerHTML = '';
+
+  if (!grade3.plan.length && !grade2.plan.length) {
+    body.innerHTML = '<div class="aa-empty">授業名が登録されていません。<br>「＋ 授業名を追加」から授業を追加してください。</div>';
+    document.getElementById('aaConfirmBtn').disabled = true;
+    document.getElementById('aaModal').style.display = 'flex';
+    return;
+  }
+
   const desc = document.createElement('p');
   desc.className = 'aa-desc';
   desc.textContent = '進捗リストの授業を、空いているコマに順番に割り当てます。確定すると授業内容が自動入力されます。';
   body.appendChild(desc);
-  renderAutoAssignPreview(autoAssignPlan, classes, body);
+
+  if (grade3.plan.length) {
+    const h3 = document.createElement('p');
+    h3.className = 'aa-grade-label';
+    h3.textContent = '3年生';
+    body.appendChild(h3);
+    renderAutoAssignPreview(grade3.plan, grade3.classes, body);
+  }
+  if (grade2.plan.length) {
+    const h2 = document.createElement('p');
+    h2.className = 'aa-grade-label';
+    h2.textContent = '2年生';
+    body.appendChild(h2);
+    renderAutoAssignPreview(grade2.plan, grade2.classes, body);
+  }
+
   document.getElementById('aaConfirmBtn').disabled = false;
   document.getElementById('aaModal').style.display = 'flex';
 }
@@ -2669,36 +2672,43 @@ function renderAutoAssignPreview(plan, classes, container) {
 
 function applyAutoAssign() {
   if (!autoAssignPlan) return;
-  const classes = autoAssignGrade === 3 ? PROG_CLASSES : PROG2_CLASSES;
-  const planLessons = new Set(autoAssignPlan.map(p => p.lesson));
   const today = new Date(); today.setHours(0,0,0,0);
-  // 自動割り当て済み + プラン内の手動入力をクリア（過去・それ以外の手動変更は残す）
-  Object.keys(overrides).forEach(key => {
-    const e = overrides[key];
-    if (!e || !classes.includes(e.name)) return;
-    if (e.jugyohenkou && !e.autoAssigned) return; // 手動入力の授業変更は保護
-    if (e.autoAssigned || planLessons.has(e.teacher)) {
-      const parts = key.split('-');
-      const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
-      if (date >= today) delete overrides[key];
-    }
-  });
   let count = 0;
-  autoAssignPlan.forEach(({ lesson, slots }) => {
-    classes.forEach(cls => {
-      const slot = slots[cls];
-      if (!slot) return;
-      const ok = overrideKey(slot.dateStr, slot.period);
-      const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
-      if (!currentEntry) return;
-      const existingOvr = overrides[ok];
-      const chgProps = (existingOvr && existingOvr.jugyohenkou)
-        ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
-        : {};
-      overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
-      count++;
+
+  function applyGrade({ plan, classes }) {
+    if (!plan.length) return;
+    const planLessons = new Set(plan.map(p => p.lesson));
+    // 自動割り当て済み + プラン内の手動入力をクリア（過去・それ以外の手動変更は残す）
+    Object.keys(overrides).forEach(key => {
+      const e = overrides[key];
+      if (!e || !classes.includes(e.name)) return;
+      if (e.jugyohenkou && !e.autoAssigned) return; // 手動入力の授業変更は保護
+      if (e.autoAssigned || planLessons.has(e.teacher)) {
+        const parts = key.split('-');
+        const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
+        if (date >= today) delete overrides[key];
+      }
     });
-  });
+    plan.forEach(({ lesson, slots }) => {
+      classes.forEach(cls => {
+        const slot = slots[cls];
+        if (!slot) return;
+        const ok = overrideKey(slot.dateStr, slot.period);
+        const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
+        if (!currentEntry) return;
+        const existingOvr = overrides[ok];
+        const chgProps = (existingOvr && existingOvr.jugyohenkou)
+          ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
+          : {};
+        overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
+        count++;
+      });
+    });
+  }
+
+  applyGrade(autoAssignPlan.grade3);
+  applyGrade(autoAssignPlan.grade2);
+
   save();
   renderTimetable();
   renderProgress();
@@ -3433,10 +3443,7 @@ document.getElementById('aaClose').addEventListener('click', closeAutoAssignModa
 document.getElementById('aaCancelBtn').addEventListener('click', closeAutoAssignModal);
 document.getElementById('aaConfirmBtn').addEventListener('click', applyAutoAssign);
 document.getElementById('aaModal').addEventListener('click', e => { if (e.target === document.getElementById('aaModal')) closeAutoAssignModal(); });
-document.getElementById('aaTab3').addEventListener('click', () => openAutoAssignModal(3));
-document.getElementById('aaTab2').addEventListener('click', () => openAutoAssignModal(2));
-document.getElementById('btnAutoAssign3').addEventListener('click', () => openAutoAssignModal(3));
-document.getElementById('btnAutoAssign2').addEventListener('click', () => openAutoAssignModal(2));
+document.getElementById('btnAutoAssign').addEventListener('click', () => openAutoAssignModal());
 
 /* ── 起動 ── */
 loadDaySchedules();
