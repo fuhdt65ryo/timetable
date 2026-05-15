@@ -1995,9 +1995,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <datalist id="eClassList">${classDatalist}</datalist>
       </div>
       ${showSubject ? `
-      <div class="form-group fg-subject" style="${isJikoji ? 'flex:1;min-width:180px' : ''}">
+      <div class="form-group fg-subject" style="${isKenkyu || isJikoji ? 'flex:1 1 100%' : ''}">
         <label class="form-label">${subjectLabel}</label>
-        <input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList">${subjectDatalist}</datalist>
+        ${isKenkyu
+          ? `<textarea class="form-input" id="eSubject" rows="3" placeholder="${subjectPlaceholder}" style="resize:vertical;line-height:1.5">${esc(currentSubject)}</textarea>`
+          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList">${subjectDatalist}</datalist>`
+        }
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
