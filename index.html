@@ -139,7 +139,7 @@
     .period-num  { font-size:clamp(.7rem,1.6vw,1rem); font-weight:800; color:var(--accent); }
     .period-time { font-size:clamp(.38rem,0.8vw,.5rem); color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(55px,10vh); align-self:stretch; }
+    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(55px,10vh); align-self:stretch; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
@@ -164,7 +164,7 @@
     .cell.has-top-badge { padding-top:1.3rem; }
     .cell.has-btm-badge { padding-bottom:1.3rem; }
     /* クラス名・授業名は常にセル中央固定 */
-    .c-text-wrap { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+    .c-text-wrap { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:clamp(3px,0.8vw,6px); pointer-events:none; }
     .cell.selected { outline:4px solid #5A80CC; box-shadow:0 0 0 7px rgba(90,128,204,.35), 0 8px 24px rgba(0,0,0,.18) !important; transform:translateY(-3px) scale(1.04) !important; filter:none !important; z-index:2; }
 
     /* ── 長期休業列（全体ブロック） ── */
