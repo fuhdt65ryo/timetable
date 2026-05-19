@@ -1138,6 +1138,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 /* ── 基本時間割（毎週繰り返し） ── */
 const BASE = {
@@ -3491,7 +3492,10 @@ renderProgress2(); renderChanges();
     _resizeTimer = setTimeout(() => { renderTimetable(); }, 150);
   });
 })();
-initFirebaseSync();
+// 匿名認証してからFirebase同期を開始
+firebase.auth().signInAnonymously()
+  .then(() => initFirebaseSync())
+  .catch(e => { console.error('auth error:', e); initFirebaseSync(); }); // 失敗しても同期は試みる
 fetchGcalEvents();
 </script>
 <script>
