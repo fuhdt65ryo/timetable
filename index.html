@@ -280,6 +280,9 @@
     .form-select.err { border-color:#e53e3e; }
 
     .edit-actions { padding:4px 14px 10px; display:flex; gap:6px; flex-wrap:wrap; }
+    .chg-status-bar { display:flex; align-items:center; gap:8px; padding:7px 14px 6px; background:#eef2fb; border-bottom:1px solid #c8d4ee; font-size:.82rem; flex-wrap:wrap; }
+    .chg-status-badge { background:linear-gradient(135deg,#4A6DB5,#2c47a0); color:#fff; border-radius:5px; padding:2px 7px; font-size:.68rem; font-weight:800; white-space:nowrap; letter-spacing:.02em; }
+    .chg-status-text { font-weight:600; color:#2d3748; flex:1; }
     .btn { padding:9px 18px; border:none; border-radius:8px; font-size:.87rem; font-weight:600; cursor:pointer; font-family:inherit; transition:filter .15s,transform .12s; }
     .btn:hover { transform:translateY(-1px); }
     .btn-save    { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--on-accent); }
@@ -1716,8 +1719,15 @@ function renderTimetable() {
       if (hasJugyohenkou) {
         const ovrEntry = overrides[ok2];
         const baseE  = BASE[`${naturalDi}-${p}`];
-        const fromText = ovrEntry.fromRoom || ovrEntry.fromName || (baseE ? (baseE.room || baseE.name) : '空き');
-        const toText   = ovrEntry.room || ovrEntry.name;
+        const _tName = ovrEntry.name || '';
+        const _tRoom = ovrEntry.room || '';
+        const _fName = ovrEntry.fromName || '';
+        const _fRoom = ovrEntry.fromRoom || '';
+        // セル上部（_tName）と同じクラスは省略
+        const fromText = (_fName || _fRoom)
+          ? [(_fName !== _tName ? _fName : ''), _fRoom].filter(Boolean).join(' ')
+          : (baseE ? (baseE.room || baseE.name) : '空き');
+        const toText = _tRoom || _tName;
         chgSubjectText = `${fromText}→${toText}`;
         chgBadge = `<span class="cell-chg-badge">授業変更</span>`;
       }
@@ -1946,6 +1956,9 @@ function refreshEditForm() {
 
 function renderEditForm(entry, isOvr, baseEntry) {
   const currentClass   = entry?.name    || '';
+  const isJugyoHenkou = !!(entry?.jugyohenkou);
+  const chgFromLabel  = isJugyoHenkou ? [entry.fromName, entry.fromRoom].filter(Boolean).join(' ') || '(不明)' : '';
+  const chgToLabel    = isJugyoHenkou ? [currentClass, entry?.room].filter(Boolean).join(' ') : '';
   const isGrade3Class = PROG_CLASSES.includes(currentClass);
   const isGrade2Class = PROG2_CLASSES.includes(currentClass);
   const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
@@ -1990,6 +2003,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   }).join('');
 
   document.getElementById('editBody').innerHTML = `
+    ${isJugyoHenkou ? `<div class="chg-status-bar"><span class="chg-status-badge">授業変更</span><span class="chg-status-text">${esc(chgFromLabel)} → ${esc(chgToLabel)}</span></div>` : ''}
     <div class="edit-form">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
@@ -2774,7 +2788,7 @@ function renderChanges() {
   changes.sort((a, b) => a.date - b.date || a.period - b.period);
 
   if (!changes.length) {
-    container.innerHTML = '<div class="list-empty">今日以降の授業変更はありません</div>';
+    container.innerHTML = '<div class="list-empty">授業変更はありません</div>';
     return;
   }
 
