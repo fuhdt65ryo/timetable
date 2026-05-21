@@ -2776,11 +2776,8 @@ function renderChanges() {
       ? { name: newEntry.fromName || '', room: newEntry.fromRoom || '', color: getColor(newEntry.fromName||'', newEntry.fromRoom||'') }
       : baseEntry;
 
-    // 授業変更ボタン経由以外・空欄・行事は一覧に不要
     if (newEntry === null) return;
     if (!newEntry?.jugyohenkou) return;
-    if (newEntry?.name === '行事') return;
-    if (newEntry?.autoAssigned) return;
 
     changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
   });
