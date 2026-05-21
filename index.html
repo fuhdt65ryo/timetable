@@ -310,8 +310,8 @@
     .prog-table thead { position:sticky; top:0; z-index:1; }
     .prog-table th { padding:4px 6px; background:#f7fafc; font-weight:700; text-align:center; border-bottom:2px solid var(--border); color:var(--muted); font-size:.65rem; letter-spacing:.04em; }
     .prog-table th:first-child { text-align:left; }
-    .prog-table tbody tr { height:22px; }
-    .prog-table td { padding:0 4px; border-bottom:1px solid #f0f2f6; vertical-align:middle; text-align:center; overflow:hidden; height:22px; box-sizing:border-box; }
+    .prog-table tbody tr { height:36px; }
+    .prog-table td { padding:0 4px; border-bottom:1px solid #f0f2f6; vertical-align:middle; text-align:center; overflow:hidden; height:36px; box-sizing:border-box; }
     .prog-table td > .prog-cell-inner { display:flex; align-items:center; justify-content:center; height:100%; overflow:hidden; }
     .prog-content-cell { text-align:left !important; }
     .prog-sub { font-size:.62rem; color:var(--muted); }
@@ -323,7 +323,7 @@
     tr.drag-over td { border-top:2px solid var(--accent); }
     .prog-edit-inp { font-size:.88rem; font-weight:600; font-family:inherit; border:1.5px solid var(--accent); border-radius:4px; padding:2px 6px; outline:none; width:100%; box-sizing:border-box; }
     .prog-done { }
-    .prog-badge { display:inline-flex; flex-direction:row; align-items:center; gap:3px; border-radius:5px; padding:1px 5px; font-size:.65rem; white-space:nowrap; box-sizing:border-box; line-height:1.2; }
+    .prog-badge { display:inline-flex; flex-direction:column; align-items:center; gap:1px; border-radius:5px; padding:2px 5px; font-size:.65rem; box-sizing:border-box; line-height:1.2; }
     .prog-done-badge { background:#EEEEEE; color:#9E9E9E; font-weight:500; }
     .prog-done-badge .prog-p { color:#BDBDBD; }
     .prog-p   { font-size:.6rem; font-weight:600; }
@@ -2188,7 +2188,7 @@ function renderProgress() {
   const table = document.createElement('table');
   table.className = 'prog-table';
   table.style.tableLayout = 'fixed';
-  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  table.innerHTML = `<thead><tr><th style="width:55%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
 
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
@@ -2344,7 +2344,7 @@ function renderProgress2() {
   const table = document.createElement('table');
   table.className = 'prog-table';
   table.style.tableLayout = 'fixed';
-  table.innerHTML = `<thead><tr><th style="width:40%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  table.innerHTML = `<thead><tr><th style="width:55%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
 
   const tbody = document.createElement('tbody');
   rows.forEach(({ content, classes, manual }) => {
