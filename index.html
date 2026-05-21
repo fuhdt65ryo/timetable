@@ -398,13 +398,13 @@
 
       .tt-scroll {
         padding:0 0 12px;
-        overflow-x: scroll;
+        overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scroll-snap-type: x mandatory;
       }
       .timetable {
-        grid-template-columns: 44px repeat(5, calc((100vw - 56px) / 2)) repeat(2, 40px);
-        gap: 3px;
+        grid-template-columns: 36px repeat(5, minmax(50px, 1fr)) repeat(2, minmax(24px, 0.6fr));
+        gap: 2px;
         min-width: max-content;
       }
       .cell-day { font-size:.78rem; padding:4px 3px; scroll-snap-align: start; }
