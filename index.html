@@ -61,7 +61,7 @@
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
-      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; }
+      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; padding:0 0 8px; scrollbar-gutter:auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; }
