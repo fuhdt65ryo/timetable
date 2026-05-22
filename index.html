@@ -1135,6 +1135,7 @@
     <div class="sync-modal-actions">
       <button class="btn btn-secondary" id="syncModalCancel">閉じる</button>
       <button class="btn btn-save" id="syncModalPull">今すぐ取得</button>
+      <button class="btn" id="syncModalForcePush" style="background:#e53e3e;color:#fff;border:none;">強制アップロード</button>
     </div>
   </div>
 </div>
@@ -3317,6 +3318,13 @@ document.getElementById('syncModalPull').addEventListener('click', () => {
     console.error('manual pull:', e);
     updateSyncBtn('error');
   });
+});
+
+document.getElementById('syncModalForcePush').addEventListener('click', () => {
+  if (!confirm('ローカルのデータをFirebaseに強制アップロードします。\n他の端末のデータは上書きされます。よろしいですか？')) return;
+  closeSyncModal();
+  clearTimeout(syncTimer);
+  syncPush();
 });
 
 /* ── 授業進捗 手動追加・削除 ── */
