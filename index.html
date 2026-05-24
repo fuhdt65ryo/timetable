@@ -3177,7 +3177,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('click', e => {
   if (!selKey) return;
-  if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('.cell-sched')) return;
+  if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('.cell-sched') || e.target.closest('#progressPane')) return;
   clearSelect();
 });
 
