@@ -2150,16 +2150,8 @@ function renderProgress() {
 
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // 全クラスが過去になった手動追加分を自動削除
-  const beforeLen = progManual.length;
-  progManual = progManual.filter(name => {
-    const info = map[name];
-    if (!info || Object.keys(info.classes).length === 0) return true;
-    return !PROG_CLASSES.every(c => info.classes[c] && info.classes[c].date < today);
-  });
-  if (progManual.length !== beforeLen) saveProgManual();
-
   const rows = Object.values(map).filter(({ content, classes }) => {
+    if (progManual.includes(content)) return true; // 手動追加分は常に表示
     return !PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
   });
   if (!rows.length) {
@@ -2218,7 +2210,7 @@ function renderProgress() {
     inp.value = oldVal;
     cnt.replaceWith(inp);
     inp.focus(); inp.select();
-    const save = () => {
+    const doSave1 = () => {
       const newVal = inp.value.trim();
       if (newVal && newVal !== oldVal) {
         if (manual) {
@@ -2231,7 +2223,7 @@ function renderProgress() {
         renderProgress(); renderProgress2();
       } else { renderProgress(); }
     };
-    inp.addEventListener('blur', save);
+    inp.addEventListener('blur', doSave1);
     inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
   });
   attachProgDrag(tbody, progOrder, saveProgOrder, renderProgress);
@@ -2302,16 +2294,8 @@ function renderProgress2() {
 
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // 全クラスが過去になった手動追加分を自動削除
-  const beforeLen2 = prog2Manual.length;
-  prog2Manual = prog2Manual.filter(name => {
-    const info = map[name];
-    if (!info || Object.keys(info.classes).length === 0) return true;
-    return !PROG2_CLASSES.every(c => info.classes[c] && info.classes[c].date < today);
-  });
-  if (prog2Manual.length !== beforeLen2) saveProg2Manual();
-
-  const rows = Object.values(map).filter(({ classes }) => {
+  const rows = Object.values(map).filter(({ content, classes }) => {
+    if (prog2Manual.includes(content)) return true; // 手動追加分は常に表示
     return !PROG2_CLASSES.every(c => classes[c] && classes[c].date < today);
   });
   if (!rows.length) {
@@ -2370,7 +2354,7 @@ function renderProgress2() {
     inp.value = oldVal;
     cnt.replaceWith(inp);
     inp.focus(); inp.select();
-    const save = () => {
+    const doSave2 = () => {
       const newVal = inp.value.trim();
       if (newVal && newVal !== oldVal) {
         if (manual) {
@@ -2383,7 +2367,7 @@ function renderProgress2() {
         renderProgress(); renderProgress2();
       } else { renderProgress2(); }
     };
-    inp.addEventListener('blur', save);
+    inp.addEventListener('blur', doSave2);
     inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
   });
   attachProgDrag(tbody, prog2Order, saveProg2Order, renderProgress2);
