@@ -333,10 +333,7 @@
     .prog-today { background:#FFF9C4; color:#F57F17; font-weight:800; }
     .prog-today .prog-p { color:#F9A825; }
 
-    .prog-add-details { margin:8px 12px 6px; }
-    .prog-add-summary { font-size:.8rem; font-weight:700; color:var(--accent); cursor:pointer; list-style:none; padding:4px 0; user-select:none; }
-    .prog-add-summary::-webkit-details-marker { display:none; }
-    .prog-add-wrap { display:flex; gap:6px; margin:6px 0 2px; }
+    .prog-add-wrap { display:flex; gap:6px; margin:6px 12px 8px; }
     .prog-add-inp { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; outline:none; }
     .prog-add-inp:focus { border-color:var(--accent2); }
     .prog-add-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:5px 14px; font-size:.82rem; font-weight:700; cursor:pointer; white-space:nowrap; }
@@ -2247,37 +2244,33 @@ function renderProgress() {
 }
 
 function renderProgManualInput(container) {
-  const details = document.createElement('details');
-  details.className = 'prog-add-details';
-  const summary = document.createElement('summary');
-  summary.className = 'prog-add-summary';
-  summary.textContent = '＋ 授業名を追加';
   const wrap = document.createElement('div');
   wrap.className = 'prog-add-wrap';
   const inp = document.createElement('input');
   inp.className = 'prog-add-inp';
   inp.type = 'text';
-  inp.placeholder = '授業名を入力してEnterまたはフォーカスを外す';
+  inp.placeholder = '授業名を入力…';
   inp.dataset.list = 'prog';
+  const btn = document.createElement('button');
+  btn.className = 'prog-add-btn';
+  btn.textContent = '追加';
   wrap.appendChild(inp);
-  details.appendChild(summary);
-  details.appendChild(wrap);
-  container.appendChild(details);
+  wrap.appendChild(btn);
+  container.appendChild(wrap);
 
-  details.addEventListener('toggle', function() {
-    if (details.open) {
-      inp.focus();
-    } else {
-      const val = inp.value.trim();
-      if (val && !progManual.includes(val)) {
-        progManual.push(val);
-        saveProgManual();
-        renderProgress();
-      }
-      inp.value = '';
+  const doAdd = () => {
+    const val = inp.value.trim();
+    if (val && !progManual.includes(val)) {
+      progManual.push(val);
+      saveProgManual();
       schedulePush();
+      renderProgress();
     }
-  });
+    inp.value = '';
+    inp.focus();
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
 }
 
 /* ── 2年生進捗テーブル ── */
@@ -2439,37 +2432,33 @@ function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
 }
 
 function renderProg2ManualInput(container) {
-  const details = document.createElement('details');
-  details.className = 'prog-add-details';
-  const summary = document.createElement('summary');
-  summary.className = 'prog-add-summary';
-  summary.textContent = '＋ 授業名を追加';
   const wrap = document.createElement('div');
   wrap.className = 'prog-add-wrap';
   const inp = document.createElement('input');
   inp.className = 'prog-add-inp';
   inp.type = 'text';
-  inp.placeholder = '授業名を入力してEnterまたはフォーカスを外す';
+  inp.placeholder = '授業名を入力…';
   inp.dataset.list = 'prog2';
+  const btn = document.createElement('button');
+  btn.className = 'prog-add-btn';
+  btn.textContent = '追加';
   wrap.appendChild(inp);
-  details.appendChild(summary);
-  details.appendChild(wrap);
-  container.appendChild(details);
+  wrap.appendChild(btn);
+  container.appendChild(wrap);
 
-  details.addEventListener('toggle', function() {
-    if (details.open) {
-      inp.focus();
-    } else {
-      const val = inp.value.trim();
-      if (val && !prog2Manual.includes(val)) {
-        prog2Manual.push(val);
-        saveProg2Manual();
-        renderProgress2();
-      }
-      inp.value = '';
+  const doAdd = () => {
+    const val = inp.value.trim();
+    if (val && !prog2Manual.includes(val)) {
+      prog2Manual.push(val);
+      saveProg2Manual();
       schedulePush();
+      renderProgress2();
     }
-  });
+    inp.value = '';
+    inp.focus();
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
 }
 
 /* ── 自動割り当て ── */
@@ -3345,21 +3334,6 @@ document.addEventListener('click', function(e) {
     }
     renderTimetable();
   }
-});
-// Enterキー → detailsを閉じる（toggleハンドラで確定＋同期）
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && e.target.classList.contains('prog-add-inp')) {
-    e.preventDefault();
-    const details = e.target.closest('.prog-add-details');
-    if (details) details.open = false;
-  }
-});
-// フォーカスを外したとき → detailsの外に出たら閉じる
-document.addEventListener('focusout', function(e) {
-  if (!e.target.classList.contains('prog-add-inp')) return;
-  const details = e.target.closest('.prog-add-details');
-  if (!details || !details.open) return;
-  if (!details.contains(e.relatedTarget)) details.open = false;
 });
 
 /* ── カレンダー設定ページ イベント ── */
