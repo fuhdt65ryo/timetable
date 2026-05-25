@@ -328,6 +328,8 @@
     .prog-done-badge .prog-p { color:#BDBDBD; }
     .prog-p   { font-size:.6rem; font-weight:600; }
     .prog-none { color:#d1d9e6; font-size:.85rem; }
+    .prog-thisweek { background:#E8F5E9; color:#2E7D32; font-weight:700; }
+    .prog-thisweek .prog-p { color:#388E3C; }
     .prog-upcoming { background:#E3F2FD; color:#1565C0; font-weight:700; }
     .prog-upcoming .prog-p { color:#1976D2; }
     .prog-today { background:#FFF9C4; color:#F57F17; font-weight:800; }
@@ -2171,6 +2173,7 @@ function renderProgress() {
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ content, classes }) => {
     if (progManual.includes(content)) return true; // 手動追加分は常に表示
@@ -2213,7 +2216,8 @@ function renderProgress() {
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
         const d = info.date;
-        html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
+        const badgeClass = d <= weekEnd ? 'prog-thisweek' : 'prog-upcoming';
+        html += `<td><div class="prog-cell-inner"><span class="prog-badge ${badgeClass}">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else {
         html += '<td><div class="prog-cell-inner prog-none">─</div></td>';
       }
@@ -2315,6 +2319,7 @@ function renderProgress2() {
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ content, classes }) => {
     if (prog2Manual.includes(content)) return true; // 手動追加分は常に表示
@@ -2357,7 +2362,8 @@ function renderProgress2() {
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
         const d = info.date;
-        html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-upcoming">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
+        const badgeClass = d <= weekEnd ? 'prog-thisweek' : 'prog-upcoming';
+        html += `<td><div class="prog-cell-inner"><span class="prog-badge ${badgeClass}">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else {
         html += '<td><div class="prog-cell-inner prog-none">─</div></td>';
       }
