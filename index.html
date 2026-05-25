@@ -2194,7 +2194,7 @@ function renderProgress() {
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
         const d = info.date;
-        const badgeClass = d <= weekEnd ? 'prog-thisweek' : 'prog-upcoming';
+        const badgeClass = (d >= weekStart && d <= weekEnd) ? 'prog-thisweek' : 'prog-upcoming';
         html += `<td><div class="prog-cell-inner"><span class="prog-badge ${badgeClass}">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else {
         html += '<td><div class="prog-cell-inner prog-none">─</div></td>';
@@ -2340,7 +2340,7 @@ function renderProgress2() {
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
         const d = info.date;
-        const badgeClass = d <= weekEnd ? 'prog-thisweek' : 'prog-upcoming';
+        const badgeClass = (d >= weekStart && d <= weekEnd) ? 'prog-thisweek' : 'prog-upcoming';
         html += `<td><div class="prog-cell-inner"><span class="prog-badge ${badgeClass}">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else {
         html += '<td><div class="prog-cell-inner prog-none">─</div></td>';
