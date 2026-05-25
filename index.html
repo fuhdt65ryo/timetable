@@ -635,7 +635,7 @@
 </div>
 
 <!-- 予定入力モーダル -->
-<div id="eventModal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center">
+<div id="eventModal" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;width:min(420px,94vw);box-shadow:0 8px 32px rgba(0,0,0,.25);overflow:hidden">
     <div style="background:linear-gradient(135deg,#2C3E6B,#4A2D6B);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
       <span id="eventModalTitle" style="font-size:.95rem;font-weight:700"></span>
@@ -3125,7 +3125,10 @@ function addEvent() {
   if (!title) { document.getElementById('evTitle').focus(); return; }
   if (!calEvents[modalDateStr]) calEvents[modalDateStr] = [];
   calEvents[modalDateStr].push({ title, time });
-  calEvents[modalDateStr].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  calEvents[modalDateStr].sort((a, b) => {
+    const toMin = t => { if (!t) return 9999; const [h,m]=t.split(':'); return +h*60+(+m||0); };
+    return toMin(a.time) - toMin(b.time);
+  });
   saveCalEvents();
   document.getElementById('evTitle').value = '';
   document.getElementById('evTime').value = '';
@@ -3208,7 +3211,7 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v._x) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
+  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
   if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  safeSave('tt_daysched_v1',  daySchedules); changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  safeSave('tt_cellsrc_v1',   cellSources);  changed = true; }
   if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  safeSave('tt_holidays_v1',  holidays);     changed = true; }
@@ -3218,7 +3221,7 @@ function _applyFbData(data) {
 
 function _encodeOverrides(ovr) {
   const out = {};
-  for (const [k, v] of Object.entries(ovr)) out[k] = v === null ? {_x:1} : v;
+  for (const [k, v] of Object.entries(ovr)) out[k] = v === null ? {__deleted__:true} : v;
   return out;
 }
 
