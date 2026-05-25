@@ -411,6 +411,12 @@
       .c-class   { font-size:.78rem; }
       .c-subject { font-size:.64rem; display:block !important; }
       .c-content { display:none; }
+
+      /* ── 参照元グリッド折りたたみ ── */
+      .src-grid-label { cursor: pointer; user-select: none; }
+      .src-grid-label::after { content: ' ▶'; font-size: .6rem; }
+      .src-grid-wrap.src-grid-open .src-grid-label::after { content: ' ▼'; }
+      .src-grid-wrap:not(.src-grid-open) .src-grid { display: none; }
     }
 
     /* ── カレンダー設定ページ ── */
@@ -1236,9 +1242,7 @@ function loadGcalCache() {
 }
 
 function saveGcalCache(events, timeMin, timeMax) {
-  localStorage.setItem(GCAL_CACHE_KEY, JSON.stringify({
-    events, timeMin, timeMax, updatedAt: new Date().toISOString()
-  }));
+  safeSave(GCAL_CACHE_KEY, { events, timeMin, timeMax, updatedAt: new Date().toISOString() });
 }
 
 function showGcalStatus(type, msg) {
@@ -1353,15 +1357,25 @@ let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業
 function load() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
 }
-function save() { localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); }
+function safeSave(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error('localStorage save failed:', key, e);
+    if (e.name === 'QuotaExceededError') {
+      alert('データの保存に失敗しました（ブラウザの空き容量が不足しています）');
+    }
+  }
+}
+function save() { safeSave('tt_overrides_v1', overrides); }
 function loadDaySchedules() {
   try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1') || '{}'); } catch { daySchedules = {}; }
 }
-function saveDaySchedules() { localStorage.setItem('tt_daysched_v1', JSON.stringify(daySchedules)); schedulePush(); }
+function saveDaySchedules() { safeSave('tt_daysched_v1', daySchedules); schedulePush(); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
 }
-function saveCellSources() { localStorage.setItem('tt_cellsrc_v1', JSON.stringify(cellSources)); schedulePush(); }
+function saveCellSources() { safeSave('tt_cellsrc_v1', cellSources); schedulePush(); }
 function loadHolidays() {
   try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
   // 未登録の祝日のみ追加（ユーザーが削除したものは復活させない）
@@ -1376,15 +1390,15 @@ function loadHolidays() {
   });
   if (changed) {
     // 組み込み祝日の初期化はローカル保存のみ（schedulePush不要：全端末で同じデータが追加されるため）
-    localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays));
-    localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
+    safeSave('tt_holidays_v1', holidays);
+    safeSave('tt_holidays_seen', seen);
   }
 }
-function saveHolidays() { localStorage.setItem('tt_holidays_v1', JSON.stringify(holidays)); schedulePush(); }
+function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush(); }
 function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
-function saveBukatsuOverrides() { localStorage.setItem('tt_bukatsu_v1', JSON.stringify(bukatsuOverrides)); schedulePush(); }
+function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush(); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
-function saveWeekendClassDays() { localStorage.setItem('tt_weekend_classes_v1', JSON.stringify(weekendClassDays)); schedulePush(); }
+function saveWeekendClassDays() { safeSave('tt_weekend_classes_v1', weekendClassDays); schedulePush(); }
 
 function getHolidayEntry(dateStr) {
   const val = holidays[dateStr];
@@ -1410,15 +1424,15 @@ function isCalendarLongVacation(dateStr) {
 function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
 }
-function saveCalEvents() { localStorage.setItem('tt_calevents_v1', JSON.stringify(calEvents)); }
+function saveCalEvents() { safeSave('tt_calevents_v1', calEvents); }
 function loadProgManual()  { try { progManual  = JSON.parse(localStorage.getItem('tt_prog_manual')  || '[]'); } catch { progManual  = []; } }
-function saveProgManual()  { localStorage.setItem('tt_prog_manual',  JSON.stringify(progManual));  }
+function saveProgManual()  { safeSave('tt_prog_manual',  progManual);  }
 function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem('tt_prog2_manual') || '[]'); } catch { prog2Manual = []; } }
-function saveProg2Manual() { localStorage.setItem('tt_prog2_manual', JSON.stringify(prog2Manual)); }
+function saveProg2Manual() { safeSave('tt_prog2_manual', prog2Manual); }
 function loadProgOrder()   { try { progOrder  = JSON.parse(localStorage.getItem('tt_prog_order')  || '[]'); } catch { progOrder  = []; } }
-function saveProgOrder()   { localStorage.setItem('tt_prog_order',  JSON.stringify(progOrder));  }
+function saveProgOrder()   { safeSave('tt_prog_order',  progOrder);  }
 function loadProg2Order()  { try { prog2Order = JSON.parse(localStorage.getItem('tt_prog2_order') || '[]'); } catch { prog2Order = []; } }
-function saveProg2Order()  { localStorage.setItem('tt_prog2_order', JSON.stringify(prog2Order)); }
+function saveProg2Order()  { safeSave('tt_prog2_order', prog2Order); }
 
 /* ── 日付ユーティリティ ── */
 function getWeekStart(d) {
@@ -2039,6 +2053,14 @@ function renderEditForm(entry, isOvr, baseEntry) {
       </div>
     </div>
   `;
+
+  // スマホでは参照元グリッドを折りたたむ、変更済みの場合は展開状態にする
+  const srcWrap = document.querySelector('.src-grid-wrap');
+  const srcLabel = document.querySelector('.src-grid-label');
+  if (srcWrap && srcLabel && window.innerWidth <= 640) {
+    if (srcChanged) srcWrap.classList.add('src-grid-open');
+    srcLabel.addEventListener('click', () => srcWrap.classList.toggle('src-grid-open'));
+  }
 
   const _as = () => { autoSave(false); schedulePush(); };
   document.getElementById('eClass')?.addEventListener('blur', _as);
@@ -3062,7 +3084,7 @@ function saveDaySetting() {
       delete holidays[daySettingDateStr];
       const seen = JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}');
       seen[daySettingDateStr] = true;
-      localStorage.setItem('tt_holidays_seen', JSON.stringify(seen));
+      safeSave('tt_holidays_seen', seen);
     }
     saveHolidays();
   }
@@ -3186,11 +3208,11 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v._x) ? null : v; localStorage.setItem('tt_overrides_v1', JSON.stringify(overrides)); changed = true; }
-  if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  localStorage.setItem('tt_daysched_v1',   JSON.stringify(daySchedules)); changed = true; }
-  if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  localStorage.setItem('tt_cellsrc_v1',    JSON.stringify(cellSources));  changed = true; }
-  if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  localStorage.setItem('tt_holidays_v1',   JSON.stringify(holidays));     changed = true; }
-  if (data.tt_holidays_seen) localStorage.setItem('tt_holidays_seen', JSON.stringify(data.tt_holidays_seen));
+  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v._x) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
+  if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  safeSave('tt_daysched_v1',  daySchedules); changed = true; }
+  if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  safeSave('tt_cellsrc_v1',   cellSources);  changed = true; }
+  if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  safeSave('tt_holidays_v1',  holidays);     changed = true; }
+  if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
   if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
