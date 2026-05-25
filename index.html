@@ -2460,7 +2460,9 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
     const dateStr = toDateStr(d);
     if (isActualHoliday(dateStr)) continue;
     if (isCalendarLongVacation(dateStr)) continue;
+    const _holEntry = getHolidayEntry(dateStr);
     for (const p of PERIODS) {
+      if (absenceCoversPeriod(_holEntry, p)) continue; // 年休・出張は自動割り当て除外
       const entry = getEntry(dateStr, p);
       if (!entry || entry.name !== className) continue;
       if (isTanin && entry.room !== '理科') continue;
