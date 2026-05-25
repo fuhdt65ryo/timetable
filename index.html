@@ -2154,7 +2154,6 @@ function renderProgress() {
   const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ content, classes }) => {
-    if (progManual.includes(content)) return true; // 手動追加分は常に表示
     return !PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
   });
   if (!rows.length) {
@@ -2300,7 +2299,6 @@ function renderProgress2() {
   const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ content, classes }) => {
-    if (prog2Manual.includes(content)) return true; // 手動追加分は常に表示
     return !PROG2_CLASSES.every(c => classes[c] && classes[c].date < today);
   });
   if (!rows.length) {
