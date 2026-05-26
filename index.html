@@ -2131,9 +2131,8 @@ function renderProgress() {
     if (!entry || !entry.teacher) return;
     if (entry.rinji) return;
     if (!PROG_CLASSES.includes(entry.name)) return;
-    // 担任クラス(3-1)は理科のみ対象、他教科は除外
-    const cls = CLASSES.find(c => c.name === entry.name);
-    if (cls?.tanin && entry.room !== '理科') return;
+    // 全クラス共通：理科以外は進捗対象外
+    if (entry.room !== '理科') return;
     const mk = `${entry.teacher}`;
     if (!map[mk]) map[mk] = { content:entry.teacher, classes:{} };
     const parts = key.split('-');
@@ -2463,7 +2462,7 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
       if (absenceCoversPeriod(_holEntry, p)) continue; // 年休・出張は自動割り当て除外
       const entry = getEntry(dateStr, p);
       if (!entry || entry.name !== className) continue;
-      if (isTanin && entry.room !== '理科') continue;
+      if (entry.room !== '理科') continue; // 全クラス共通：理科以外は自動割り当て除外
       const ok = overrideKey(dateStr, p);
       const ovr = overrides[ok];
       if (ovr === null) continue; // 空欄化済みは除外
@@ -2505,8 +2504,7 @@ function buildEffectiveLessonList(grade) {
   Object.entries(overrides).forEach(([key, entry]) => {
     if (!entry || !entry.teacher || entry.rinji) return;
     if (!progC.includes(entry.name)) return;
-    const cls = CLASSES.find(c => c.name === entry.name);
-    if (cls?.tanin && entry.room !== '理科') return;
+    if (entry.room !== '理科') return; // 全クラス共通：理科以外は除外
     if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
     const parts = key.split('-');
     const d = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
