@@ -3080,10 +3080,17 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)  { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
-  if (data.tt_daysched_v1  !== undefined)  { daySchedules = data.tt_daysched_v1  || {};  safeSave('tt_daysched_v1',  daySchedules); changed = true; }
-  if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  safeSave('tt_cellsrc_v1',   cellSources);  changed = true; }
-  if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  safeSave('tt_holidays_v1',  holidays);     changed = true; }
+  if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
+  if (data.tt_daysched_v1  !== undefined)       { daySchedules    = data.tt_daysched_v1          || {}; safeSave('tt_daysched_v1',          daySchedules);    changed = true; }
+  if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
+  if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
+  if (data.tt_bukatsu_v1   !== undefined)       { bukatsuOverrides   = data.tt_bukatsu_v1        || {}; safeSave('tt_bukatsu_v1',           bukatsuOverrides);   changed = true; }
+  if (data.tt_weekend_classes_v1 !== undefined) { weekendClassDays   = data.tt_weekend_classes_v1 || {}; safeSave('tt_weekend_classes_v1',  weekendClassDays);   changed = true; }
+  if (data.tt_calevents_v1 !== undefined)       { calEvents       = data.tt_calevents_v1         || {}; safeSave('tt_calevents_v1',         calEvents);       changed = true; }
+  if (data.tt_prog_manual  !== undefined)       { progManual      = data.tt_prog_manual          || []; safeSave('tt_prog_manual',          progManual);      changed = true; }
+  if (data.tt_prog2_manual !== undefined)       { prog2Manual     = data.tt_prog2_manual         || []; safeSave('tt_prog2_manual',         prog2Manual);     changed = true; }
+  if (data.tt_prog_order   !== undefined)       { progOrder       = data.tt_prog_order           || []; safeSave('tt_prog_order',           progOrder);       changed = true; }
+  if (data.tt_prog2_order  !== undefined)       { prog2Order      = data.tt_prog2_order          || []; safeSave('tt_prog2_order',          prog2Order);      changed = true; }
   if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
   if (changed) { _syncProgManuals(); renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
@@ -3097,11 +3104,18 @@ function _encodeOverrides(ovr) {
 async function syncPush() {
   updateSyncBtn('syncing');
   const payload = {
-    tt_overrides_v1:  _encodeOverrides(overrides),
-    tt_daysched_v1:   daySchedules,
-    tt_cellsrc_v1:    cellSources,
-    tt_holidays_v1:   holidays,
-    tt_holidays_seen: JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
+    tt_overrides_v1:       _encodeOverrides(overrides),
+    tt_daysched_v1:        daySchedules,
+    tt_cellsrc_v1:         cellSources,
+    tt_holidays_v1:        holidays,
+    tt_holidays_seen:      JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
+    tt_bukatsu_v1:         bukatsuOverrides,
+    tt_weekend_classes_v1: weekendClassDays,
+    tt_calevents_v1:       calEvents,
+    tt_prog_manual:        progManual,
+    tt_prog2_manual:       prog2Manual,
+    tt_prog_order:         progOrder,
+    tt_prog2_order:        prog2Order,
     _updated: new Date().toISOString()
   };
   try {
