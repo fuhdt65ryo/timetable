@@ -3038,7 +3038,9 @@ weekPicker.addEventListener('change', function() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { clearSelect(); closeEventModal(); closeAutoAssignModal(); closeDaySetting(); return; }
   if (e.target.matches('input,textarea,select')) return;
-  if (e.key === 't' && !selKey) { navScrollWeek(0); } // 授業未選択時に今日へ
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); navScrollWeek(-7); return; }
+  if (e.key === 'ArrowRight') { e.preventDefault(); navScrollWeek(7);  return; }
+  if (e.key === 't' || e.key === 'T') { navScrollWeek(0); }
 });
 document.addEventListener('click', e => {
   if (!selKey) return;
