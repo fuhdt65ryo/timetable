@@ -1485,9 +1485,6 @@ function getVisibleLeftDate() {
   return best;
 }
 
-function setupTTScroll() {
-}
-
 /* ── スケジュールロジック ── */
 function baseKey(date, period)     { return `${dayIdx(date)}-${period}`; }
 function overrideKey(dateStr, p)   { return `${dateStr}-${p}`; }
@@ -2120,6 +2117,7 @@ function autoSave(doRerender = true) {
   const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
   overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
+  _syncProgManuals();
   if (!doRerender) return;
   rerender();
 }
@@ -2161,13 +2159,6 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
       map[entry.teacher].classes[entry.name] = { date, period };
     }
   });
-
-  // 一度検出された授業名をmanualArrに保存（overrides削除後も行が消えないように）
-  let _changed = false;
-  Object.keys(map).forEach(name => {
-    if (!manualArr.includes(name)) { manualArr.push(name); _changed = true; }
-  });
-  if (_changed) saveFn();
 
   // 手動追加分をマージ
   manualArr.forEach(name => {
@@ -2290,6 +2281,21 @@ function _renderProgManualInput(container, manualArr, saveFn, listKey, renderSel
   };
   btn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+}
+
+function _syncProgManuals() {
+  let c3 = false, c2 = false;
+  Object.values(overrides).forEach(entry => {
+    if (!entry || !entry.teacher || entry.rinji || entry.room !== '理科') return;
+    if (PROG_CLASSES.includes(entry.name) && !progManual.includes(entry.teacher)) {
+      progManual.push(entry.teacher); c3 = true;
+    }
+    if (PROG2_CLASSES.includes(entry.name) && !prog2Manual.includes(entry.teacher)) {
+      prog2Manual.push(entry.teacher); c2 = true;
+    }
+  });
+  if (c3) saveProgManual();
+  if (c2) saveProg2Manual();
 }
 
 function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
@@ -3079,7 +3085,7 @@ function _applyFbData(data) {
   if (data.tt_cellsrc_v1   !== undefined)  { cellSources  = data.tt_cellsrc_v1   || {};  safeSave('tt_cellsrc_v1',   cellSources);  changed = true; }
   if (data.tt_holidays_v1  !== undefined)  { holidays     = data.tt_holidays_v1  || {};  safeSave('tt_holidays_v1',  holidays);     changed = true; }
   if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
-  if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
+  if (changed) { _syncProgManuals(); renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
 function _encodeOverrides(ovr) {
@@ -3337,7 +3343,6 @@ loadProg2Order();
 load();
 loadGcalCache();
 renderTimetable();
-setupTTScroll();
 renderProgress();
 renderProgress2(); renderChanges();
 (function() {
@@ -3357,8 +3362,6 @@ firebase.auth().signInAnonymously()
   .then(() => initFirebaseSync())
   .catch(e => { console.error('auth error:', e); initFirebaseSync(); }); // 失敗しても同期は試みる
 fetchGcalEvents();
-</script>
-<script>
 </script>
 </body>
 </html>
