@@ -2136,77 +2136,79 @@ function selKeyParts() {
   return [`${parts[0]}-${parts[1]}-${parts[2]}`, parts[3]];
 }
 
-/* ── 3年生進捗テーブル ── */
-const PROG_CLASSES = ['3-1','3-2','3-3','3-4'];
+/* ── 進捗テーブル ── */
+const PROG_CLASSES  = ['3-1','3-2','3-3','3-4'];
+const PROG2_CLASSES = ['2-4'];
 
-function renderProgress() {
-  const container = document.getElementById('progressBody');
+function renderProgress()  { _renderProgress(progManual,  saveProgManual,  PROG_CLASSES,  progOrder,  saveProgOrder,  'prog',  'progressBody',  renderProgress);  }
+function renderProgress2() { _renderProgress(prog2Manual, saveProg2Manual, PROG2_CLASSES, prog2Order, saveProg2Order, 'prog2', 'progress2Body', renderProgress2); }
+
+function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, listKey, containerId, renderSelf) {
+  const container = document.getElementById(containerId);
 
   const map = {};
   Object.entries(overrides).forEach(([key, entry]) => {
     if (!entry || !entry.teacher) return;
     if (entry.rinji) return;
-    if (!PROG_CLASSES.includes(entry.name)) return;
-    // 全クラス共通：理科以外は進捗対象外
+    if (!classes.includes(entry.name)) return;
     if (entry.room !== '理科') return;
-    const mk = `${entry.teacher}`;
-    if (!map[mk]) map[mk] = { content:entry.teacher, classes:{} };
+    if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period  = Number(parts[3]);
     const date    = parseDateStr(dateStr);
-    if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
-      map[mk].classes[entry.name] = { date, period };
+    if (!map[entry.teacher].classes[entry.name] || date < map[entry.teacher].classes[entry.name].date) {
+      map[entry.teacher].classes[entry.name] = { date, period };
     }
   });
 
-  // 一度検出された授業名をprogManualに保存（overrides削除後も行が消えないように）
-  let _progManualChanged = false;
+  // 一度検出された授業名をmanualArrに保存（overrides削除後も行が消えないように）
+  let _changed = false;
   Object.keys(map).forEach(name => {
-    if (!progManual.includes(name)) { progManual.push(name); _progManualChanged = true; }
+    if (!manualArr.includes(name)) { manualArr.push(name); _changed = true; }
   });
-  if (_progManualChanged) saveProgManual();
+  if (_changed) saveFn();
 
   // 手動追加分をマージ
-  progManual.forEach(name => {
+  manualArr.forEach(name => {
     if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
   const weekEnd = addDays(weekStart, 6);
 
-  const rows = Object.values(map).filter(({ content, classes }) => {
-    return !PROG_CLASSES.every(c => classes[c] && classes[c].date < today);
-  });
+  const rows = Object.values(map).filter(({ classes: cls }) =>
+    !classes.every(c => cls[c] && cls[c].date < today)
+  );
   if (!rows.length) {
     container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
-    renderProgManualInput(container);
+    _renderProgManualInput(container, manualArr, saveFn, listKey, renderSelf);
     return;
   }
 
   rows.sort((a, b) => {
-    const ai = progOrder.indexOf(a.content), bi = progOrder.indexOf(b.content);
+    const ai = orderArr.indexOf(a.content), bi = orderArr.indexOf(b.content);
     if (ai !== -1 && bi !== -1) return ai - bi;
     if (ai !== -1) return -1;
     if (bi !== -1) return 1;
-    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
-    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
-    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
+    const aMin = Math.min(...Object.values(a.classes).map(c => c.date.getTime()));
+    const bMin = Math.min(...Object.values(b.classes).map(c => c.date.getTime()));
+    return (isFinite(aMin) ? aMin : Infinity) - (isFinite(bMin) ? bMin : Infinity);
   });
 
   const table = document.createElement('table');
   table.className = 'prog-table';
   table.style.tableLayout = 'fixed';
-  table.innerHTML = `<thead><tr><th style="width:55%">授業内容</th>${PROG_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  table.innerHTML = `<thead><tr><th style="width:55%">授業内容</th>${classes.map(c => `<th>${c}</th>`).join('')}</tr></thead>`;
 
   const tbody = document.createElement('tbody');
-  rows.forEach(({ content, classes, manual }) => {
+  rows.forEach(({ content, classes: cls, manual }) => {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
-    PROG_CLASSES.forEach(cls => {
-      const info = classes[cls];
+    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual ? '1' : '0'}">${esc(content)}</div><button class="prog-del-btn" data-list="${listKey}" data-key="${esc(content)}" data-manual="${manual ? '1' : '0'}" title="削除">×</button></td>`;
+    classes.forEach(c => {
+      const info = cls[c];
       if (info && info.date < today) {
         const d = info.date;
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
@@ -2235,39 +2237,39 @@ function renderProgress() {
     inp.value = oldVal;
     cnt.replaceWith(inp);
     inp.focus(); inp.select();
-    const doSave1 = () => {
+    const doSave = () => {
       const newVal = inp.value.trim();
       if (newVal && newVal !== oldVal) {
         if (manual) {
-          const idx = progManual.indexOf(oldVal);
-          if (idx !== -1) { progManual[idx] = newVal; saveProgManual(); }
+          const idx = manualArr.indexOf(oldVal);
+          if (idx !== -1) { manualArr[idx] = newVal; saveFn(); }
         } else {
           Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
           save(); schedulePush();
         }
         renderProgress(); renderProgress2();
-      } else { renderProgress(); }
+      } else { renderSelf(); }
     };
-    inp.addEventListener('blur', doSave1);
+    inp.addEventListener('blur', doSave);
     inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
   });
-  attachProgDrag(tbody, progOrder, saveProgOrder, renderProgress);
+  attachProgDrag(tbody, orderArr, saveOrderFn, renderSelf);
   const wrap = document.createElement('div');
   wrap.className = 'prog-table-wrap';
   wrap.appendChild(table);
   container.innerHTML = '';
   container.appendChild(wrap);
-  renderProgManualInput(container);
+  _renderProgManualInput(container, manualArr, saveFn, listKey, renderSelf);
 }
 
-function renderProgManualInput(container) {
+function _renderProgManualInput(container, manualArr, saveFn, listKey, renderSelf) {
   const wrap = document.createElement('div');
   wrap.className = 'prog-add-wrap';
   const inp = document.createElement('input');
   inp.className = 'prog-add-inp';
   inp.type = 'text';
   inp.placeholder = '授業名を入力…';
-  inp.dataset.list = 'prog';
+  inp.dataset.list = listKey;
   const btn = document.createElement('button');
   btn.className = 'prog-add-btn';
   btn.textContent = '追加';
@@ -2277,139 +2279,17 @@ function renderProgManualInput(container) {
 
   const doAdd = () => {
     const val = inp.value.trim();
-    if (val && !progManual.includes(val)) {
-      progManual.push(val);
-      saveProgManual();
+    if (val && !manualArr.includes(val)) {
+      manualArr.push(val);
+      saveFn();
       schedulePush();
-      renderProgress();
+      renderSelf();
     }
     inp.value = '';
     inp.focus();
   };
   btn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-}
-
-/* ── 2年生進捗テーブル ── */
-const PROG2_CLASSES = ['2-4'];
-
-function renderProgress2() {
-  const container = document.getElementById('progress2Body');
-
-  const map = {};
-  Object.entries(overrides).forEach(([key, entry]) => {
-    if (!entry || !entry.teacher) return;
-    if (entry.rinji) return;
-    if (!PROG2_CLASSES.includes(entry.name)) return;
-    const mk = entry.teacher;
-    if (!map[mk]) map[mk] = { content: entry.teacher, classes: {} };
-    const parts = key.split('-');
-    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
-    const period  = Number(parts[3]);
-    const date    = parseDateStr(dateStr);
-    if (!map[mk].classes[entry.name] || date < map[mk].classes[entry.name].date) {
-      map[mk].classes[entry.name] = { date, period };
-    }
-  });
-
-  // 一度検出された授業名をprog2Manualに保存（overrides削除後も行が消えないように）
-  let _prog2ManualChanged = false;
-  Object.keys(map).forEach(name => {
-    if (!prog2Manual.includes(name)) { prog2Manual.push(name); _prog2ManualChanged = true; }
-  });
-  if (_prog2ManualChanged) saveProg2Manual();
-
-  // 手動追加分をマージ
-  prog2Manual.forEach(name => {
-    if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
-  });
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const weekEnd = addDays(weekStart, 6);
-
-  const rows = Object.values(map).filter(({ content, classes }) => {
-    return !PROG2_CLASSES.every(c => classes[c] && classes[c].date < today);
-  });
-  if (!rows.length) {
-    container.innerHTML = '<div class="list-empty">授業内容が入力されていません</div>';
-    renderProg2ManualInput(container);
-    return;
-  }
-
-  rows.sort((a, b) => {
-    const ai = prog2Order.indexOf(a.content), bi = prog2Order.indexOf(b.content);
-    if (ai !== -1 && bi !== -1) return ai - bi;
-    if (ai !== -1) return -1;
-    if (bi !== -1) return 1;
-    const aMin = Math.min(...Object.values(a.classes).map(c=>c.date.getTime()));
-    const bMin = Math.min(...Object.values(b.classes).map(c=>c.date.getTime()));
-    return (isFinite(aMin)?aMin:Infinity) - (isFinite(bMin)?bMin:Infinity);
-  });
-
-  const table = document.createElement('table');
-  table.className = 'prog-table';
-  table.style.tableLayout = 'fixed';
-  table.innerHTML = `<thead><tr><th style="width:55%">授業内容</th>${PROG2_CLASSES.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
-
-  const tbody = document.createElement('tbody');
-  rows.forEach(({ content, classes, manual }) => {
-    const tr = document.createElement('tr');
-    tr.draggable = true;
-    tr.dataset.content = content;
-    let html = `<td class="prog-content-cell"><span class="prog-drag-handle">⠿</span><div class="prog-cnt" data-content="${esc(content)}" data-manual="${manual?'1':'0'}">${esc(content)}</div><button class="prog-del-btn" data-list="prog2" data-key="${esc(content)}" data-manual="${manual?'1':'0'}" title="削除">×</button></td>`;
-    PROG2_CLASSES.forEach(cls => {
-      const info = classes[cls];
-      if (info && info.date < today) {
-        const d = info.date;
-        html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-done-badge">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
-      } else if (info && isSameDay(info.date, today)) {
-        const d = info.date;
-        html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
-      } else if (info) {
-        const d = info.date;
-        const badgeClass = (d >= weekStart && d <= weekEnd) ? 'prog-thisweek' : 'prog-upcoming';
-        html += `<td><div class="prog-cell-inner"><span class="prog-badge ${badgeClass}">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
-      } else {
-        html += '<td><div class="prog-cell-inner prog-none">─</div></td>';
-      }
-    });
-    tr.innerHTML = html;
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  tbody.addEventListener('click', e => {
-    const cnt = e.target.closest('.prog-cnt');
-    if (!cnt) return;
-    const oldVal = cnt.dataset.content || cnt.textContent;
-    const manual = cnt.dataset.manual === '1';
-    const inp = document.createElement('input');
-    inp.className = 'prog-edit-inp';
-    inp.value = oldVal;
-    cnt.replaceWith(inp);
-    inp.focus(); inp.select();
-    const doSave2 = () => {
-      const newVal = inp.value.trim();
-      if (newVal && newVal !== oldVal) {
-        if (manual) {
-          const idx = prog2Manual.indexOf(oldVal);
-          if (idx !== -1) { prog2Manual[idx] = newVal; saveProg2Manual(); }
-        } else {
-          Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save(); schedulePush();
-        }
-        renderProgress(); renderProgress2();
-      } else { renderProgress2(); }
-    };
-    inp.addEventListener('blur', doSave2);
-    inp.addEventListener('keydown', e2 => { if (e2.key === 'Enter') inp.blur(); if (e2.key === 'Escape') { inp.value = oldVal; inp.blur(); } });
-  });
-  attachProgDrag(tbody, prog2Order, saveProg2Order, renderProgress2);
-  const wrap2 = document.createElement('div');
-  wrap2.className = 'prog-table-wrap';
-  wrap2.appendChild(table);
-  container.innerHTML = '';
-  container.appendChild(wrap2);
-  renderProg2ManualInput(container);
 }
 
 function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
@@ -2446,36 +2326,6 @@ function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
     newOrder.forEach(v => orderArr.push(v));
     saveFn();
   });
-}
-
-function renderProg2ManualInput(container) {
-  const wrap = document.createElement('div');
-  wrap.className = 'prog-add-wrap';
-  const inp = document.createElement('input');
-  inp.className = 'prog-add-inp';
-  inp.type = 'text';
-  inp.placeholder = '授業名を入力…';
-  inp.dataset.list = 'prog2';
-  const btn = document.createElement('button');
-  btn.className = 'prog-add-btn';
-  btn.textContent = '追加';
-  wrap.appendChild(inp);
-  wrap.appendChild(btn);
-  container.appendChild(wrap);
-
-  const doAdd = () => {
-    const val = inp.value.trim();
-    if (val && !prog2Manual.includes(val)) {
-      prog2Manual.push(val);
-      saveProg2Manual();
-      schedulePush();
-      renderProgress2();
-    }
-    inp.value = '';
-    inp.focus();
-  };
-  btn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
 }
 
 /* ── 自動割り当て ── */
