@@ -1350,7 +1350,7 @@ let bukatsuOverrides = {}; // { "YYYY-MM-DD": true(あり)/false(なし)/undefin
 let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業ありにした日
 
 /* ── 永続化 ── */
-function load() {
+function loadOverrides() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
 }
 function safeSave(key, value) {
@@ -1443,7 +1443,6 @@ function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(
 function pad(n)       { return String(n).padStart(2,'0'); }
 function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 function getWeekDates(){ return Array.from({length:7},(_,i)=>addDays(weekStart,i)); }
-function getTimetableDates(){ return getWeekDates(); }
 function parseDateStr(s){ const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d); }
 // dayIdx: 月=0, 火=1, 水=2, 木=3, 金=4, 土=5, 日=6（既存データと後方互換）
 function dayIdx(d)     { const dw=d.getDay(); return dw===0?6:dw-1; }
@@ -1540,7 +1539,7 @@ function getSubjects(name) {
 /* ── 時間割グリッド ── */
 function renderTimetable() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const dates = getTimetableDates();
+  const dates = getWeekDates();
   document.getElementById('weekLabel').textContent = formatWeekLabel();
 
   const ttScroll = document.getElementById('ttScroll');
@@ -1666,14 +1665,14 @@ function renderTimetable() {
     pc.innerHTML = `<span class="period-num">${p}</span>`;
     grid.appendChild(pc);
 
-    dates.forEach(d => {
-      const col = dates.indexOf(d) + 2;
+    dates.forEach((d, i) => {
+      const col = i + 2;
       const isToday   = isSameDay(d, today);
       const isPast    = d < today && !isToday;
       const dateStr   = toDateStr(d);
       if (isActualHoliday(dateStr)) return; // 祝日ブロックは後で処理
       if (isCalendarLongVacation(dateStr)) return; // 長期休業ブロックは後で処理
-      if (narrowFlags[dates.indexOf(d)]) return; // 授業なし土日はセルを非表示
+      if (narrowFlags[i]) return; // 授業なし土日はセルを非表示
 
       const key    = overrideKey(dateStr, p);
       const entry  = getEntry(dateStr, p);
@@ -1681,10 +1680,9 @@ function renderTimetable() {
       const isSel  = key === selKey;
 
       const isWeekendCol = d.getDay() === 0 || d.getDay() === 6;
-      const isNarrowCol  = isWeekendCol && narrowFlags[dates.indexOf(d)];
+      const isNarrowCol  = isWeekendCol && narrowFlags[i];
       const isDark  = entry && DARK_CLASSES.has(entry.name);
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
-      const colIdx = dates.indexOf(d);
       let cls = 'cell';
       if (entry) cls += ' has-entry';
       if (entry && (entry.teacher || isLight)) cls += ' has-content';
@@ -3354,7 +3352,7 @@ loadProgManual();
 loadProg2Manual();
 loadProgOrder();
 loadProg2Order();
-load();
+loadOverrides();
 loadGcalCache();
 renderTimetable();
 renderProgress();
