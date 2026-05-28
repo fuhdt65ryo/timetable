@@ -2143,6 +2143,13 @@ function renderProgress() {
     }
   });
 
+  // 一度検出された授業名をprogManualに保存（overrides削除後も行が消えないように）
+  let _progManualChanged = false;
+  Object.keys(map).forEach(name => {
+    if (!progManual.includes(name)) { progManual.push(name); _progManualChanged = true; }
+  });
+  if (_progManualChanged) saveProgManual();
+
   // 手動追加分をマージ
   progManual.forEach(name => {
     if (!map[name]) map[name] = { content: name, classes: {}, manual: true };
@@ -2287,6 +2294,13 @@ function renderProgress2() {
       map[mk].classes[entry.name] = { date, period };
     }
   });
+
+  // 一度検出された授業名をprog2Manualに保存（overrides削除後も行が消えないように）
+  let _prog2ManualChanged = false;
+  Object.keys(map).forEach(name => {
+    if (!prog2Manual.includes(name)) { prog2Manual.push(name); _prog2ManualChanged = true; }
+  });
+  if (_prog2ManualChanged) saveProg2Manual();
 
   // 手動追加分をマージ
   prog2Manual.forEach(name => {
