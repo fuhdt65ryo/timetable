@@ -1352,6 +1352,20 @@ let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業
 /* ── 永続化 ── */
 function loadOverrides() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
+  _migrateJikojiRoomToTeacher();
+}
+
+/* 行事エントリの room→teacher 一括移行（旧データ互換） */
+function _migrateJikojiRoomToTeacher() {
+  let dirty = false;
+  Object.values(overrides).forEach(entry => {
+    if (entry && entry.name === '行事' && entry.room && !entry.teacher) {
+      entry.teacher = entry.room;
+      entry.room = '';
+      dirty = true;
+    }
+  });
+  if (dirty) save();
 }
 function safeSave(key, value) {
   try {
@@ -1975,10 +1989,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const isSairyo   = currentClass === '裁量';
   const isAki      = currentClass === '空き';
   const isTanin    = !!(CLASSES.find(c => c.name === currentClass)?.tanin);
-  const showContent = !isJikoji && !isKenkyu && !isSairyo && !isAki;
-  const showSubject = !isSairyo && !isAki; // 全クラスで教科入力可
-  const subjectLabel = isJikoji ? '行事名' : isKenkyu ? '会議内容' : '教科';
-  const subjectPlaceholder = isJikoji ? '例: 体育大会、文化祭' : isKenkyu ? '例: 学年会議' : '例: 数学、英語';
+  const showContent = !isKenkyu && !isSairyo && !isAki; // 行事もteacherフィールドを表示
+  const showSubject = !isJikoji && !isSairyo && !isAki; // 行事はroomフィールド非表示
+  const subjectLabel = isKenkyu ? '会議内容' : '教科';
+  const subjectPlaceholder = isKenkyu ? '例: 学年会議' : '例: 数学、英語';
+  const contentLabel = isJikoji ? '行事名' : '授業内容';
+  const contentPlaceholder = isJikoji ? '例: 体育大会、文化祭' : '例: 光合成のまとめ';
 
   const [srcDateStr, srcPStr] = selKeyParts();
   const srcPeriod = +srcPStr;
@@ -2018,9 +2034,9 @@ function renderEditForm(entry, isOvr, baseEntry) {
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
-        <label class="form-label">授業内容</label>
+        <label class="form-label">${contentLabel}</label>
         <input class="form-input" id="eContent" type="text" list="eContentList"
-          placeholder="例: 光合成のまとめ" value="${esc(currentContent)}">
+          placeholder="${contentPlaceholder}" value="${esc(currentContent)}">
         <datalist id="eContentList">${datalistHtml}</datalist>
       </div>` : ''}
     </div>
@@ -2672,7 +2688,7 @@ function renderChanges() {
         ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
       const toHtml = to
-        ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : ''}</span>`
+        ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.teacher ? ' '+to.teacher : '')}</span>`
         : '<span style="color:#aaa">なし</span>';
       const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
       tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
@@ -3080,7 +3096,7 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; safeSave('tt_overrides_v1', overrides); changed = true; }
+  if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; _migrateJikojiRoomToTeacher(); safeSave('tt_overrides_v1', overrides); changed = true; }
   if (data.tt_daysched_v1  !== undefined)       { daySchedules    = data.tt_daysched_v1          || {}; safeSave('tt_daysched_v1',          daySchedules);    changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
