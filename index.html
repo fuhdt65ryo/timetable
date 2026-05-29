@@ -2138,7 +2138,8 @@ function autoSave(doRerender = true) {
 
 function restoreBase() {
   delete overrides[selKey];
-  save();
+  delete cellSources[selKey];
+  save(); saveCellSources();
   schedulePush();
   selectCell(...selKeyParts());
 }
