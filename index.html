@@ -3272,9 +3272,7 @@ document.addEventListener('click', function(e) {
     const list   = e.target.dataset.list;
     const key    = e.target.dataset.key;
     const manual = e.target.dataset.manual === '1';
-    if (!confirm(`「${key}」を削除しますか？\n該当する授業コマの授業名もすべて削除されます。`)) return;
-    // 該当授業が入っているコマの授業名をすべて削除
-    Object.values(overrides).forEach(ov => { if (ov && ov.teacher === key) delete ov.teacher; });
+    if (!confirm(`「${key}」を進捗リストから削除しますか？\n時間割の授業内容はそのまま残ります。`)) return;
     save(); schedulePush();
     if (list === 'prog') {
       progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
