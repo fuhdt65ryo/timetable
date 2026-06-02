@@ -2090,7 +2090,9 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;color:#c53030;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:6px 10px;cursor:pointer;user-select:none">
           <input type="checkbox" id="eRinji" ${entry?.rinji ? 'checked' : ''} style="accent-color:#c53030;width:14px;height:14px">臨時
         </label>
-        <button class="btn" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px;background:#78909C;color:#fff;border:none;border-radius:8px;cursor:pointer">自習</button>
+        <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;color:#455a64;background:#eceff1;border:1px solid #b0bec5;border-radius:8px;padding:6px 10px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="eJishu" ${entry?.teacher === '自習' ? 'checked' : ''} style="accent-color:#455a64;width:14px;height:14px">自習
+        </label>
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
         <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
@@ -2116,11 +2118,17 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eContent')?.addEventListener('blur', _as);
   document.getElementById('eRinji')?.addEventListener('change', _as);
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
-  document.getElementById('eBtnJishu')?.addEventListener('click', () => {
+  document.getElementById('eJishu')?.addEventListener('change', () => {
+    const checked = document.getElementById('eJishu').checked;
     const cont = document.getElementById('eContent');
     const cb = document.getElementById('eRinji');
-    if (cont) cont.value = '自習';
-    if (cb) cb.checked = true;
+    if (checked) {
+      if (cont) cont.value = '自習';
+      if (cb) cb.checked = true;
+    } else {
+      if (cont && cont.value === '自習') cont.value = '';
+      if (cb) cb.checked = false;
+    }
     autoSave(false); schedulePush();
   });
 
