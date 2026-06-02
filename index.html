@@ -3253,13 +3253,24 @@ document.addEventListener('click', function(e) {
     const list   = e.target.dataset.list;
     const key    = e.target.dataset.key;
     const manual = e.target.dataset.manual === '1';
-    if (!confirm(`「${key}」を進捗リストから削除しますか？\n時間割の授業内容はそのまま残ります。`)) return;
-    save(); schedulePush();
+    if (!confirm(`「${key}」を進捗リストから削除しますか？\n時間割の授業内容も合わせて消去されます。`)) return;
+    // 該当授業内容が入っている未来のセルをクリア
+    const today = new Date(); today.setHours(0,0,0,0);
+    Object.keys(overrides).forEach(oKey => {
+      const e = overrides[oKey];
+      if (!e || e.teacher !== key) return;
+      const parts = oKey.split('-');
+      const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
+      if (date < today) return;
+      overrides[oKey] = { ...e, teacher: '' };
+      delete overrides[oKey].autoAssigned;
+    });
     if (list === 'prog') {
       progManual = progManual.filter(n => n !== key); saveProgManual(); renderProgress();
     } else {
       prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
     }
+    save(); schedulePush();
     renderTimetable();
   }
 });
