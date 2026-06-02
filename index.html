@@ -2110,10 +2110,6 @@ function renderEditForm(entry, isOvr, baseEntry) {
 
   const _as = () => { autoSave(false); schedulePush(); };
   document.getElementById('eClass')?.addEventListener('blur', _as);
-  document.getElementById('eSubject')?.addEventListener('input', () => {
-    const cb = document.getElementById('eRinji');
-    if (cb && document.getElementById('eSubject').value === '自習') cb.checked = true;
-  });
   document.getElementById('eSubject')?.addEventListener('blur', _as);
   document.getElementById('eContent')?.addEventListener('blur', _as);
   document.getElementById('eRinji')?.addEventListener('change', _as);
@@ -2182,7 +2178,7 @@ function autoSave(doRerender = true) {
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
   document.getElementById('eClass')?.classList.remove('err');
-  const rinji = document.getElementById('eRinji')?.checked || subject === '自習' || false;
+  const rinji = document.getElementById('eRinji')?.checked || false;
   const prev = overrides[selKey];
   const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
   overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
