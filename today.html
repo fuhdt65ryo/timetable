@@ -99,8 +99,8 @@
       display: flex;
       align-items: stretch;
       border-radius: 7px;
-      overflow: visible;
-      background: white;
+      overflow: hidden;
+      background: #f7fafc;
       border: 1.5px dashed #e2e8f0;
       height: 30px;
     }
@@ -413,7 +413,7 @@ const _fbRef = firebase.database().ref('timetable_data');
 
 setFooter('syncing');
 firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
-  _fbRef.on('value', snap => applyFbData(snap.val()), () => setFooter('ok'));
+  _fbRef.on('value', snap => { applyFbData(snap.val()); setFooter('ok'); }, () => setFooter('ok'));
 });
 
 function render() {
@@ -438,7 +438,7 @@ function render() {
     const holType = typeof holRaw === 'object' ? holRaw.type : 'holiday';
     if (holType === 'holiday') {
       content.innerHTML = `<div class="holiday-banner">🏖️ ${esc(holName)}</div>`;
-      setFooter('ok');
+      // footer is managed separately
       return;
     }
   }
@@ -448,7 +448,7 @@ function render() {
     const hasAny = PERIODS.some(p => getEntry(ds, p, overrides, daySchedules, cellSources));
     if (!hasAny) {
       content.innerHTML = `<div class="no-class">📅 今日は授業がありません</div>`;
-      setFooter('ok');
+      // footer is managed separately
       return;
     }
   }
@@ -474,7 +474,7 @@ function render() {
   }
   if (allEvent) {
     content.innerHTML = html + `<div class="no-class">📌 本日は行事日程です</div>`;
-    setFooter('ok');
+    // footer is managed separately
     return;
   }
 
@@ -502,12 +502,12 @@ function render() {
     const numStyle = `background:${numBg}`;
     const numLabelColor = isDark ? 'rgba(255,255,255,.85)' : (entry ? color : '#a0aec0');
 
-    // ボーダー
+    // ボーダー＋行背景
     let borderStyle = '';
     if (!entry || (!hasContent && !isDark)) {
       borderStyle = `border-color:${color || '#e2e8f0'}`;
     } else if (hasContent && !isDark) {
-      borderStyle = `border-color:${color};border-style:solid`;
+      borderStyle = `border-color:${color};border-style:solid;background:${bg}`;
     } else if (isDark) {
       borderStyle = `border-color:${color};border-style:solid;background:${bg}`;
     }
@@ -591,7 +591,7 @@ function render() {
 
   html += '</div>';
   content.innerHTML = html;
-  setFooter('ok');
+  // footer is managed separately
 }
 
 render();
