@@ -111,22 +111,22 @@
 
     /* コマ番号 */
     .period-num {
-      width: 38px;
-      min-width: 38px;
-      display: flex;
-      flex-direction: row;
+      width: 42px;
+      min-width: 42px;
+      display: grid;
+      grid-template-columns: 16px 1fr;
       align-items: center;
-      justify-content: center;
-      gap: 2px;
+      justify-items: center;
       border-right: 1px solid rgba(0,0,0,.07);
       border-radius: 5px 0 0 5px;
-      padding: 0 4px;
+      padding: 0 3px;
     }
 
     .period-label {
       font-size: 11px;
       font-weight: 800;
       line-height: 1;
+      justify-self: center;
     }
 
     /* セル内容 */
