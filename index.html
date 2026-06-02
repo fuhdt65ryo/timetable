@@ -2178,12 +2178,18 @@ function autoSave(doRerender = true) {
   const content = document.getElementById('eContent')?.value.trim() || '';
   if (!klass) { document.getElementById('eClass')?.classList.add('err'); return; }
   document.getElementById('eClass')?.classList.remove('err');
-  const rinji = document.getElementById('eRinji')?.checked || false;
+  // 進捗リストにない授業内容を直接入力した場合は臨時扱い
+  const progList = PROG_CLASSES.includes(klass) ? progManual : PROG2_CLASSES.includes(klass) ? prog2Manual : [];
+  const notInProg = content && progList.length > 0 && !progList.includes(content);
+  const rinjiForcedByProg = notInProg;
+  const rinji = document.getElementById('eRinji')?.checked || rinjiForcedByProg;
+  // UIのチェックボックスも同期
+  const rinjCb = document.getElementById('eRinji');
+  if (rinjCb && rinjiForcedByProg) rinjCb.checked = true;
   const prev = overrides[selKey];
   const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
   overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
-  _syncProgManuals();
   if (!doRerender) return;
   rerender();
 }
@@ -2357,18 +2363,7 @@ function _renderProgManualInput(container, manualArr, saveFn, listKey, renderSel
 }
 
 function _syncProgManuals() {
-  let c3 = false, c2 = false;
-  Object.values(overrides).forEach(entry => {
-    if (!entry || !entry.teacher || entry.rinji || entry.room !== '理科') return;
-    if (PROG_CLASSES.includes(entry.name) && !progManual.includes(entry.teacher)) {
-      progManual.push(entry.teacher); c3 = true;
-    }
-    if (PROG2_CLASSES.includes(entry.name) && !prog2Manual.includes(entry.teacher)) {
-      prog2Manual.push(entry.teacher); c2 = true;
-    }
-  });
-  if (c3) saveProgManual();
-  if (c2) saveProg2Manual();
+  // 自動追加は行わない（進捗リストは手動入力のみ）
 }
 
 function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
@@ -2452,40 +2447,18 @@ function getExistingFutureAssignment(lessonName, className) {
 
 let autoAssignPlan = null;
 
-// 進捗テーブルと同じ順序・同じ授業リストを返す（progOrder反映・overrides含む）
+// 自動割り当て用授業リスト（進捗リストに手動追加されたものだけ、progOrder順）
 function buildEffectiveLessonList(grade) {
   const progM    = grade === 3 ? progManual   : prog2Manual;
-  const progC    = grade === 3 ? PROG_CLASSES : PROG2_CLASSES;
   const orderArr = grade === 3 ? progOrder    : prog2Order;
-  const today    = new Date(); today.setHours(0,0,0,0);
-
-  const map = {};
-  Object.entries(overrides).forEach(([key, entry]) => {
-    if (!entry || !entry.teacher || entry.rinji) return;
-    if (!progC.includes(entry.name)) return;
-    if (entry.room !== '理科') return; // 全クラス共通：理科以外は除外
-    if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
-    const parts = key.split('-');
-    const d = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
-    if (!map[entry.teacher].classes[entry.name] || d < map[entry.teacher].classes[entry.name].date) {
-      map[entry.teacher].classes[entry.name] = { date: d };
-    }
-  });
-  progM.forEach(name => { if (!map[name]) map[name] = { content: name, classes: {} }; });
-
-  const rows = Object.values(map).filter(({ classes: cls }) =>
-    !progC.every(c => cls[c] && cls[c].date < today)
-  );
-  rows.sort((a, b) => {
-    const ai = orderArr.indexOf(a.content), bi = orderArr.indexOf(b.content);
+  const sorted = [...progM].sort((a, b) => {
+    const ai = orderArr.indexOf(a), bi = orderArr.indexOf(b);
     if (ai !== -1 && bi !== -1) return ai - bi;
     if (ai !== -1) return -1;
     if (bi !== -1) return 1;
-    const aMin = Math.min(...Object.values(a.classes).map(c => c.date.getTime()));
-    const bMin = Math.min(...Object.values(b.classes).map(c => c.date.getTime()));
-    return (isFinite(aMin) ? aMin : Infinity) - (isFinite(bMin) ? bMin : Infinity);
+    return 0;
   });
-  return rows.map(r => r.content);
+  return sorted;
 }
 
 function buildGradePlan(grade) {
