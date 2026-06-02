@@ -99,7 +99,7 @@
       overflow: visible;
       background: white;
       border: 1.5px dashed #e2e8f0;
-      min-height: 28px;
+      height: 30px;
     }
 
     .period-row.has-content {
@@ -111,16 +111,16 @@
 
     /* コマ番号 */
     .period-num {
-      width: 28px;
-      min-width: 28px;
+      width: 38px;
+      min-width: 38px;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
       gap: 2px;
       border-right: 1px solid rgba(0,0,0,.07);
       border-radius: 5px 0 0 5px;
-      padding: 3px 0;
+      padding: 0 4px;
     }
 
     .period-label {
@@ -235,8 +235,9 @@
       color: #718096;
       border: 1px solid #e2e8f0;
       border-radius: 3px;
-      padding: 0 3px;
-      line-height: 1.6;
+      padding: 0 2px;
+      line-height: 1.4;
+      white-space: nowrap;
     }
   </style>
 </head>
