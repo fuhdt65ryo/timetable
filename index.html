@@ -2596,7 +2596,7 @@ function applyAutoAssign() {
     Object.keys(overrides).forEach(key => {
       const e = overrides[key];
       if (!e || !classes.includes(e.name)) return;
-      if (e.jugyohenkou && !e.autoAssigned) return; // 手動入力の授業変更は保護
+      if (e.jugyohenkou) return; // 授業変更は常に保護（autoAssigned有無に関わらず）
       if (e.autoAssigned || planLessons.has(e.teacher)) {
         const parts = key.split('-');
         const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
