@@ -2186,14 +2186,14 @@ function autoSave(doRerender = true) {
 
 function restoreBase() {
   const [ds, pStr] = selKeyParts();
-  const base = getEntry(ds, +pStr);
-  delete cellSources[selKey];
-  if (base && base.teacher) {
-    overrides[selKey] = { name: base.name, room: base.room, teacher: '', color: base.color };
+  const prev = overrides[selKey];
+  if (prev) {
+    overrides[selKey] = { ...prev, teacher: '' };
   } else {
-    delete overrides[selKey];
+    const base = getEntry(ds, +pStr);
+    if (base) overrides[selKey] = { ...base, teacher: '' };
   }
-  save(); saveCellSources();
+  save();
   schedulePush();
   selectCell(ds, +pStr);
 }
