@@ -2117,9 +2117,9 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eRinji')?.addEventListener('change', _as);
   document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
   document.getElementById('eBtnJishu')?.addEventListener('click', () => {
-    const subj = document.getElementById('eSubject');
+    const cont = document.getElementById('eContent');
     const cb = document.getElementById('eRinji');
-    if (subj) subj.value = '自習';
+    if (cont) cont.value = '自習';
     if (cb) cb.checked = true;
     autoSave(false); schedulePush();
   });
