@@ -553,8 +553,8 @@ function render() {
             <span class="class-dot" style="background:${color}"></span>
             <span class="class-name" style="color:${textColor}">${esc(entry.name)}</span>
             ${entry.room ? `<span class="subject-tag" style="${subjectStyle}">${esc(entry.room)}</span>` : ''}
+            ${entry.teacher ? `<span class="period-content-text" style="color:#4a5568">${esc(entry.teacher)}</span>` : ''}
           </div>
-          ${entry.teacher ? `<div class="period-content-label">授業内容</div><div class="period-content-text">${esc(entry.teacher)}</div>` : ''}
         </div>
         ${isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : ''}
         ${isAbsent ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : ''}
