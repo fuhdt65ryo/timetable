@@ -194,11 +194,19 @@
       align-self: center;
     }
 
-    /* ── バッジ ── */
+    /* ── バッジ列 ── */
+    .badge-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 8px 6px 4px;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
     .badge-rinji {
-      position: absolute;
-      top: 3px;
-      left: 4px;
       font-size: .55rem;
       font-weight: 800;
       background: #fff;
@@ -207,13 +215,10 @@
       border-radius: 3px;
       padding: 0 4px;
       line-height: 1.6;
-      z-index: 2;
+      white-space: nowrap;
     }
 
     .badge-chg {
-      position: absolute;
-      top: 3px;
-      right: 4px;
       font-size: .55rem;
       font-weight: 800;
       background: linear-gradient(135deg,#4A6DB5,#2c47a0);
@@ -221,29 +226,23 @@
       border-radius: 3px;
       padding: 0 5px;
       line-height: 1.6;
-      z-index: 2;
+      white-space: nowrap;
     }
 
     .badge-absence {
-      position: absolute;
-      bottom: 3px;
-      right: 4px;
       font-size: .55rem;
       font-weight: 800;
       background: #fff;
       border-radius: 3px;
       padding: 0 4px;
       line-height: 1.6;
-      z-index: 2;
+      white-space: nowrap;
     }
 
     .badge-absence.nenkyuu { color: #E65100; border: 1.5px solid #FB8C00; }
     .badge-absence.shuccho { color: #2E7D32; border: 1.5px solid #388E3C; }
 
     .badge-src {
-      position: absolute;
-      bottom: 3px;
-      left: 4px;
       font-size: .52rem;
       font-weight: 700;
       background: #f0f2f5;
@@ -513,23 +512,27 @@ function render() {
       continue;
     }
 
+    const badges = [
+      isRinji       ? '<span class="badge-rinji">臨</span>' : '',
+      isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : '',
+      isAbsent      ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : '',
+      srcBadge      ? `<span class="badge-src">${esc(srcBadge)}</span>` : '',
+    ].filter(Boolean).join('');
+    const badgeCol = badges ? `<div class="badge-col">${badges}</div>` : '';
+
     if (isDark) {
       html += `
         <div class="${rowClass}" style="${borderStyle}">
-          ${isRinji ? '<span class="badge-rinji">臨</span>' : ''}
           <div class="period-num" style="${numStyle};border-right-color:rgba(255,255,255,.2)">
             <div class="period-label" style="color:${numLabelColor}">${p}</div>
-            <div class="period-time" style="color:rgba(255,255,255,.5)">${tStart}<br>${tEnd}</div>
           </div>
           <div class="period-content">
             <div class="period-top">
               <span class="class-name" style="color:rgba(255,255,255,.9)">${esc(entry.name)}</span>
             </div>
-            ${entry.teacher ? `<div class="period-content-label" style="color:rgba(255,255,255,.5)">授業内容</div><div class="period-content-text" style="color:rgba(255,255,255,.85)">${esc(entry.teacher)}</div>` : ''}
+            ${entry.teacher ? `<div class="period-content-text" style="color:rgba(255,255,255,.85)">${esc(entry.teacher)}</div>` : ''}
           </div>
-          ${isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : ''}
-          ${isAbsent ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : ''}
-          ${srcBadge ? `<span class="badge-src">${esc(srcBadge)}</span>` : ''}
+          ${badgeCol}
         </div>`;
       continue;
     }
@@ -543,10 +546,8 @@ function render() {
 
     html += `
       <div class="${rowClass}" style="${borderStyle}">
-        ${isRinji ? '<span class="badge-rinji">臨</span>' : ''}
         <div class="period-num" style="${numStyle}">
           <div class="period-label" style="color:${numLabelColor}">${p}</div>
-          <div class="period-time">${tStart}<br>${tEnd}</div>
         </div>
         <div class="period-content">
           <div class="period-top">
@@ -556,9 +557,7 @@ function render() {
             ${entry.teacher ? `<span class="period-content-text" style="color:#4a5568">${esc(entry.teacher)}</span>` : ''}
           </div>
         </div>
-        ${isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : ''}
-        ${isAbsent ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : ''}
-        ${srcBadge ? `<span class="badge-src">${esc(srcBadge)}</span>` : ''}
+        ${badgeCol}
       </div>`;
   }
 
