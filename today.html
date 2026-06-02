@@ -273,6 +273,9 @@
   <div class="footer" id="footer"></div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 /* ── 基本時間割（メインアプリと同期） ── */
 const BASE = {
@@ -382,6 +385,41 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+let _overrides    = {};
+let _daySchedules = {};
+let _cellSources  = {};
+let _holidays     = {};
+
+function applyFbData(data) {
+  if (!data) return;
+  if (data.tt_overrides_v1 !== undefined) {
+    _overrides = {};
+    for (const [k, v] of Object.entries(data.tt_overrides_v1 || {})) {
+      _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
+    }
+  }
+  if (data.tt_daysched_v1 !== undefined) _daySchedules = data.tt_daysched_v1 || {};
+  if (data.tt_cellsrc_v1  !== undefined) _cellSources  = data.tt_cellsrc_v1  || {};
+  if (data.tt_holidays_v1 !== undefined) _holidays     = data.tt_holidays_v1 || {};
+  render();
+}
+
+const _fbConfig = {
+  apiKey: "AIzaSyBK8aZpB0O1HCbUzXk8A4bz95k8hW-MIKo",
+  authDomain: "timetable-a17e2.firebaseapp.com",
+  databaseURL: "https://timetable-a17e2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "timetable-a17e2",
+  storageBucket: "timetable-a17e2.firebasestorage.app",
+  messagingSenderId: "936420205250",
+  appId: "1:936420205250:web:168446baa909186f1c515b"
+};
+if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+const _fbRef = firebase.database().ref('timetable_data');
+
+firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
+  _fbRef.on('value', snap => applyFbData(snap.val()), () => render());
+});
+
 function render() {
   const today = new Date();
   const ds    = toDateStr(today);
@@ -390,14 +428,10 @@ function render() {
   document.getElementById('headerDate').textContent = `${today.getMonth()+1}月${today.getDate()}日`;
   document.getElementById('headerDay').textContent  = `（${DAY_JP[dow]}）`;
 
-  let overrides    = {};
-  let daySchedules = {};
-  let cellSources  = {};
-  let holidays     = {};
-  try { overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1')  || '{}'); } catch {}
-  try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')   || '{}'); } catch {}
-  try { cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')    || '{}'); } catch {}
-  try { holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')   || '{}'); } catch {}
+  const overrides    = _overrides;
+  const daySchedules = _daySchedules;
+  const cellSources  = _cellSources;
+  const holidays     = _holidays;
 
   const content = document.getElementById('content');
 
