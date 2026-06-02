@@ -3398,7 +3398,12 @@ document.getElementById('aaClose').addEventListener('click', closeAutoAssignModa
 document.getElementById('aaCancelBtn').addEventListener('click', closeAutoAssignModal);
 document.getElementById('aaConfirmBtn').addEventListener('click', applyAutoAssign);
 document.getElementById('aaModal').addEventListener('click', e => { if (e.target === document.getElementById('aaModal')) closeAutoAssignModal(); });
-document.getElementById('btnAutoAssign').addEventListener('click', () => openAutoAssignModal());
+document.getElementById('btnAutoAssign').addEventListener('click', () => {
+  const grade3 = buildGradePlan(3);
+  const grade2 = buildGradePlan(2);
+  autoAssignPlan = { grade3, grade2 };
+  applyAutoAssign();
+});
 
 /* ── 起動 ── */
 loadDaySchedules();
