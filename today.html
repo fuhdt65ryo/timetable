@@ -363,10 +363,15 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// まずlocalStorageのキャッシュを読み込んで即座に表示
 let _overrides    = {};
 let _daySchedules = {};
 let _cellSources  = {};
 let _holidays     = {};
+try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch {}
+try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')  || '{}'); } catch {}
+try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')   || '{}'); } catch {}
+try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')  || '{}'); } catch {}
 
 function applyFbData(data) {
   if (!data) return;
@@ -375,10 +380,11 @@ function applyFbData(data) {
     for (const [k, v] of Object.entries(data.tt_overrides_v1 || {})) {
       _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
     }
+    localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
   }
-  if (data.tt_daysched_v1 !== undefined) _daySchedules = data.tt_daysched_v1 || {};
-  if (data.tt_cellsrc_v1  !== undefined) _cellSources  = data.tt_cellsrc_v1  || {};
-  if (data.tt_holidays_v1 !== undefined) _holidays     = data.tt_holidays_v1 || {};
+  if (data.tt_daysched_v1 !== undefined) { _daySchedules = data.tt_daysched_v1 || {}; localStorage.setItem('tt_daysched_v1', JSON.stringify(_daySchedules)); }
+  if (data.tt_cellsrc_v1  !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {}; localStorage.setItem('tt_cellsrc_v1',  JSON.stringify(_cellSources));  }
+  if (data.tt_holidays_v1 !== undefined) { _holidays     = data.tt_holidays_v1 || {}; localStorage.setItem('tt_holidays_v1', JSON.stringify(_holidays));     }
   render();
 }
 
