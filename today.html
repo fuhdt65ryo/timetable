@@ -318,12 +318,12 @@ function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad
 function dayIdx(d) { const w = d.getDay(); return w === 0 ? 6 : w - 1; }
 function parseDateStr(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
 
-function pastelizeColor(hex) {
+function pastelizeColor(hex, strength = .42) {
   if (!hex || hex.length < 7) return hex;
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
   const b = parseInt(hex.slice(5,7),16);
-  return `rgb(${Math.round(r*.42+255*.58)},${Math.round(g*.42+255*.58)},${Math.round(b*.42+255*.58)})`;
+  return `rgb(${Math.round(r*strength+255*(1-strength))},${Math.round(g*strength+255*(1-strength))},${Math.round(b*strength+255*(1-strength))})`;
 }
 
 function getColor(name, subject) {
@@ -498,7 +498,7 @@ function render() {
     const bg    = isDark ? color : pastelizeColor(color);
 
     // 数字列スタイル
-    const numBg = entry ? bg : '#f7fafc';
+    const numBg = entry ? pastelizeColor(color, .3) : '#f7fafc';
     const numStyle = `background:${numBg}`;
     const numLabelColor = isDark ? 'rgba(255,255,255,.85)' : (entry ? color : '#a0aec0');
 
@@ -507,7 +507,7 @@ function render() {
     if (!entry || (!hasContent && !isDark)) {
       borderStyle = `border-color:${color || '#e2e8f0'}`;
     } else if (hasContent && !isDark) {
-      borderStyle = `border-color:${color};border-style:solid;background:${bg}`;
+      borderStyle = `border-color:${color};border-style:solid;background:${pastelizeColor(color, .12)}`;
     } else if (isDark) {
       borderStyle = `border-color:${color};border-style:solid;background:${bg}`;
     }
