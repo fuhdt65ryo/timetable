@@ -2193,11 +2193,17 @@ function autoSave(doRerender = true) {
 }
 
 function restoreBase() {
-  delete overrides[selKey];
+  const [ds, pStr] = selKeyParts();
+  const base = getEntry(ds, +pStr);
   delete cellSources[selKey];
+  if (base && base.teacher) {
+    overrides[selKey] = { name: base.name, room: base.room, teacher: '', color: base.color };
+  } else {
+    delete overrides[selKey];
+  }
   save(); saveCellSources();
   schedulePush();
-  selectCell(...selKeyParts());
+  selectCell(ds, +pStr);
 }
 
 function selKeyParts() {
