@@ -2634,19 +2634,6 @@ function applyAutoAssign() {
   renderProgress2();
   renderChanges();
   closeAutoAssignModal();
-  showAutoAssignResult(assignedLessons, unassignedLessons);
-}
-
-function showAutoAssignResult(assigned, unassigned) {
-  const lines = [];
-  if (assigned.length > 0) lines.push(`✓ ${assigned.join('、')}`);
-  if (unassigned.length > 0) {
-    unassigned.forEach(({ lesson, missing }) => {
-      lines.push(`⚠ ${lesson}：${missing.join('・')}のコマが見つかりません`);
-    });
-  }
-  if (!lines.length) return;
-  showAutoAssignToast(lines.join('\n'), unassigned.length > 0);
 }
 
 function closeAutoAssignModal() {
