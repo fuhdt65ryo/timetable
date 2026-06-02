@@ -2070,7 +2070,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
       </div>` : ''}
       ${showContent ? `
       <div class="form-group fg-content">
-        <label class="form-label">${contentLabel}</label>
+        <label class="form-label" style="display:flex;align-items:center;gap:8px">
+          ${contentLabel}
+          <label style="display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#c53030;cursor:pointer;user-select:none;margin-left:auto">
+            <input type="checkbox" id="eRinji" ${entry?.rinji ? 'checked' : ''} style="accent-color:#c53030;width:12px;height:12px">臨時
+          </label>
+        </label>
         <input class="form-input" id="eContent" type="text" list="eContentList"
           placeholder="${contentPlaceholder}" value="${esc(currentContent)}">
         <datalist id="eContentList">${datalistHtml}</datalist>
@@ -2087,13 +2092,9 @@ function renderEditForm(entry, isOvr, baseEntry) {
         ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
       </div>
       <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;color:#c53030;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:6px 10px;cursor:pointer;user-select:none">
-          <input type="checkbox" id="eRinji" ${entry?.rinji ? 'checked' : ''} style="accent-color:#c53030;width:14px;height:14px">臨時
-        </label>
         <button class="btn btn-secondary" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px">自習</button>
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
-        <button class="btn btn-restore" id="eBtnRestore" ${!isOvr ? 'disabled style="opacity:.4;cursor:default"' : ''}>元に戻す</button>
       </div>
     </div>
   `;
@@ -2111,7 +2112,6 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eSubject')?.addEventListener('blur', _as);
   document.getElementById('eContent')?.addEventListener('blur', _as);
   document.getElementById('eRinji')?.addEventListener('change', _as);
-  document.getElementById('eBtnRestore')?.addEventListener('click', restoreBase);
   document.getElementById('eBtnJishu')?.addEventListener('click', () => {
     const cont = document.getElementById('eContent');
     if (cont) cont.value = '自習';
