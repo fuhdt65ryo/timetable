@@ -2587,16 +2587,16 @@ function renderAutoAssignPreview(plan, classes, container) {
 function applyAutoAssign() {
   if (!autoAssignPlan) return;
   const today = new Date(); today.setHours(0,0,0,0);
-  let count = 0;
+  const assignedLessons = [];
+  const unassignedLessons = [];
 
   function applyGrade({ plan, classes }) {
     if (!plan.length) return;
     const planLessons = new Set(plan.map(p => p.lesson));
-    // 自動割り当て済み + プラン内の手動入力をクリア（過去・それ以外の手動変更は残す）
     Object.keys(overrides).forEach(key => {
       const e = overrides[key];
       if (!e || !classes.includes(e.name)) return;
-      if (e.jugyohenkou) return; // 授業変更は常に保護（autoAssigned有無に関わらず）
+      if (e.jugyohenkou) return;
       if (e.autoAssigned || planLessons.has(e.teacher)) {
         const parts = key.split('-');
         const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
@@ -2604,19 +2604,24 @@ function applyAutoAssign() {
       }
     });
     plan.forEach(({ lesson, slots }) => {
+      let assigned = 0;
+      const missing = [];
       classes.forEach(cls => {
         const slot = slots[cls];
-        if (!slot) return;
+        if (!slot) { missing.push(cls); return; }
+        if (slot.past) return; // 過去の割り当て済みはカウントしない
         const ok = overrideKey(slot.dateStr, slot.period);
         const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
-        if (!currentEntry) return;
+        if (!currentEntry) { missing.push(cls); return; }
         const existingOvr = overrides[ok];
         const chgProps = (existingOvr && existingOvr.jugyohenkou)
           ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
           : {};
         overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
-        count++;
+        assigned++;
       });
+      if (assigned > 0) assignedLessons.push(lesson);
+      if (missing.length > 0) unassignedLessons.push({ lesson, missing });
     });
   }
 
@@ -2629,7 +2634,19 @@ function applyAutoAssign() {
   renderProgress2();
   renderChanges();
   closeAutoAssignModal();
-  if (count > 0) showAutoAssignToast(`${count}件のコマに授業を割り当てました`);
+  showAutoAssignResult(assignedLessons, unassignedLessons);
+}
+
+function showAutoAssignResult(assigned, unassigned) {
+  const lines = [];
+  if (assigned.length > 0) lines.push(`✓ ${assigned.join('、')}`);
+  if (unassigned.length > 0) {
+    unassigned.forEach(({ lesson, missing }) => {
+      lines.push(`⚠ ${lesson}：${missing.join('・')}のコマが見つかりません`);
+    });
+  }
+  if (!lines.length) return;
+  showAutoAssignToast(lines.join('\n'), unassigned.length > 0);
 }
 
 function closeAutoAssignModal() {
@@ -2638,7 +2655,7 @@ function closeAutoAssignModal() {
 }
 
 let aaToastTimer = null;
-function showAutoAssignToast(msg) {
+function showAutoAssignToast(msg, hasWarn = false) {
   let toast = document.getElementById('aaToast');
   if (!toast) {
     toast = document.createElement('div');
@@ -2646,10 +2663,11 @@ function showAutoAssignToast(msg) {
     toast.className = 'aa-toast';
     document.body.appendChild(toast);
   }
-  toast.textContent = msg;
+  toast.innerHTML = msg.split('\n').map(l => `<div>${l}</div>`).join('');
+  toast.style.background = hasWarn ? 'rgba(180,60,20,.92)' : 'rgba(30,40,60,.92)';
   toast.classList.add('aa-toast-show');
   clearTimeout(aaToastTimer);
-  aaToastTimer = setTimeout(() => toast.classList.remove('aa-toast-show'), 2800);
+  aaToastTimer = setTimeout(() => toast.classList.remove('aa-toast-show'), hasWarn ? 5000 : 3000);
 }
 
 /* ── 授業変更一覧 ── */
