@@ -2092,6 +2092,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
         ${srcChanged ? '<button class="btn-src-clear" id="eBtnSrcClear">解除</button>' : ''}
       </div>
       <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
+        <button class="btn btn-secondary" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px">自習</button>
         <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
       </div>
@@ -2111,6 +2112,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eSubject')?.addEventListener('blur', _as);
   document.getElementById('eContent')?.addEventListener('blur', _as);
   document.getElementById('eRinji')?.addEventListener('change', _as);
+  document.getElementById('eBtnJishu')?.addEventListener('click', () => {
+    const cont = document.getElementById('eContent');
+    if (cont) cont.value = '自習';
+    autoSave(false); schedulePush();
+  });
+
   document.querySelectorAll('.src-gc').forEach(gc => {
     gc.addEventListener('click', () => {
       const di = +gc.dataset.di;
