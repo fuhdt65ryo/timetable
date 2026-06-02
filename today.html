@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日の時間割</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #f8f9fa;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    .widget {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .header-date {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+
+    .header-day {
+      font-size: 14px;
+      color: #718096;
+    }
+
+    .holiday-banner {
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      color: #c53030;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .event-banner {
+      background: #fffbeb;
+      border: 1px solid #f6e05e;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      color: #744210;
+      font-size: 13px;
+    }
+
+    .periods {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .period-row {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      transition: opacity 0.2s;
+    }
+
+    .period-row.is-past { opacity: 0.4; }
+
+    .period-row.is-now {
+      border-color: transparent;
+      box-shadow: 0 0 0 2px #4a6cf7, 0 4px 12px rgba(74,108,247,0.18);
+    }
+
+    .period-num {
+      width: 38px;
+      min-width: 38px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f7fafc;
+      border-right: 1.5px solid #e2e8f0;
+      padding: 8px 0;
+    }
+
+    .period-row.is-now .period-num {
+      background: #ebf0ff;
+      border-right-color: #c3d0ff;
+    }
+
+    .period-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #a0aec0;
+      line-height: 1;
+    }
+
+    .period-row.is-now .period-label { color: #4a6cf7; }
+
+    .period-time {
+      font-size: 9px;
+      color: #cbd5e0;
+      margin-top: 3px;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .period-row.is-now .period-time { color: #a3b4f7; }
+
+    .period-content {
+      flex: 1;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .period-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .class-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .class-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a202c;
+      white-space: nowrap;
+    }
+
+    .subject-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .period-detail {
+      font-size: 11px;
+      color: #718096;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty-cell {
+      color: #cbd5e0;
+      font-size: 13px;
+      padding: 11px 12px;
+    }
+
+    .now-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #4a6cf7;
+      background: #ebf0ff;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .footer {
+      margin-top: 12px;
+      text-align: right;
+      font-size: 10px;
+      color: #cbd5e0;
+    }
+
+    .no-class {
+      text-align: center;
+      padding: 30px 16px;
+      color: #a0aec0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<div class="widget">
+  <div class="header">
+    <div class="header-date" id="headerDate"></div>
+    <div class="header-day" id="headerDay"></div>
+  </div>
+  <div id="content"></div>
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+/* ── 基本時間割（メインアプリと同期） ── */
+const BASE = {
+  '0-1':{ name:'3-3',  room:'理科', color:'#D4BE00' },
+  '0-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
+  '0-3':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '0-4':{ name:'3-1',  room:'道徳', color:'#9C6ADE' },
+  '0-5':{ name:'3-1',  room:'理科', color:'#D44545' },
+  '0-6':{ name:'空き',  room:'',    color:'#B07D4E' },
+  '1-1':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '1-2':{ name:'3-3',  room:'理科', color:'#D4BE00' },
+  '1-3':{ name:'3-1',  room:'理科', color:'#D44545' },
+  '1-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
+  '1-5':{ name:'3-1',  room:'学活', color:'#9C6ADE' },
+  '1-6':{ name:'裁量',  room:'',    color:'#546E7A' },
+  '2-1':{ name:'3-4',  room:'理科', color:'#3DAE65' },
+  '2-2':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '2-3':{ name:'3-3',  room:'理科', color:'#D4BE00' },
+  '2-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
+  '2-5':{ name:'3-1',  room:'理科', color:'#D44545' },
+  '2-6':{ name:'空き',  room:'',    color:'#B07D4E' },
+  '3-1':{ name:'空き',  room:'',    color:'#B07D4E' },
+  '3-2':{ name:'3-3',  room:'理科', color:'#D4BE00' },
+  '3-3':{ name:'研究部', room:'',   color:'#3D7A6E' },
+  '3-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
+  '3-5':{ name:'3-4',  room:'理科', color:'#3DAE65' },
+  '4-1':{ name:'空き',  room:'',    color:'#B07D4E' },
+  '4-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
+  '4-3':{ name:'2-4',  room:'理科', color:'#E06010' },
+  '4-4':{ name:'3-2',  room:'理科', color:'#4A90D9' },
+  '4-5':{ name:'3-1',  room:'理科', color:'#D44545' },
+  '4-6':{ name:'3-1',  room:'総合', color:'#9C6ADE' },
+};
+
+const PERIODS = [1,2,3,4,5,6];
+const TIMES   = [
+  ['8:50','9:40'],['9:50','10:40'],['10:50','11:40'],
+  ['13:00','13:50'],['14:00','14:50'],['15:00','15:50']
+];
+
+const DARK_CLASSES  = new Set(['空き','裁量','研究部']);
+const EVENT_CLASSES = new Set(['行事']);
+
+const DAY_JP = ['日','月','火','水','木','金','土'];
+const DI_JP  = ['月','火','水','木','金','土','日'];
+
+function pad2(n) { return String(n).padStart(2,'0'); }
+function dateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+function dayIdx(d) {
+  const dow = d.getDay();
+  return dow === 0 ? 6 : dow - 1; // 月=0 … 日=6
+}
+
+function parseDateStr(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function getEntry(ds, period, overrides, daySchedules, cellSources) {
+  const ok = `${ds}-${period}`;
+  if (ok in overrides) return overrides[ok];
+  if (ok in cellSources) {
+    const src = cellSources[ok];
+    return BASE[`${src.di}-${src.p}`] || null;
+  }
+  const d  = parseDateStr(ds);
+  const di = ds in daySchedules ? daySchedules[ds] : dayIdx(d);
+  if (di < 0 || di > 6) return null;
+  return BASE[`${di}-${period}`] || null;
+}
+
+function nowMinutes() {
+  const n = new Date();
+  return n.getHours() * 60 + n.getMinutes();
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function currentPeriod() {
+  const now = nowMinutes();
+  for (let i = 0; i < TIMES.length; i++) {
+    const start = timeToMinutes(TIMES[i][0]);
+    const end   = timeToMinutes(TIMES[i][1]);
+    if (now >= start && now <= end) return i + 1;
+    if (now < start) return -(i + 1); // 次のコマがi+1
+  }
+  return 0;
+}
+
+function pastelColor(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.round(r*.3+255*.7)},${Math.round(g*.3+255*.7)},${Math.round(b*.3+255*.7)})`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function render() {
+  const today = new Date();
+  const ds    = dateStr(today);
+  const dow   = today.getDay();
+
+  // ヘッダー
+  document.getElementById('headerDate').textContent =
+    `${today.getMonth()+1}月${today.getDate()}日`;
+  document.getElementById('headerDay').textContent =
+    `（${DAY_JP[dow]}）`;
+
+  // localStorage 読み込み
+  let overrides    = {};
+  let daySchedules = {};
+  let cellSources  = {};
+  let holidays     = {};
+
+  try { overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1')   || '{}'); } catch {}
+  try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')    || '{}'); } catch {}
+  try { cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')     || '{}'); } catch {}
+  try { holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')    || '{}'); } catch {}
+
+  const content = document.getElementById('content');
+
+  // 休日チェック
+  const holidayName = holidays[ds];
+  if (holidayName) {
+    content.innerHTML = `<div class="holiday-banner">🏖️ ${esc(holidayName)}</div>`;
+    document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+    return;
+  }
+
+  // 土日で授業なし
+  if ((dow === 0 || dow === 6) && !Object.keys(daySchedules).includes(ds)) {
+    const hasAny = PERIODS.some(p => getEntry(ds, p, overrides, daySchedules, cellSources));
+    if (!hasAny) {
+      content.innerHTML = `<div class="no-class">📅 今日は授業がありません</div>`;
+      document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+      return;
+    }
+  }
+
+  // 行事チェック（全コマが行事か1コマ目が行事）
+  const firstEntry = getEntry(ds, 1, overrides, daySchedules, cellSources);
+  const allEvent   = PERIODS.every(p => {
+    const e = getEntry(ds, p, overrides, daySchedules, cellSources);
+    return e && EVENT_CLASSES.has(e.name);
+  });
+
+  let html = '';
+
+  // 行事バナー
+  if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && firstEntry.teacher) {
+    html += `<div class="event-banner">📌 ${esc(firstEntry.teacher)}</div>`;
+  }
+
+  if (allEvent) {
+    content.innerHTML = html + `<div class="no-class">📌 本日は行事日程です</div>`;
+    document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+    return;
+  }
+
+  const cp = currentPeriod(); // 正数=現在のコマ, 負数=次のコマの番号(符号反転), 0=終了後
+
+  html += '<div class="periods">';
+  for (const p of PERIODS) {
+    const entry = getEntry(ds, p, overrides, daySchedules, cellSources);
+    const isNow  = cp === p;
+    const isPast = cp > 0 ? p < cp : (cp === 0 ? true : p < -cp);
+    const [tStart, tEnd] = TIMES[p - 1];
+
+    let rowClass = 'period-row';
+    if (isNow)  rowClass += ' is-now';
+    if (isPast && !isNow) rowClass += ' is-past';
+
+    const numStyle = entry ? `background:${isNow ? '#ebf0ff' : pastelColor(entry.color || '#aaa')}` : '';
+
+    if (!entry || (DARK_CLASSES.has(entry.name) && !entry.teacher)) {
+      const label = entry ? esc(entry.name) : '―';
+      html += `
+        <div class="${rowClass}">
+          <div class="period-num" style="${numStyle}">
+            <div class="period-label" style="color:${isNow?'#4a6cf7':'#a0aec0'}">${p}</div>
+            <div class="period-time">${tStart}<br>${tEnd}</div>
+          </div>
+          <div class="empty-cell">${label}</div>
+          ${isNow ? '<div style="margin:auto 10px 0 0;align-self:center"><span class="now-badge">授業中</span></div>' : ''}
+        </div>`;
+      continue;
+    }
+
+    const color = entry.color || '#667eea';
+    const bg    = pastelColor(color);
+    const subjectStyle = `background:${bg};color:${color}`;
+
+    const detailParts = [];
+    if (entry.teacher) detailParts.push(entry.teacher);
+    const detail = detailParts.join('　');
+
+    html += `
+      <div class="${rowClass}">
+        <div class="period-num" style="${numStyle}">
+          <div class="period-label" style="color:${isNow?'#4a6cf7':color}">${p}</div>
+          <div class="period-time" style="color:${isNow?'#a3b4f7':''}">${tStart}<br>${tEnd}</div>
+        </div>
+        <div class="period-content">
+          <div class="period-top">
+            <span class="class-dot" style="background:${color}"></span>
+            <span class="class-name">${esc(entry.name)}</span>
+            ${entry.room ? `<span class="subject-tag" style="${subjectStyle}">${esc(entry.room)}</span>` : ''}
+            ${isNow ? '<span class="now-badge">授業中</span>' : ''}
+          </div>
+          ${detail ? `<div class="period-detail">${esc(detail)}</div>` : ''}
+        </div>
+      </div>`;
+  }
+  html += '</div>';
+
+  content.innerHTML = html;
+  document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+}
+
+render();
+// 1分ごとに更新（現在コマのハイライト追従）
+setInterval(render, 60 * 1000);
+</script>
+</body>
+</html>
