@@ -11,188 +11,172 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
       background: #f0f2f5;
       color: #2d3748;
-      min-height: 100vh;
     }
 
+    /* ── 全体レイアウト：左＝日付、右＝コマ一覧 ── */
     .widget {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 14px;
+      display: flex;
+      gap: 10px;
+      padding: 10px 12px;
+      align-items: flex-start;
     }
 
-    .header {
+    /* 左：日付列 */
+    .date-col {
       display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 12px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-width: 36px;
+      padding-top: 2px;
     }
 
     .header-date {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 800;
       color: #1a202c;
+      line-height: 1.1;
+      text-align: center;
     }
 
     .header-day {
-      font-size: 13px;
-      color: #718096;
+      font-size: 11px;
+      color: #a0aec0;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .footer {
+      margin-top: 6px;
+      font-size: 9px;
+      color: #cbd5e0;
+      text-align: center;
+    }
+
+    /* 右：コマ一覧 */
+    .periods-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
     /* ── バナー ── */
     .holiday-banner {
       background: #fff5f5;
       border: 1.5px solid #feb2b2;
-      border-radius: 10px;
-      padding: 18px;
+      border-radius: 8px;
+      padding: 10px;
       text-align: center;
       color: #c53030;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 600;
     }
 
     .event-banner {
       background: #fffbeb;
       border: 1.5px solid #f6e05e;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
+      border-radius: 7px;
+      padding: 5px 10px;
+      margin-bottom: 4px;
       color: #744210;
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .no-class {
       text-align: center;
-      padding: 30px 16px;
+      padding: 16px;
       color: #a0aec0;
-      font-size: 14px;
+      font-size: 12px;
     }
 
-    /* ── 時間割リスト ── */
-    .periods {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
+    /* ── コマ行 ── */
     .period-row {
       display: flex;
       align-items: stretch;
-      border-radius: 10px;
+      border-radius: 7px;
       overflow: visible;
       background: white;
-      border: 2px dashed #e2e8f0;
-      position: relative;
+      border: 1.5px dashed #e2e8f0;
+      min-height: 28px;
     }
 
-    /* 授業あり（teacher入力済み or LIGHT系） */
     .period-row.has-content {
       border-style: solid;
-      box-shadow: 0 2px 8px rgba(0,0,0,.09);
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
     }
 
-    .period-time { display: none; }
+    .period-row.is-dark { border-style: solid; }
 
-    /* 暗色系（裁量） */
-    .period-row.is-dark {
-      border-style: solid;
-    }
-
-    /* ── コマ番号列 ── */
+    /* コマ番号 */
     .period-num {
-      width: 40px;
-      min-width: 40px;
+      width: 22px;
+      min-width: 22px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      border-right: 1.5px solid rgba(0,0,0,.07);
-      padding: 8px 0;
-      border-radius: 8px 0 0 8px;
+      border-right: 1px solid rgba(0,0,0,.07);
+      border-radius: 5px 0 0 5px;
     }
 
     .period-label {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 800;
       line-height: 1;
     }
 
-    .period-time {
-      font-size: 8px;
-      color: #a0aec0;
-      margin-top: 3px;
-      line-height: 1.4;
-      text-align: center;
-    }
-
-    /* ── セル内容 ── */
+    /* セル内容 */
     .period-content {
       flex: 1;
-      padding: 7px 10px 7px 10px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .period-top {
+      padding: 4px 7px;
       display: flex;
       align-items: center;
       gap: 5px;
+      min-width: 0;
       flex-wrap: wrap;
     }
 
     .class-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
     .class-name {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
       white-space: nowrap;
     }
 
     .subject-tag {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
-      padding: 1px 7px;
+      padding: 1px 6px;
       border-radius: 20px;
       white-space: nowrap;
     }
 
-    /* dark系のテキスト色 */
-    .is-dark .class-name,
-    .is-dark .period-time { color: rgba(255,255,255,.85); }
-    .is-dark .period-content-label { color: rgba(255,255,255,.55); }
-    .is-dark .period-content-text  { color: rgba(255,255,255,.9); }
-
-    /* 空き/軽量系（LIGHT）：テキスト色は通常 */
-    .is-light .class-name { color: #4a5568; }
-
-    .period-content-label {
-      font-size: 9px;
-      color: #a0aec0;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      margin-top: 3px;
-    }
-
     .period-content-text {
-      font-size: 12px;
+      font-size: 11px;
       color: #4a5568;
-      line-height: 1.4;
-      word-break: break-all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
     }
 
     .empty-label {
-      font-size: 13px;
+      font-size: 11px;
       color: #cbd5e0;
-      padding: 10px 12px;
+      padding: 4px 8px;
       align-self: center;
     }
+
+    /* dark系 */
+    .is-dark .class-name        { color: rgba(255,255,255,.9); }
+    .is-dark .period-content-text { color: rgba(255,255,255,.75); }
 
     /* ── バッジ列 ── */
     .badge-col {
@@ -200,41 +184,40 @@
       flex-direction: column;
       align-items: flex-end;
       justify-content: center;
-      gap: 3px;
-      padding: 6px 8px 6px 4px;
-      min-width: 0;
+      gap: 2px;
+      padding: 3px 5px 3px 2px;
       flex-shrink: 0;
     }
 
     .badge-rinji {
-      font-size: .55rem;
+      font-size: .5rem;
       font-weight: 800;
       background: #fff;
       color: #1565C0;
       border: 1.5px solid #1565C0;
       border-radius: 3px;
-      padding: 0 4px;
+      padding: 0 3px;
       line-height: 1.6;
       white-space: nowrap;
     }
 
     .badge-chg {
-      font-size: .55rem;
+      font-size: .5rem;
       font-weight: 800;
       background: linear-gradient(135deg,#4A6DB5,#2c47a0);
       color: #fff;
       border-radius: 3px;
-      padding: 0 5px;
+      padding: 0 4px;
       line-height: 1.6;
       white-space: nowrap;
     }
 
     .badge-absence {
-      font-size: .55rem;
+      font-size: .5rem;
       font-weight: 800;
       background: #fff;
       border-radius: 3px;
-      padding: 0 4px;
+      padding: 0 3px;
       line-height: 1.6;
       white-space: nowrap;
     }
@@ -243,34 +226,25 @@
     .badge-absence.shuccho { color: #2E7D32; border: 1.5px solid #388E3C; }
 
     .badge-src {
-      font-size: .52rem;
+      font-size: .48rem;
       font-weight: 700;
       background: #f0f2f5;
       color: #718096;
       border: 1px solid #e2e8f0;
       border-radius: 3px;
-      padding: 0 4px;
+      padding: 0 3px;
       line-height: 1.6;
-      z-index: 2;
-    }
-
-    /* ── フッター ── */
-    .footer {
-      margin-top: 10px;
-      text-align: right;
-      font-size: 10px;
-      color: #cbd5e0;
     }
   </style>
 </head>
 <body>
 <div class="widget">
-  <div class="header">
+  <div class="date-col">
     <div class="header-date" id="headerDate"></div>
     <div class="header-day"  id="headerDay"></div>
+    <div class="footer" id="footer"></div>
   </div>
-  <div id="content"></div>
-  <div class="footer" id="footer"></div>
+  <div class="periods-col" id="content"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
