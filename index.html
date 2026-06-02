@@ -2176,6 +2176,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
         delete cellSources[selKey];
       } else {
         cellSources[selKey] = { di, p };
+        if (overrides[selKey] === null) { delete overrides[selKey]; save(); }
       }
       saveCellSources();
       rerender();
