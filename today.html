@@ -523,11 +523,11 @@ function render() {
       continue;
     }
 
-    const chgBadge  = isJugyoHenkou ? '<span class="badge-chg">変</span>' : '';
+    const numBadge  = srcBadge ? `<span class="badge-src">${esc(srcBadge)}</span>` : '';
     const sideBadges = [
-      isRinji  ? '<span class="badge-rinji">臨</span>' : '',
-      isAbsent ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : '',
-      srcBadge ? `<span class="badge-src">${esc(srcBadge)}</span>` : '',
+      isRinji       ? '<span class="badge-rinji">臨</span>' : '',
+      isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : '',
+      isAbsent      ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : '',
     ].filter(Boolean).join('');
     const badgeCol = sideBadges ? `<div class="badge-col">${sideBadges}</div>` : '';
 
@@ -536,7 +536,7 @@ function render() {
         <div class="${rowClass}" style="${borderStyle}">
           <div class="period-num" style="${numStyle};border-right-color:rgba(255,255,255,.2)">
             <div class="period-label" style="color:${numLabelColor}">${p}</div>
-            ${chgBadge}
+            ${numBadge}
           </div>
           <div class="period-content">
             <span class="class-name" style="color:rgba(255,255,255,.9)">${esc(entry.name)}</span>
@@ -558,7 +558,7 @@ function render() {
       <div class="${rowClass}" style="${borderStyle}">
         <div class="period-num" style="${numStyle}">
           <div class="period-label" style="color:${numLabelColor}">${p}</div>
-          ${chgBadge}
+          ${numBadge}
         </div>
         <div class="period-content">
           <span class="class-dot" style="background:${color}"></span>
