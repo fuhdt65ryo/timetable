@@ -49,9 +49,12 @@
     .footer {
       margin-top: 6px;
       font-size: 9px;
-      color: #cbd5e0;
       text-align: center;
+      color: #a0aec0;
+      transition: color .2s;
     }
+    .footer.syncing { color: #4a6cf7; }
+    .footer.ok      { color: #38a169; }
 
     /* 右：コマ一覧 */
     .periods-col {
@@ -359,6 +362,14 @@ function absenceCoversPeriod(holEntry, period) {
   return period >= from && period <= to;
 }
 
+function setFooter(state) {
+  const el = document.getElementById('footer');
+  const now = new Date();
+  const t = `${now.getHours()}:${pad2(now.getMinutes())}`;
+  el.className = 'footer ' + state;
+  el.textContent = state === 'syncing' ? '⟳ 同期中…' : `✓ 同期済 ${t}`;
+}
+
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -400,8 +411,9 @@ const _fbConfig = {
 if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
 const _fbRef = firebase.database().ref('timetable_data');
 
+setFooter('syncing');
 firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
-  _fbRef.on('value', snap => applyFbData(snap.val()), () => render());
+  _fbRef.on('value', snap => applyFbData(snap.val()), () => setFooter('ok'));
 });
 
 function render() {
@@ -426,7 +438,7 @@ function render() {
     const holType = typeof holRaw === 'object' ? holRaw.type : 'holiday';
     if (holType === 'holiday') {
       content.innerHTML = `<div class="holiday-banner">🏖️ ${esc(holName)}</div>`;
-      document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+      setFooter('ok');
       return;
     }
   }
@@ -436,7 +448,7 @@ function render() {
     const hasAny = PERIODS.some(p => getEntry(ds, p, overrides, daySchedules, cellSources));
     if (!hasAny) {
       content.innerHTML = `<div class="no-class">📅 今日は授業がありません</div>`;
-      document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+      setFooter('ok');
       return;
     }
   }
@@ -462,7 +474,7 @@ function render() {
   }
   if (allEvent) {
     content.innerHTML = html + `<div class="no-class">📌 本日は行事日程です</div>`;
-    document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+    setFooter('ok');
     return;
   }
 
@@ -579,7 +591,7 @@ function render() {
 
   html += '</div>';
   content.innerHTML = html;
-  document.getElementById('footer').textContent = `更新: ${today.getHours()}:${pad2(today.getMinutes())}`;
+  setFooter('ok');
 }
 
 render();
