@@ -281,6 +281,7 @@
     .btn-danger:hover { background:#fed7d7; }
     .btn-secondary { background:#f8fafc; color:#64748b; border:1px solid var(--border); }
     .btn-secondary:hover { background:#f1f5f9; }
+    .btn-chg-active { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; font-weight:700 !important; }
     .btn-restore { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
     .btn-restore:hover { background:#dcfce7; }
     .btn-clear { background:#fefce8; color:#854d0e; border:1px solid #fde68a; }
@@ -2052,8 +2053,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
     return `<div class="src-gp">${pp}</div>${cells}`;
   }).join('');
 
+  const fromClass   = entry?.fromName || (baseEntry?.name || '');
+  const fromSubject = entry?.fromRoom  || (baseEntry?.room || '');
+  const fromClassDatalist = CLASSES.map(c => `<option value="${esc(c.name)}">`).join('');
+  const fromSubjectDatalist = getSubjects(fromClass).map(s => `<option value="${esc(s.name)}">`).join('');
+
   document.getElementById('editBody').innerHTML = `
-    ${isJugyoHenkou ? `<div class="chg-status-bar"><span class="chg-status-badge">授業変更</span><span class="chg-status-text">${esc(chgFromLabel)} → ${esc(chgToLabel)}</span></div>` : ''}
     <div class="edit-form">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
@@ -2081,6 +2086,21 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <datalist id="eContentList">${datalistHtml}</datalist>
       </div>` : ''}
     </div>
+    <div id="eChgWrap" style="display:${isJugyoHenkou ? 'flex' : 'none'};flex-direction:column;gap:6px;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1.5px solid #93c5fd;margin-top:2px">
+      <div style="font-size:.72rem;font-weight:700;color:#1d4ed8;margin-bottom:2px">変更前の授業</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:100px;margin:0">
+          <label class="form-label">クラス</label>
+          <input class="form-input" id="eFromClass" type="text" list="eFromClassList" value="${esc(fromClass)}">
+          <datalist id="eFromClassList">${fromClassDatalist}</datalist>
+        </div>
+        <div class="form-group" style="flex:1;min-width:100px;margin:0">
+          <label class="form-label">教科</label>
+          <input class="form-input" id="eFromSubject" type="text" list="eFromSubjectList" value="${esc(fromSubject)}">
+          <datalist id="eFromSubjectList">${fromSubjectDatalist}</datalist>
+        </div>
+      </div>
+    </div>
     <div class="edit-actions">
       <div class="src-grid-wrap">
         <div class="src-grid-label">参照元</div>
@@ -2093,7 +2113,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
       </div>
       <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
         <button class="btn btn-secondary" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px">自習</button>
-        <button class="btn btn-secondary" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">授業変更入力</button>
+        <button class="btn btn-secondary${isJugyoHenkou ? ' btn-chg-active' : ''}" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">${isJugyoHenkou ? '✓ 授業変更' : '授業変更'}</button>
         <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
       </div>
     </div>
@@ -2117,6 +2137,32 @@ function renderEditForm(entry, isOvr, baseEntry) {
     if (cont) cont.value = '自習';
     autoSave(false); schedulePush();
   });
+
+  document.getElementById('eBtnChg')?.addEventListener('click', () => {
+    const wrap = document.getElementById('eChgWrap');
+    const btn  = document.getElementById('eBtnChg');
+    const isOn = wrap.style.display !== 'none';
+    if (isOn) {
+      wrap.style.display = 'none';
+      btn.textContent = '授業変更';
+      btn.classList.remove('btn-chg-active');
+    } else {
+      wrap.style.display = 'flex';
+      btn.textContent = '✓ 授業変更';
+      btn.classList.add('btn-chg-active');
+      if (!document.getElementById('eFromClass').value) {
+        const [ds, pStr] = selKeyParts();
+        const d = parseDateStr(ds);
+        const base = BASE[`${dayIdx(d)}-${+pStr}`];
+        document.getElementById('eFromClass').value   = base?.name || '';
+        document.getElementById('eFromSubject').value = base?.room || '';
+      }
+    }
+    autoSave(false); schedulePush();
+  });
+
+  document.getElementById('eFromClass')?.addEventListener('blur', _as);
+  document.getElementById('eFromSubject')?.addEventListener('blur', _as);
 
   document.querySelectorAll('.src-gc').forEach(gc => {
     gc.addEventListener('click', () => {
@@ -2176,8 +2222,11 @@ function autoSave(doRerender = true) {
   // UIのチェックボックスも同期
   const rinjCb = document.getElementById('eRinji');
   if (rinjCb && rinjiForcedByProg) rinjCb.checked = true;
-  const prev = overrides[selKey];
-  const chgProps = (prev && prev.jugyohenkou) ? { jugyohenkou:true, fromName:prev.fromName, fromRoom:prev.fromRoom } : {};
+  const chgWrap = document.getElementById('eChgWrap');
+  const isChgOn = chgWrap && chgWrap.style.display !== 'none';
+  const fromName = isChgOn ? (document.getElementById('eFromClass')?.value.trim() || '') : '';
+  const fromRoom = isChgOn ? (document.getElementById('eFromSubject')?.value.trim() || '') : '';
+  const chgProps = isChgOn ? { jugyohenkou:true, fromName, fromRoom } : {};
   overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
   if (!doRerender) return;
