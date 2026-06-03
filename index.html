@@ -2004,6 +2004,7 @@ function refreshEditForm() {
 }
 
 function renderEditForm(entry, isOvr, baseEntry) {
+  const isBlanked = selKey && overrides[selKey] === null;
   const currentClass   = entry?.name    || '';
   const isJugyoHenkou = !!(entry?.jugyohenkou);
   const chgFromLabel  = isJugyoHenkou ? [entry.fromName, entry.fromRoom].filter(Boolean).join(' ') || '(不明)' : '';
@@ -2059,7 +2060,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const fromSubjectDatalist = getSubjects(fromClass).map(s => `<option value="${esc(s.name)}">`).join('');
 
   document.getElementById('editBody').innerHTML = `
-    <div class="edit-form">
+    ${isBlanked ? `<div style="padding:10px 12px 4px;font-size:.82rem;color:#718096;display:flex;align-items:center;gap:6px"><span style="font-size:1rem">🚫</span>このコマは空欄に設定されています。「元に戻す」で参照元の授業が入ります。</div>` : ''}
+    <div class="edit-form" style="${isBlanked ? 'display:none' : ''}">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
         <input class="form-input" id="eClass" type="text" list="eClassList" placeholder="例: 3-1、行事" value="${esc(currentClass)}">
@@ -2114,7 +2116,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
       <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
         <button class="btn btn-secondary" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px">自習</button>
         <button class="btn btn-secondary${isJugyoHenkou ? ' btn-chg-active' : ''}" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">${isJugyoHenkou ? '✓ 授業変更' : '授業変更'}</button>
-        <button class="btn btn-clear" id="eBtnClear">空欄にする</button>
+        ${isBlanked
+          ? `<button class="btn btn-secondary" id="eBtnRestore" style="font-size:.8rem;padding:6px 12px">↩ 元に戻す</button>`
+          : `<button class="btn btn-clear" id="eBtnClear">空欄にする</button>`
+        }
       </div>
     </div>
   `;
@@ -2192,6 +2197,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eBtnChg')?.addEventListener('click', () => {
     const [ds, pStr] = selKeyParts();
     openChangeModal(ds, +pStr);
+  });
+  document.getElementById('eBtnRestore')?.addEventListener('click', () => {
+    delete overrides[selKey];
+    save();
+    schedulePush();
+    rerender();
   });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
     delete cellSources[selKey];
