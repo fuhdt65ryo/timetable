@@ -2145,7 +2145,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     srcLabel.addEventListener('click', () => srcWrap.classList.toggle('src-grid-open'));
   }
 
-  const _as = () => { autoSave(false); schedulePush(); };
+  const _as = () => { autoSave(true); schedulePush(); };
 
   initCdd('eClass', classNames, (val) => {
     // クラスが変わったら教科ドロップダウンを作り直す
