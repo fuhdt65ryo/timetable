@@ -266,6 +266,19 @@
     .form-select { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; padding-right:24px; cursor:pointer; }
     .form-select:focus, .form-input:focus { border-color:var(--accent); }
     .form-select.err { border-color:#e53e3e; }
+    .cdd-wrap { position:relative; }
+    .cdd-input-wrap { position:relative; }
+    .cdd-arrow { position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; color:#718096; font-size:.7rem; }
+    .cdd-list {
+      position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:300;
+      background:#fff; border:1.5px solid var(--accent); border-radius:8px;
+      max-height:180px; overflow-y:auto; box-shadow:0 4px 16px rgba(0,0,0,.14);
+      display:none;
+    }
+    .cdd-wrap.cdd-open .cdd-list { display:block; }
+    .cdd-opt { padding:7px 10px; font-size:.88rem; cursor:pointer; border-radius:6px; margin:2px 3px; }
+    .cdd-opt:hover, .cdd-opt.cdd-hi { background:#eef2fb; }
+    .cdd-input.err { border-color:#e53e3e; }
 
     .edit-actions { padding:4px 14px 10px; display:flex; gap:6px; flex-wrap:wrap; }
     .chg-status-bar { display:flex; align-items:center; gap:8px; padding:7px 14px 6px; background:#eef2fb; border-bottom:1px solid #c8d4ee; font-size:.82rem; flex-wrap:wrap; }
@@ -1205,6 +1218,7 @@ const CLASSES = [
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
   { name:'行事',   color:'#9E9E9E', isEvent:true, subjects:[] },
+  { name:'空き',   color:'#B07D4E', subjects:[] },
 ];
 
 const DAY_NAMES  = ['月','火','水','木','金'];       // 平日のみ（src-grid用, di=0〜4）
@@ -2018,8 +2032,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const currentSubject = entry?.room    || '';
   const currentContent = entry?.teacher || '';
 
-  const classDatalist = CLASSES.map(c => `<option value="${esc(c.name)}">`).join('');
-  const subjectDatalist = getSubjects(currentClass).map(s => `<option value="${esc(s.name)}">`).join('');
+  const classNames = CLASSES.map(c => c.name);
+  const subjectNames = getSubjects(currentClass).map(s => s.name);
   const datalistHtml = ['自習', ...pastContents.filter(v => v !== '自習')].map(v=>`<option value="${esc(v)}">`).join('');
 
   const isJikoji   = currentClass === '行事';
@@ -2064,15 +2078,14 @@ function renderEditForm(entry, isOvr, baseEntry) {
     <div class="edit-form" style="${isBlanked ? 'display:none' : ''}">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
-        <input class="form-input" id="eClass" type="text" list="eClassList" placeholder="例: 3-1、行事" value="${esc(currentClass)}">
-        <datalist id="eClassList">${classDatalist}</datalist>
+        ${buildCdd('eClass', classNames, currentClass, '例: 3-1、行事')}
       </div>
       ${showSubject ? `
       <div class="form-group fg-subject" style="${isKenkyu || isJikoji ? 'flex:1 1 100%' : ''}">
         <label class="form-label">${subjectLabel}</label>
         ${isKenkyu
           ? `<textarea class="form-input" id="eSubject" rows="3" placeholder="${subjectPlaceholder}" style="resize:vertical;line-height:1.5">${esc(currentSubject)}</textarea>`
-          : `<input class="form-input" id="eSubject" type="text" list="eSubjectList" placeholder="${subjectPlaceholder}" value="${esc(currentSubject)}"><datalist id="eSubjectList">${subjectDatalist}</datalist>`
+          : buildCdd('eSubject', subjectNames, currentSubject, subjectPlaceholder)
         }
       </div>` : ''}
       ${showContent ? `
@@ -2133,6 +2146,21 @@ function renderEditForm(entry, isOvr, baseEntry) {
   }
 
   const _as = () => { autoSave(false); schedulePush(); };
+
+  initCdd('eClass', classNames, (val) => {
+    // クラスが変わったら教科ドロップダウンを作り直す
+    const newSubs = getSubjects(val).map(s => s.name);
+    const subjWrap = document.getElementById('eSubject_wrap');
+    if (subjWrap) {
+      const subjInput = document.getElementById('eSubject');
+      const currentVal = subjInput ? subjInput.value : '';
+      subjWrap.outerHTML = buildCdd('eSubject', newSubs, '', subjectPlaceholder);
+      initCdd('eSubject', newSubs, _as);
+    }
+    _as();
+  });
+  initCdd('eSubject', subjectNames, _as);
+
   document.getElementById('eClass')?.addEventListener('blur', _as);
   document.getElementById('eSubject')?.addEventListener('blur', _as);
   document.getElementById('eContent')?.addEventListener('blur', _as);
@@ -2210,6 +2238,51 @@ function renderEditForm(entry, isOvr, baseEntry) {
     selectCell(...selKeyParts());
   });
   positionEditPanel();
+}
+
+function buildCdd(id, options, value, placeholder='') {
+  const opts = options.map(o => `<div class="cdd-opt" data-val="${esc(o)}">${esc(o)}</div>`).join('');
+  return `<div class="cdd-wrap" id="${id}_wrap">
+    <div class="cdd-input-wrap">
+      <input class="form-input cdd-input" id="${id}" type="text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off">
+      <span class="cdd-arrow">▾</span>
+    </div>
+    <div class="cdd-list" id="${id}_list">${opts}</div>
+  </div>`;
+}
+
+function initCdd(id, allOptions, onSelect) {
+  const wrap  = document.getElementById(id + '_wrap');
+  const input = document.getElementById(id);
+  const list  = document.getElementById(id + '_list');
+  if (!wrap || !input || !list) return;
+
+  function renderOpts(filter) {
+    const q = (filter || '').toLowerCase();
+    const filtered = q ? allOptions.filter(o => o.toLowerCase().includes(q)) : allOptions;
+    list.innerHTML = filtered.map(o => `<div class="cdd-opt" data-val="${esc(o)}">${esc(o)}</div>`).join('');
+  }
+
+  function open() {
+    renderOpts('');
+    wrap.classList.add('cdd-open');
+  }
+  function close() {
+    wrap.classList.remove('cdd-open');
+  }
+
+  input.addEventListener('focus', open);
+  input.addEventListener('input', () => renderOpts(input.value));
+  input.addEventListener('blur', () => setTimeout(close, 150));
+
+  list.addEventListener('mousedown', e => {
+    const opt = e.target.closest('.cdd-opt');
+    if (!opt) return;
+    e.preventDefault();
+    input.value = opt.dataset.val;
+    close();
+    if (onSelect) onSelect(opt.dataset.val);
+  });
 }
 
 function getSubjectOptions(className, currentSubject) {
