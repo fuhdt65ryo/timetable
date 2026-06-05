@@ -608,6 +608,15 @@
       </div>
       <div id="changesBody"></div>
     </div>
+
+    <div class="card">
+      <div class="list-top">
+        <span class="list-title">📝 メモ</span>
+      </div>
+      <div style="padding:0 12px 12px">
+        <textarea id="memoArea" placeholder="メモを入力…" style="width:100%;min-height:100px;border:1.5px solid #d0d7e3;border-radius:8px;padding:8px 10px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none;line-height:1.6;color:#333"></textarea>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -3359,6 +3368,7 @@ function _applyFbData(data) {
   if (data.tt_prog_order   !== undefined)       { progOrder       = data.tt_prog_order           || []; safeSave('tt_prog_order',           progOrder);       changed = true; }
   if (data.tt_prog2_order  !== undefined)       { prog2Order      = data.tt_prog2_order          || []; safeSave('tt_prog2_order',          prog2Order);      changed = true; }
   if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
+  if (data.tt_memo_v1 !== undefined) { localStorage.setItem('tt_memo_v1', data.tt_memo_v1 || ''); const area = document.getElementById('memoArea'); if (area) area.value = data.tt_memo_v1 || ''; }
   if (changed) { _syncProgManuals(); renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
@@ -3383,6 +3393,7 @@ async function syncPush() {
     tt_prog2_manual:       prog2Manual,
     tt_prog_order:         progOrder,
     tt_prog2_order:        prog2Order,
+    tt_memo_v1:            localStorage.getItem('tt_memo_v1') || '',
     _updated: new Date().toISOString()
   };
   try {
@@ -3693,6 +3704,21 @@ renderProgress2(); renderChanges();
   });
 })();
 // Firebase初期化は _initFirebaseWithConfig() で行われる（上部参照）
+
+// ── メモ ──
+(function() {
+  const KEY = 'tt_memo_v1';
+  const area = document.getElementById('memoArea');
+  area.value = localStorage.getItem(KEY) || '';
+  let _timer = null;
+  area.addEventListener('input', () => {
+    clearTimeout(_timer);
+    _timer = setTimeout(() => {
+      localStorage.setItem(KEY, area.value);
+      localDirty = true;
+    }, 400);
+  });
+})();
 </script>
 </body>
 </html>
