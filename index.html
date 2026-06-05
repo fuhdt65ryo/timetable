@@ -3233,9 +3233,13 @@ document.addEventListener('click', e => {
 
 /* ── Firebase リアルタイム同期 ── */
 const SYNC_TIME_KEY = 'tt_sync_last_v1';
+const LOCAL_UPDATED_KEY = 'tt_local_updated_v1';
 let syncTimer = null;
 let fbPushing = false;
 let localDirty = false;
+let pushRetryCount = 0;
+const PUSH_MAX_RETRY = 4;
+const PUSH_RETRY_BASE_MS = 3000;
 
 const _fbConfig = {
   apiKey: "AIzaSyBK8aZpB0O1HCbUzXk8A4bz95k8hW-MIKo",
@@ -3305,12 +3309,21 @@ async function syncPush() {
     fbPushing = true;
     await _fbRef.set(payload);
     localDirty = false;
+    pushRetryCount = 0;
     const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
     localStorage.setItem(SYNC_TIME_KEY, now);
     updateSyncBtn('ok');
   } catch(e) {
     console.error('sync push:', e);
-    updateSyncBtn('error');
+    if (pushRetryCount < PUSH_MAX_RETRY) {
+      pushRetryCount++;
+      const delay = PUSH_RETRY_BASE_MS * Math.pow(2, pushRetryCount - 1); // 3s, 6s, 12s, 24s
+      console.warn(`sync push retry ${pushRetryCount}/${PUSH_MAX_RETRY} in ${delay}ms`);
+      syncTimer = setTimeout(syncPush, delay);
+    } else {
+      pushRetryCount = 0;
+      updateSyncBtn('error');
+    }
   } finally {
     setTimeout(() => { fbPushing = false; }, 500);
   }
@@ -3318,6 +3331,7 @@ async function syncPush() {
 
 function schedulePush() {
   localDirty = true;
+  localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
   clearTimeout(syncTimer);
   syncTimer = setTimeout(syncPush, 1500);
 }
@@ -3330,18 +3344,32 @@ function initFirebaseSync() {
   }
   updateSyncBtn('syncing');
   try {
-    // 起動時に一度強制取得：新端末でlocalDirtyが残っていても必ずFirebaseデータを適用する
+    // 起動時：タイムスタンプを比較してFirebaseとローカルのどちらが新しいか判断する
     _fbRef.once('value').then(snap => {
       const data = snap.val();
-      if (data) {
-        clearTimeout(syncTimer); // 起動直後のpushをキャンセル
+      const fbUpdated   = data && data._updated ? new Date(data._updated).getTime() : 0;
+      const localUpdated = new Date(localStorage.getItem(LOCAL_UPDATED_KEY) || 0).getTime();
+
+      if (data && fbUpdated >= localUpdated) {
+        // Firebaseが新しい（または同じ）→ Firebaseを適用
+        clearTimeout(syncTimer);
         localDirty = false;
         _applyFbData(data);
+      } else if (localDirty || localUpdated > fbUpdated) {
+        // ローカルが新しい→ ローカルをpush
+        syncPush();
+      } else {
+        updateSyncBtn('ok');
       }
-      // 以降はリアルタイムリスナー（自分の編集中は無視）
+
+      // 以降はリアルタイムリスナー（自分の編集中・push中は無視）
       _fbRef.on('value', snapshot => {
         if (fbPushing || localDirty) return;
-        _applyFbData(snapshot.val());
+        const fbData = snapshot.val();
+        if (!fbData) return;
+        const fbTs    = fbData._updated ? new Date(fbData._updated).getTime() : 0;
+        const localTs = new Date(localStorage.getItem(LOCAL_UPDATED_KEY) || 0).getTime();
+        if (fbTs >= localTs) _applyFbData(fbData);
       }, err => {
         console.error('firebase sync error:', err.code, err.message);
         updateSyncBtn('error');
