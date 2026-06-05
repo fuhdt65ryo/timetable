@@ -556,6 +556,7 @@
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
     <button class="tab-btn" data-tab="calendar">📅 カレンダー設定</button>
+    <button class="tab-btn" data-tab="firebase">🔥 Firebase設定</button>
     <button class="tab-btn" data-tab="help">📖 使い方</button>
   </div>
 </header>
@@ -762,6 +763,48 @@
 </div>
 
 <!-- 取扱説明書ページ -->
+<div id="pageFirebase" class="container" style="display:none">
+  <div class="card" style="max-width:520px;margin:24px auto;">
+    <h2 style="margin:0 0 6px;font-size:18px;">🔥 Firebase 接続設定</h2>
+    <p style="margin:0 0 18px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力してください。設定はこのブラウザに保存されます。</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">API キー</label>
+      <input id="fbp_apiKey" placeholder="apiKey" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">Auth ドメイン</label>
+      <input id="fbp_authDomain" placeholder="authDomain" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">Database URL</label>
+      <input id="fbp_databaseURL" placeholder="databaseURL" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">プロジェクト ID</label>
+      <input id="fbp_projectId" placeholder="projectId" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">Storage Bucket</label>
+      <input id="fbp_storageBucket" placeholder="storageBucket" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">Sender ID</label>
+      <input id="fbp_messagingSenderId" placeholder="messagingSenderId" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">App ID</label>
+      <input id="fbp_appId" placeholder="appId" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+      <button id="fbPageSaveBtn" class="btn btn-save" style="flex:1;">保存して接続</button>
+      <button id="fbPageDownloadBtn" class="btn btn-secondary" style="font-size:13px;">⬇ バックアップ</button>
+      <button id="fbPageResetBtn" class="btn" style="font-size:13px;background:#e53e3e;color:#fff;border:none;">設定をリセット</button>
+    </div>
+    <p id="fbPageMsg" style="margin:12px 0 0;font-size:13px;color:#2d7d46;display:none;"></p>
+    <p style="margin:12px 0 0;font-size:11px;color:#999;">設定はこのブラウザのみに保存されます。別のブラウザや端末でも使う場合はバックアップを保存してください。</p>
+  </div>
+</div>
+
 <div id="pageHelp" class="container" style="display:none">
 
   <!-- ヒーロー -->
@@ -2969,10 +3012,52 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
     document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
     document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
+    document.getElementById('pageFirebase').style.display   = tab === 'firebase'  ? '' : 'none';
     document.getElementById('pageHelp').style.display       = tab === 'help'      ? '' : 'none';
     if (tab === 'holiday')  renderHolidayPage();
     if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
+    if (tab === 'firebase') _renderFbPage();
   });
+});
+
+/* ── Firebase設定ページ ── */
+function _renderFbPage() {
+  const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+  const saved = localStorage.getItem('tt_firebase_config');
+  const cfg = saved ? JSON.parse(saved) : {};
+  keys.forEach(k => {
+    const el = document.getElementById('fbp_' + k);
+    if (el) el.value = cfg[k] || '';
+  });
+  document.getElementById('fbPageMsg').style.display = 'none';
+}
+
+document.getElementById('fbPageSaveBtn').addEventListener('click', () => {
+  const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+  const cfg = {};
+  keys.forEach(k => { cfg[k] = document.getElementById('fbp_' + k).value.trim(); });
+  if (!cfg.apiKey || !cfg.databaseURL) { alert('API キーと Database URL は必須です'); return; }
+  localStorage.setItem('tt_firebase_config', JSON.stringify(cfg));
+  const msg = document.getElementById('fbPageMsg');
+  msg.textContent = '✓ 設定を保存しました。ページを再読み込みして接続します…';
+  msg.style.display = '';
+  setTimeout(() => location.reload(), 1200);
+});
+
+document.getElementById('fbPageDownloadBtn').addEventListener('click', () => {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) { alert('先に設定を保存してください'); return; }
+  const blob = new Blob([saved], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'firebase-config.json';
+  a.click();
+});
+
+document.getElementById('fbPageResetBtn').addEventListener('click', () => {
+  if (!confirm('Firebase設定を削除します。次回起動時に再設定が必要です。よろしいですか？')) return;
+  localStorage.removeItem('tt_firebase_config');
+  location.reload();
 });
 
 /* ── 取扱説明書：アコーディオン & 目次リンク ── */
@@ -3512,8 +3597,8 @@ document.getElementById('syncModalForcePush').addEventListener('click', () => {
 
 document.getElementById('syncModalReconfig').addEventListener('click', () => {
   closeSyncModal();
-  localStorage.removeItem('tt_firebase_config');
-  location.reload();
+  const btn = document.querySelector('.tab-btn[data-tab="firebase"]');
+  if (btn) btn.click();
 });
 
 document.getElementById('syncModalExportConfig').addEventListener('click', () => {
