@@ -353,9 +353,7 @@
     .chg-period { text-align:center; color:var(--accent); font-weight:800; width:3em; white-space:nowrap; border-right:1px solid #f0f2f6; }
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
-    .chg-row-mine td { background:#fffbeb; }
-    .chg-row-mine td.chg-date-cell { background:#fef3c7; }
-    .chg-mine-badge { display:inline-block; font-size:.65rem; font-weight:700; background:#f59e0b; color:#fff; border-radius:10px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
+    .chg-class-mine { outline:2.5px solid #f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.18); }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -2850,13 +2848,13 @@ function renderChanges() {
     const MY_SUBJECTS = ['理科', '総合', '学活', '道徳'];
     items.forEach(({ period, from, to }, i) => {
       const tr = document.createElement('tr');
-      const isMine = (to && MY_SUBJECTS.includes(to.name)) || (from && MY_SUBJECTS.includes(from.name));
-      if (isMine) tr.className = 'chg-row-mine';
+      const fromMine = from && MY_SUBJECTS.includes(from.name);
+      const toMine   = to   && MY_SUBJECTS.includes(to.name);
       const fromHtml = from
-        ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+        ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
       const toHtml = to
-        ? `<span class="chg-class" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.teacher ? ' '+to.teacher : '')}</span>${isMine ? '<span class="chg-mine-badge">自分</span>' : ''}`
+        ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.teacher ? ' '+to.teacher : '')}</span>`
         : '<span style="color:#aaa">なし</span>';
       const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
       tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
