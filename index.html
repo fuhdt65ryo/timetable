@@ -50,7 +50,7 @@
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
       #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; padding:6px 8px 12px; scrollbar-gutter:auto; }
-      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
@@ -101,7 +101,12 @@
     .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
 
     /* ── Day events (カレンダー行・row2) ── */
-    .cell-events { display:flex; flex-direction:column; gap:2px; padding:3px 4px 4px; background:#f7fafc; border-radius:0 0 6px 6px; border:1px solid var(--border); border-top:none; max-height:100px; overflow-y:auto; }
+    .cell-events { display:flex; flex-direction:column; gap:2px; padding:3px 4px 4px; background:#f7fafc; border-radius:0; border:1px solid var(--border); border-top:none; border-bottom:none; max-height:100px; overflow-y:auto; }
+    .cell-day-memo { padding:3px 5px 4px; background:#fff; border:1px solid var(--border); border-top:none; border-radius:0 0 6px 6px; }
+    .cell-day-memo textarea { display:block; width:100%; min-height:30px; max-height:60px; resize:none; border:1px solid #d0d7e3; border-radius:5px; background:#fff; font-size:.68rem; font-family:inherit; color:#444; outline:none; line-height:1.45; padding:2px 5px; box-sizing:border-box; }
+    .cell-day-memo textarea:focus { border-color:#7a9cc6; box-shadow:0 0 0 2px rgba(44,62,107,.1); }
+    .cell-day-memo textarea::placeholder { color:#ccc; }
+    .cell-day-memo.narrow { display:none; }
     .cell-events.narrow { padding:2px 3px; }
     .day-events { display:flex; flex-direction:column; gap:2px; width:100%; }
     .day-event-item { font-size:.56rem; font-weight:600; color:#444; background:#f0f4ff; border:1px solid #c8d4ee; border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
@@ -610,14 +615,6 @@
       <div id="changesBody"></div>
     </div>
 
-    <div class="card">
-      <div class="list-top">
-        <span class="list-title">📝 メモ</span>
-      </div>
-      <div style="padding:0 12px 12px">
-        <textarea id="memoArea" placeholder="メモを入力…" style="width:100%;min-height:100px;border:1.5px solid #d0d7e3;border-radius:8px;padding:8px 10px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none;line-height:1.6;color:#333"></textarea>
-      </div>
-    </div>
   </div>
 
 </div>
@@ -1401,7 +1398,7 @@ async function fetchGcalEvents() {
       }
     });
     saveGcalCache(gcalEvents, timeMin, timeMax);
-    renderTimetable();
+    renderTimetable(); renderTodayCal();
     const count = Object.values(gcalEvents).reduce((s, evs) => s + evs.length, 0);
     showGcalStatus('ok', `更新完了 — ${count}件取得`);
     renderCalendarPage();
@@ -1455,6 +1452,10 @@ let daySchedules = {};
 let cellSources  = {};
 let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
+let dayMemos     = {};  // { "YYYY-MM-DD": "メモ文字列" }
+function loadDayMemos() { try { dayMemos = JSON.parse(localStorage.getItem('tt_day_memo_v1') || '{}'); } catch { dayMemos = {}; } }
+function saveDayMemos() { localStorage.setItem('tt_day_memo_v1', JSON.stringify(dayMemos)); localDirty = true; }
+loadDayMemos();
 let progManual   = [];  // 3年生 手動追加授業名
 let prog2Manual  = [];  // 2年生 手動追加授業名
 let progOrder    = [];  // 3年生 手動並び順
@@ -1761,9 +1762,28 @@ function renderTimetable() {
     }
     grid.appendChild(evDiv);
 
-    // 日課セレクタ（行2）— 土日はスキップ（空divで行高を維持）
+    // メモ行（row3）
+    const memoDiv = el('div', 'cell-day-memo' + (isNarrow ? ' narrow' : ''));
+    memoDiv.style.cssText = `grid-column:${col};grid-row:3`;
+    const memoTa = document.createElement('textarea');
+    memoTa.placeholder = 'メモ…';
+    memoTa.value = dayMemos[dateStr] || '';
+    let _memoTimer = null;
+    memoTa.addEventListener('input', () => {
+      clearTimeout(_memoTimer);
+      _memoTimer = setTimeout(() => {
+        if (memoTa.value) dayMemos[dateStr] = memoTa.value;
+        else delete dayMemos[dateStr];
+        saveDayMemos();
+      }, 400);
+    });
+    memoTa.addEventListener('click', e => e.stopPropagation());
+    memoDiv.appendChild(memoTa);
+    grid.appendChild(memoDiv);
+
+    // 日課セレクタ（行4）— 土日はスキップ（空divで行高を維持）
     const schedDiv = el('div', 'cell-sched');
-    schedDiv.style.cssText = `grid-column:${col};grid-row:3`;
+    schedDiv.style.cssText = `grid-column:${col};grid-row:4`;
     if (!isActHol && !isWeekend && !isCalendarLongVacation(dateStr)) {
       const sel = document.createElement('select');
       const isChanged = hasSched && schedDi !== naturalDi;
@@ -1791,7 +1811,7 @@ function renderTimetable() {
 
   // 時限ラベル列・授業セル
   PERIODS.forEach((p, pi) => {
-    const periodRow = pi * 2 + 4;
+    const periodRow = pi * 2 + 5;
 
     const pc = el('div', 'cell-period');
     pc.style.cssText = `grid-column:1;grid-row:${periodRow}`;
@@ -1933,7 +1953,7 @@ function renderTimetable() {
   }
 
   // 部活行（6限の下）
-  const bukatsuRow = PERIODS.length * 2 + 4;
+  const bukatsuRow = PERIODS.length * 2 + 5;
   const bukatsuLabel = el('div', 'bukatsu-label');
   bukatsuLabel.style.cssText = `grid-column:1;grid-row:${bukatsuRow}`;
   bukatsuLabel.textContent = '部活';
@@ -1985,7 +2005,7 @@ function renderTimetable() {
     if (!isActualHoliday(dateStr)) return;
     const _he = getHolidayEntry(dateStr);
     const block = el('div', 'cell-holiday-span');
-    block.style.cssText = `grid-column:${i+2};grid-row:4 / ${holRowEnd};cursor:pointer`;
+    block.style.cssText = `grid-column:${i+2};grid-row:5 / ${holRowEnd};cursor:pointer`;
     block.innerHTML = `
       <div class="hol-span-icon">🎌</div>
       <div class="hol-span-name">${esc(_he.name)}</div>
@@ -2003,7 +2023,7 @@ function renderTimetable() {
     const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
     const vacEv = allEvs.find(ev => ev.title && ev.title.includes('休業'));
     const block = el('div', 'cell-vacation-span');
-    block.style.cssText = `grid-column:${i+2};grid-row:4 / ${holRowEnd}`;
+    block.style.cssText = `grid-column:${i+2};grid-row:5 / ${holRowEnd}`;
     block.innerHTML = `
       <div class="vac-span-icon">🏫</div>
       <div class="vac-span-name">${esc(vacEv ? vacEv.title : '長期休業')}</div>
@@ -2403,6 +2423,26 @@ function restoreBase() {
 function selKeyParts() {
   const parts = selKey.split('-');
   return [`${parts[0]}-${parts[1]}-${parts[2]}`, parts[3]];
+}
+
+/* ── 今日の予定 ── */
+function renderTodayCal() {
+  const card = document.getElementById('todayCalCard');
+  const body = document.getElementById('todayCalBody');
+  const title = document.getElementById('todayCalTitle');
+  if (!card || !body) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dateStr = toDateStr(today);
+  const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
+  const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
+  const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  if (title) title.textContent = `📅 ${today.getMonth()+1}/${today.getDate()}(${DAY_JP[today.getDay()]}) の予定`;
+  if (allEvs.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  body.innerHTML = allEvs.map(ev => {
+    const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
+    return `<div class="day-event-item" style="${style};margin:2px 0;padding:3px 8px;border-radius:6px;">${ev.time ? `<span style="font-size:.75rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+  }).join('');
 }
 
 /* ── 進捗テーブル ── */
@@ -3801,6 +3841,7 @@ loadProg2Order();
 loadOverrides();
 loadGcalCache();
 renderTimetable();
+renderTodayCal();
 renderProgress();
 renderProgress2(); renderChanges();
 (function() {
@@ -3821,6 +3862,7 @@ renderProgress2(); renderChanges();
 (function() {
   const KEY = 'tt_memo_v1';
   const area = document.getElementById('memoArea');
+  if (!area) return;
   area.value = localStorage.getItem(KEY) || '';
   let _timer = null;
   area.addEventListener('input', () => {
