@@ -2426,6 +2426,19 @@ function selKeyParts() {
 }
 
 /* ── 今日の予定 ── */
+function calGroupLabel(cal) {
+  const c = cal || '';
+  if (!(/\d/.test(c) || c.includes('ファミリー'))) return '妻の予定';
+  if (c.includes('学校'))  return '学校';
+  if (c.includes('部活'))  return '部活';
+  if (c.includes('出張'))  return '出張';
+  if (c.includes('受験'))  return '受験';
+  if (c.includes('勉強'))  return '勉強';
+  return '個人';
+}
+
+const CAL_GROUP_ORDER = ['学校','部活','出張','受験','勉強','個人','妻の予定','手動'];
+
 function renderTodayCal() {
   const card = document.getElementById('todayCalCard');
   const body = document.getElementById('todayCalBody');
@@ -2439,10 +2452,43 @@ function renderTodayCal() {
   if (title) title.textContent = `📅 ${today.getMonth()+1}/${today.getDate()}(${DAY_JP[today.getDay()]}) の予定`;
   if (allEvs.length === 0) { card.style.display = 'none'; return; }
   card.style.display = '';
-  body.innerHTML = allEvs.map(ev => {
-    const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
-    return `<div class="day-event-item" style="${style};margin:2px 0;padding:3px 8px;border-radius:6px;">${ev.time ? `<span style="font-size:.75rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
-  }).join('');
+
+  // グループ化
+  const groups = {};
+  allEvs.forEach(ev => {
+    const label = ev.src === 'gcal' ? calGroupLabel(ev.calendar) : '手動';
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(ev);
+  });
+
+  const groupKeys = CAL_GROUP_ORDER.filter(k => groups[k]);
+
+  // 1グループのみなら列分け不要
+  if (groupKeys.length <= 1) {
+    body.innerHTML = allEvs.map(ev => {
+      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
+      return `<div class="day-event-item" style="${style};margin:2px 0;padding:3px 8px;border-radius:6px;">${ev.time ? `<span style="font-size:.75rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+    }).join('');
+    return;
+  }
+
+  // 複数グループ → 列並び
+  const cols = groupKeys.map(label => {
+    const evs = groups[label];
+    const baseStyle = evs[0].src === 'gcal' ? gcalEventStyle(evs[0].calendar) : '';
+    const headerBg = (baseStyle.match(/background:([^;]+)/) || [])[1] || '#F5F5F5';
+    const headerColor = (baseStyle.match(/color:([^;]+)/) || [])[1] || '#333';
+    const items = evs.map(ev => {
+      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
+      return `<div style="${style};margin:2px 0;padding:2px 6px;border-radius:5px;font-size:.82rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:3px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+    }).join('');
+    return `<div style="flex:1;min-width:0;">
+      <div style="font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:4px 4px 0 0;background:${headerBg};color:${headerColor};margin-bottom:3px;">${esc(label)}</div>
+      ${items}
+    </div>`;
+  }).join('<div style="width:1px;background:#E0E0E0;margin:0 6px;"></div>');
+
+  body.innerHTML = `<div style="display:flex;gap:0;align-items:flex-start;">${cols}</div>`;
 }
 
 /* ── 進捗テーブル ── */
