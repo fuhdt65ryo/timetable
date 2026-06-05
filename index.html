@@ -736,6 +736,10 @@
       </div>
     </div>
     <div class="gcal-section">
+      <div class="gcal-section-title">取得済みカレンダー</div>
+      <div id="gcalCalendarList" style="font-size:.85rem;color:var(--muted)">未取得</div>
+    </div>
+    <div class="gcal-section">
       <div class="gcal-section-title">キャッシュ状態</div>
       <div class="gcal-meta" id="gcalMeta">
         <div class="gcal-meta-item">
@@ -828,6 +832,7 @@
       <a class="help-toc-item" href="#" data-help-sec="sec-gcal">⑦ カレンダー連携</a>
       <a class="help-toc-item" href="#" data-help-sec="sec-sync">⑧ データ同期</a>
       <a class="help-toc-item" href="#" data-help-sec="sec-keys">⑨ キーボード操作</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-daymemo">⑩ 日付メモ欄</a>
     </nav>
   </div>
 
@@ -1077,6 +1082,21 @@
       <div class="help-row">
         <span class="help-desc">• <b>〇〇休業</b>（夏季休業など）を含む予定 → その期間を長期休業として自動表示</span>
       </div>
+
+      <p class="help-sub" style="margin-top:14px">カレンダー種別ごとの列分け表示</p>
+      <p style="font-size:.83rem;line-height:1.7;margin-bottom:8px">時間割表の日付ヘッダー下の予定欄は、カレンダー名に含まれるキーワードで自動グループ分けされます。複数グループの予定がある日は<b>列並び</b>で表示されます。</p>
+      <div class="help-row">
+        <span class="help-badge" style="background:#FFF0E0;color:#7A4500;border:1.5px solid #E8922A;min-width:36px">学校</span>
+        <span class="help-desc">カレンダー名に「学校」を含む予定</span>
+      </div>
+      <div class="help-row">
+        <span class="help-badge" style="background:#E0EEFF;color:#1A4A8A;border:1.5px solid #4A90D9;min-width:36px">部活</span>
+        <span class="help-desc">カレンダー名に「部活」を含む予定</span>
+      </div>
+      <div class="help-row">
+        <span class="help-badge" style="background:#F5F5F5;color:#333;border:1.5px solid #CCC;min-width:36px">個人</span>
+        <span class="help-desc">上記以外の個人カレンダーの予定</span>
+      </div>
       <div class="help-note">ICS URLはGoogleカレンダーの「設定と共有」→「カレンダーの統合」から「公開URL（ICS）」をコピーしてください。</div>
     </div>
   </div>
@@ -1131,6 +1151,28 @@
         <span class="help-badge" style="background:#f0f4ff;color:#1a56db;border:1.5px solid #1a56db;min-width:60px">Esc</span>
         <span class="help-desc">選択解除・モーダルを閉じる</span>
       </div>
+    </div>
+  </div>
+
+  <!-- ⑩ 日付メモ欄 -->
+  <div class="help-section card" id="sec-daymemo">
+    <div class="help-sec-head">
+      <span class="help-sec-icon">📝</span>
+      <span class="help-sec-title">⑩ 日付メモ欄</span>
+      <span class="help-sec-arrow">▶</span>
+    </div>
+    <div class="help-sec-body">
+      <p style="font-size:.83rem;line-height:1.7;margin-bottom:10px">時間割表の各日の下部に小さなメモ欄があります。その日に関する一言メモや備考を自由に書き留められます。</p>
+      <div class="help-row">
+        <span class="help-desc">• 日付ヘッダーの下にあるテキストエリア（「メモ…」と薄く表示）をタップして入力します。</span>
+      </div>
+      <div class="help-row">
+        <span class="help-desc">• 入力内容は自動保存されます（端末のlocalStorageに記録）。</span>
+      </div>
+      <div class="help-row">
+        <span class="help-desc">• データ同期（☁ 同期）を使うと、他の端末にもメモが引き継がれます。</span>
+      </div>
+      <div class="help-note">表示幅が狭い列ではメモ欄が非表示になる場合があります。</div>
     </div>
   </div>
 
@@ -1340,7 +1382,21 @@ const JP_HOLIDAYS = {
 const DEFAULT_GCAL_URL = '';
 const GCAL_URL_KEY     = 'tt_gcal_url_v1';
 const GCAL_CACHE_KEY   = 'tt_gcal_cache_v1';
+const GCAL_HIDDEN_KEY  = 'tt_gcal_hidden_v1';
 let gcalEvents = {};
+
+function isMyCalendar(name) {
+  return /\d/.test(name) || name.includes('ファミリー');
+}
+function getHiddenCalendars() {
+  try { return new Set(JSON.parse(localStorage.getItem(GCAL_HIDDEN_KEY) || '[]')); } catch { return new Set(); }
+}
+function saveHiddenCalendars(set) {
+  safeSave(GCAL_HIDDEN_KEY, [...set]);
+}
+function isCalendarVisible(name) {
+  return !getHiddenCalendars().has(name);
+}
 
 function getGcalUrl() {
   return localStorage.getItem(GCAL_URL_KEY) || DEFAULT_GCAL_URL;
@@ -1349,7 +1405,16 @@ function getGcalUrl() {
 function loadGcalCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(GCAL_CACHE_KEY) || 'null');
-    if (cached && cached.events) gcalEvents = cached.events;
+    if (cached && cached.events) {
+      gcalEvents = cached.events;
+      // 初回のみ: 自分以外のカレンダーをデフォルト非表示に設定
+      if (!localStorage.getItem(GCAL_HIDDEN_KEY)) {
+        const names = new Set();
+        Object.values(gcalEvents).forEach(evs => evs.forEach(ev => { if (ev.calendar) names.add(ev.calendar); }));
+        const hidden = new Set([...names].filter(n => !isMyCalendar(n)));
+        saveHiddenCalendars(hidden);
+      }
+    }
   } catch { gcalEvents = {}; }
 }
 
@@ -1428,6 +1493,33 @@ function renderCalendarPage() {
         const s = new Date(cached.timeMin);
         const e = new Date(cached.timeMax);
         rangeEl.textContent = `${s.getMonth()+1}/${s.getDate()} 〜 ${e.getMonth()+1}/${e.getDate()}`;
+      }
+      const listEl = document.getElementById('gcalCalendarList');
+      if (listEl && cached.events) {
+        const names = new Set();
+        Object.values(cached.events).forEach(evs => evs.forEach(ev => { if (ev.calendar) names.add(ev.calendar); }));
+        if (names.size === 0) {
+          listEl.textContent = 'カレンダーなし';
+        } else {
+          const hidden = getHiddenCalendars();
+          listEl.innerHTML = [...names].sort().map(n => {
+            const checked = !hidden.has(n);
+            const mine = isMyCalendar(n);
+            const color = checked ? (mine ? '#2C6B3F' : '#2C3E6B') : '#999';
+            return `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid #f0f0f0;font-size:.85rem;cursor:pointer;color:${color}">
+              <input type="checkbox" data-cal="${n}" ${checked ? 'checked' : ''} style="accent-color:var(--accent);cursor:pointer;flex-shrink:0">${n}
+            </label>`;
+          }).join('');
+          listEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+            cb.addEventListener('change', () => {
+              const h = getHiddenCalendars();
+              if (cb.checked) h.delete(cb.dataset.cal); else h.add(cb.dataset.cal);
+              saveHiddenCalendars(h);
+              renderCalendarPage();
+              renderTodayCal();
+            });
+          });
+        }
       }
     }
   } catch {}
@@ -2446,7 +2538,8 @@ function renderTodayCal() {
   if (!card || !body) return;
   const today = new Date(); today.setHours(0,0,0,0);
   const dateStr = toDateStr(today);
-  const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
+  const hidden = getHiddenCalendars();
+  const googleEvs = (gcalEvents[dateStr] || []).filter(ev => !hidden.has(ev.calendar)).map(ev => ({ ...ev, src: 'gcal' }));
   const manualEvs = (calEvents[dateStr] || []).map(ev => ({ ...ev, src: 'manual' }));
   const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
   if (title) title.textContent = `📅 ${today.getMonth()+1}/${today.getDate()}(${DAY_JP[today.getDay()]}) の予定`;
