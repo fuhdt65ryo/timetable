@@ -2850,7 +2850,7 @@ function renderChanges() {
     const MY_SUBJECTS = ['理科', '総合', '学活', '道徳'];
     items.forEach(({ period, from, to }, i) => {
       const tr = document.createElement('tr');
-      const isMine = to && MY_SUBJECTS.includes(to.name);
+      const isMine = (to && MY_SUBJECTS.includes(to.name)) || (from && MY_SUBJECTS.includes(from.name));
       if (isMine) tr.className = 'chg-row-mine';
       const fromHtml = from
         ? `<span class="chg-class" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
