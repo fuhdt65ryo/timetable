@@ -763,10 +763,20 @@
 </div>
 
 <!-- 取扱説明書ページ -->
-<div id="pageFirebase" class="container" style="display:none">
-  <div class="card" style="max-width:520px;margin:24px auto;">
+<div id="pageFirebase" class="container" style="display:none;padding:20px 16px;">
+  <div class="card" style="max-width:520px;margin:0 auto;padding:24px;">
     <h2 style="margin:0 0 6px;font-size:18px;">🔥 Firebase 接続設定</h2>
-    <p style="margin:0 0 18px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力してください。設定はこのブラウザに保存されます。</p>
+    <p style="margin:0 0 18px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力するか、バックアップファイルを読み込んでください。</p>
+
+    <div style="margin-bottom:16px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px dashed #ccc;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#333;">📂 バックアップファイルから読み込む</p>
+      <label id="fbpUploadLabel" style="display:inline-block;padding:7px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-size:13px;cursor:pointer;">
+        ファイルを選択…
+        <input type="file" id="fbp_uploadFile" accept=".json" style="display:none;" />
+      </label>
+      <span id="fbpUploadName" style="margin-left:8px;font-size:12px;color:#666;"></span>
+    </div>
+
     <div style="margin-bottom:12px;">
       <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">API キー</label>
       <input id="fbp_apiKey" placeholder="apiKey" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
@@ -791,17 +801,17 @@
       <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">Sender ID</label>
       <input id="fbp_messagingSenderId" placeholder="messagingSenderId" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
     </div>
-    <div style="margin-bottom:12px;">
+    <div style="margin-bottom:16px;">
       <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">App ID</label>
       <input id="fbp_appId" placeholder="appId" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button id="fbPageSaveBtn" class="btn btn-save" style="flex:1;">保存して接続</button>
       <button id="fbPageDownloadBtn" class="btn btn-secondary" style="font-size:13px;">⬇ バックアップ</button>
       <button id="fbPageResetBtn" class="btn" style="font-size:13px;background:#e53e3e;color:#fff;border:none;">設定をリセット</button>
     </div>
     <p id="fbPageMsg" style="margin:12px 0 0;font-size:13px;color:#2d7d46;display:none;"></p>
-    <p style="margin:12px 0 0;font-size:11px;color:#999;">設定はこのブラウザのみに保存されます。別のブラウザや端末でも使う場合はバックアップを保存してください。</p>
+    <p style="margin:10px 0 0;font-size:11px;color:#999;">設定はこのブラウザのみに保存されます。別のブラウザや端末でも使う場合はバックアップを保存してください。</p>
   </div>
 </div>
 
@@ -3031,6 +3041,23 @@ function _renderFbPage() {
   });
   document.getElementById('fbPageMsg').style.display = 'none';
 }
+
+document.getElementById('fbp_uploadFile').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  document.getElementById('fbpUploadName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const cfg = JSON.parse(e.target.result);
+      const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+      keys.forEach(k => { const el = document.getElementById('fbp_' + k); if (el && cfg[k]) el.value = cfg[k]; });
+    } catch(err) {
+      alert('ファイルの読み込みに失敗しました。正しいJSONファイルか確認してください。');
+    }
+  };
+  reader.readAsText(file);
+});
 
 document.getElementById('fbPageSaveBtn').addEventListener('click', () => {
   const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
