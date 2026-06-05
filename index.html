@@ -2569,14 +2569,14 @@ function renderTodayCal() {
   const cols = groupKeys.map(label => {
     const evs = groups[label];
     const baseStyle = evs[0].src === 'gcal' ? gcalEventStyle(evs[0].calendar) : '';
-    const headerBg = (baseStyle.match(/background:([^;]+)/) || [])[1] || '#F5F5F5';
+    const borderColor = (baseStyle.match(/border-color:([^;]+)/) || [])[1] || '#BDBDBD';
     const headerColor = (baseStyle.match(/color:([^;]+)/) || [])[1] || '#333';
     const items = evs.map(ev => {
       const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
       return `<div style="${style};margin:2px 0;padding:2px 6px;border-radius:5px;font-size:.82rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:3px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
     }).join('');
     return `<div style="flex:1;min-width:0;">
-      <div style="font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:4px 4px 0 0;background:${headerBg};color:${headerColor};margin-bottom:3px;">${esc(label)}</div>
+      <div style="font-size:.75rem;font-weight:700;padding:2px 6px 4px;border-bottom:2px solid ${borderColor};color:${headerColor};margin-bottom:4px;">${esc(label)}</div>
       ${items}
     </div>`;
   }).join('<div style="width:1px;background:#E0E0E0;margin:0 6px;"></div>');
