@@ -354,7 +354,7 @@
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
     .chg-class { opacity: 0.35; }
-    .chg-class-mine { opacity: 1; }
+    .chg-class.chg-class-mine { opacity: 1; }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -2849,8 +2849,8 @@ function renderChanges() {
     const MY_SUBJECTS = ['理科', '総合', '学活', '道徳'];
     items.forEach(({ period, from, to }, i) => {
       const tr = document.createElement('tr');
-      const fromMine = from && MY_SUBJECTS.includes(from.name);
-      const toMine   = to   && MY_SUBJECTS.includes(to.name);
+      const fromMine = from && MY_SUBJECTS.includes(from.room);
+      const toMine   = to   && MY_SUBJECTS.includes(to.room);
       const fromHtml = from
         ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
