@@ -353,8 +353,9 @@
     .chg-period { text-align:center; color:var(--accent); font-weight:800; width:3em; white-space:nowrap; border-right:1px solid #f0f2f6; }
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
-    .chg-class { opacity: 0.45; }
-    .chg-class-mine { opacity: 1; }
+    .chg-row-mine td { background:#fffbeb !important; }
+    .chg-row-mine td.chg-date-cell { background:#fef3c7 !important; }
+    .chg-class-mine { font-size:.9rem !important; padding:2px 10px !important; box-shadow:0 1px 4px rgba(0,0,0,.18); }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -2851,6 +2852,7 @@ function renderChanges() {
       const tr = document.createElement('tr');
       const fromMine = from && MY_SUBJECTS.includes(from.name);
       const toMine   = to   && MY_SUBJECTS.includes(to.name);
+      if (fromMine || toMine) tr.className = 'chg-row-mine';
       const fromHtml = from
         ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
