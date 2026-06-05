@@ -1171,6 +1171,10 @@
       <button class="btn btn-save" id="syncModalPull">今すぐ取得</button>
       <button class="btn" id="syncModalForcePush" style="background:#e53e3e;color:#fff;border:none;">強制アップロード</button>
     </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-secondary" id="syncModalReconfig" style="font-size:12px;padding:6px 12px;">⚙ Firebase設定を変更</button>
+      <button class="btn btn-secondary" id="syncModalExportConfig" style="font-size:12px;padding:6px 12px;">⬇ 設定をバックアップ</button>
+    </div>
   </div>
 </div>
 
@@ -3241,17 +3245,93 @@ let pushRetryCount = 0;
 const PUSH_MAX_RETRY = 4;
 const PUSH_RETRY_BASE_MS = 3000;
 
-const _fbConfig = {
-  apiKey: "AIzaSyBK8aZpB0O1HCbUzXk8A4bz95k8hW-MIKo",
-  authDomain: "timetable-a17e2.firebaseapp.com",
-  databaseURL: "https://timetable-a17e2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "timetable-a17e2",
-  storageBucket: "timetable-a17e2.firebasestorage.app",
-  messagingSenderId: "936420205250",
-  appId: "1:936420205250:web:168446baa909186f1c515b"
-};
-if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
-const _fbRef = firebase.database().ref('timetable_data');
+// Firebase設定をlocalStorageから取得（なければ初回設定フォームを表示）
+function _loadFbConfig() {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (saved) { try { return JSON.parse(saved); } catch(e) {} }
+  return null;
+}
+
+let _fbRef = null;
+
+function _initFirebaseWithConfig(cfg) {
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  _fbRef = firebase.database().ref('timetable_data');
+  firebase.auth().signInAnonymously()
+    .then(() => initFirebaseSync())
+    .catch(e => { console.error('auth error:', e); initFirebaseSync(); });
+  fetchGcalEvents();
+}
+
+function _showFbConfigForm() {
+  const overlay = document.createElement('div');
+  overlay.id = 'fbConfigOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:28px 24px;width:min(480px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.3);">
+      <h2 style="margin:0 0 6px;font-size:18px;">🔥 Firebase 接続設定</h2>
+      <p style="margin:0 0 16px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力してください。設定はこのブラウザに保存されます。</p>
+      ${[
+        ['apiKey','API キー'],
+        ['authDomain','Auth ドメイン'],
+        ['databaseURL','Database URL'],
+        ['projectId','プロジェクト ID'],
+        ['storageBucket','Storage Bucket'],
+        ['messagingSenderId','Sender ID'],
+        ['appId','App ID'],
+      ].map(([k,label]) => `
+        <div style="margin-bottom:10px;">
+          <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:3px;">${label}</label>
+          <input id="fbc_${k}" placeholder="${k}" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;" />
+        </div>
+      `).join('')}
+      <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button id="fbcSaveBtn" style="flex:1;padding:10px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存して接続</button>
+        <button id="fbcDownloadBtn" style="padding:10px 14px;background:#f1f3f4;color:#333;border:none;border-radius:8px;font-size:13px;cursor:pointer;" title="設定をJSONファイルで保存">⬇ バックアップ</button>
+      </div>
+      <p style="margin:10px 0 0;font-size:11px;color:#999;">設定はこのブラウザのみに保存されます。別のブラウザや端末でも使う場合はバックアップを保存してください。</p>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  function getInputValues() {
+    return {
+      apiKey:            document.getElementById('fbc_apiKey').value.trim(),
+      authDomain:        document.getElementById('fbc_authDomain').value.trim(),
+      databaseURL:       document.getElementById('fbc_databaseURL').value.trim(),
+      projectId:         document.getElementById('fbc_projectId').value.trim(),
+      storageBucket:     document.getElementById('fbc_storageBucket').value.trim(),
+      messagingSenderId: document.getElementById('fbc_messagingSenderId').value.trim(),
+      appId:             document.getElementById('fbc_appId').value.trim(),
+    };
+  }
+
+  document.getElementById('fbcSaveBtn').addEventListener('click', () => {
+    const cfg = getInputValues();
+    if (!cfg.apiKey || !cfg.databaseURL) { alert('API キーと Database URL は必須です'); return; }
+    localStorage.setItem('tt_firebase_config', JSON.stringify(cfg));
+    overlay.remove();
+    _initFirebaseWithConfig(cfg);
+  });
+
+  document.getElementById('fbcDownloadBtn').addEventListener('click', () => {
+    const cfg = getInputValues();
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'firebase-config.json';
+    a.click();
+  });
+}
+
+// 設定ロードまたは初回フォーム表示
+(function() {
+  const cfg = _loadFbConfig();
+  if (cfg) {
+    _initFirebaseWithConfig(cfg);
+  } else {
+    _showFbConfigForm();
+  }
+})();
 
 function updateSyncBtn(state) {
   const btn = document.getElementById('btnSync');
@@ -3417,6 +3497,22 @@ document.getElementById('syncModalForcePush').addEventListener('click', () => {
   closeSyncModal();
   clearTimeout(syncTimer);
   syncPush();
+});
+
+document.getElementById('syncModalReconfig').addEventListener('click', () => {
+  closeSyncModal();
+  localStorage.removeItem('tt_firebase_config');
+  location.reload();
+});
+
+document.getElementById('syncModalExportConfig').addEventListener('click', () => {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) { alert('Firebase設定が見つかりません'); return; }
+  const blob = new Blob([saved], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'firebase-config.json';
+  a.click();
 });
 
 /* ── 授業進捗 手動追加・削除 ── */
@@ -3596,11 +3692,7 @@ renderProgress2(); renderChanges();
     _resizeTimer = setTimeout(() => { renderTimetable(); }, 150);
   });
 })();
-// 匿名認証してからFirebase同期を開始
-firebase.auth().signInAnonymously()
-  .then(() => initFirebaseSync())
-  .catch(e => { console.error('auth error:', e); initFirebaseSync(); }); // 失敗しても同期は試みる
-fetchGcalEvents();
+// Firebase初期化は _initFirebaseWithConfig() で行われる（上部参照）
 </script>
 </body>
 </html>

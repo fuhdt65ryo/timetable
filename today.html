@@ -404,22 +404,26 @@ function applyFbData(data) {
   render();
 }
 
-const _fbConfig = {
-  apiKey: "AIzaSyBK8aZpB0O1HCbUzXk8A4bz95k8hW-MIKo",
-  authDomain: "timetable-a17e2.firebaseapp.com",
-  databaseURL: "https://timetable-a17e2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "timetable-a17e2",
-  storageBucket: "timetable-a17e2.firebasestorage.app",
-  messagingSenderId: "936420205250",
-  appId: "1:936420205250:web:168446baa909186f1c515b"
-};
-if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
-const _fbRef = firebase.database().ref('timetable_data');
+// Firebase設定をlocalStorageから取得（index.htmlで保存済みの設定を共有）
+let _fbRef = null;
 
-setFooter('syncing');
-firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
-  _fbRef.on('value', snap => { applyFbData(snap.val()); setFooter('ok'); }, () => setFooter('ok'));
-});
+function _initToday() {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) {
+    setFooter('ok');
+    document.getElementById('content').innerHTML = '<p style="text-align:center;padding:40px;color:#888;">先に時間割アプリ（index.html）でFirebase設定を行ってください。</p>';
+    return;
+  }
+  let cfg;
+  try { cfg = JSON.parse(saved); } catch(e) { return; }
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  _fbRef = firebase.database().ref('timetable_data');
+  setFooter('syncing');
+  firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
+    _fbRef.on('value', snap => { applyFbData(snap.val()); setFooter('ok'); }, () => setFooter('ok'));
+  });
+}
+_initToday();
 
 function render() {
   const today = new Date();
