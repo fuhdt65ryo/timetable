@@ -1496,6 +1496,11 @@ function loadGcalCache() {
         const hidden = new Set([...names].filter(n => !isMyCalendar(n)));
         saveHiddenCalendars(hidden);
       }
+      // 24時間以上経過していたらバックグラウンドで自動更新
+      const age = cached.updatedAt ? Date.now() - new Date(cached.updatedAt).getTime() : Infinity;
+      if (age > 24 * 60 * 60 * 1000 && getGcalUrl()) {
+        setTimeout(() => fetchGcalEvents(), 1500);
+      }
     }
   } catch { gcalEvents = {}; }
 }
