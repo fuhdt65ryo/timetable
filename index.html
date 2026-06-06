@@ -581,8 +581,7 @@
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
     <button class="tab-btn" data-tab="basechange">📋 参照元変更</button>
-    <button class="tab-btn" data-tab="calendar">📅 カレンダー設定</button>
-    <button class="tab-btn" data-tab="firebase">🔥 Firebase設定</button>
+    <button class="tab-btn" data-tab="calendar">⚙️ 設定</button>
     <button class="tab-btn" data-tab="help">📖 使い方</button>
   </div>
 </header>
@@ -837,11 +836,8 @@
       <div class="gcal-status-msg" id="gcalStatusMsg"></div>
     </div>
   </div>
-</div>
 
-<!-- 取扱説明書ページ -->
-<div id="pageFirebase" class="container" style="display:none;padding:20px 16px;">
-  <div class="card" style="max-width:520px;margin:0 auto;padding:24px;">
+  <div class="card" style="margin:16px 0 0;padding:24px;">
     <h2 style="margin:0 0 6px;font-size:18px;">🔥 Firebase 接続設定</h2>
     <p style="margin:0 0 18px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力するか、バックアップファイルを読み込んでください。</p>
 
@@ -3470,12 +3466,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('pageHoliday').style.display     = tab === 'holiday'    ? '' : 'none';
     document.getElementById('pageBaseChange').style.display  = tab === 'basechange' ? '' : 'none';
     document.getElementById('pageCalendar').style.display    = tab === 'calendar'   ? '' : 'none';
-    document.getElementById('pageFirebase').style.display    = tab === 'firebase'   ? '' : 'none';
     document.getElementById('pageHelp').style.display        = tab === 'help'       ? '' : 'none';
     if (tab === 'holiday')    renderHolidayPage();
     if (tab === 'basechange') renderBaseChangePage();
-    if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
-    if (tab === 'firebase') _renderFbPage();
+    if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; _renderFbPage(); }
   });
 });
 
