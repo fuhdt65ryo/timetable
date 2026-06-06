@@ -429,6 +429,26 @@
       .src-grid-wrap:not(.src-grid-open) .src-grid { display: none; }
     }
 
+    /* ── 参照元変更ページ ── */
+    .base-grid-wrap { overflow-x:auto; }
+    .base-grid { display:grid; grid-template-columns:28px repeat(5,1fr); gap:3px; min-width:320px; }
+    .base-grid-header { font-size:.7rem; font-weight:700; text-align:center; color:var(--muted); padding:4px 2px; background:#f7fafc; border-radius:3px; }
+    .base-cell { padding:5px 3px; border:1px solid #e2e8f0; border-radius:5px; cursor:pointer; min-height:48px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:2px; transition:opacity .15s; }
+    .base-cell:hover { opacity:.75; }
+    .base-cell-name { font-weight:700; font-size:.8rem; text-align:center; }
+    .base-cell-sub { font-size:.65rem; color:#555; text-align:center; }
+    .base-period-label { font-size:.65rem; font-weight:700; color:var(--muted); display:flex; align-items:center; justify-content:center; }
+    .base-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+    .base-fromdate-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .base-fromdate-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .base-status-active { background:#e8f5e9; color:#2e7d32; }
+    .base-status-future { background:#e3f2fd; color:#1565c0; }
+    .base-status-none { background:#f5f5f5; color:#888; }
+    /* 参照元セル編集モーダル */
+    #baseCellModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; align-items:center; justify-content:center; }
+    #baseCellModal.open { display:flex; }
+    .base-cell-modal-inner { background:#fff; border-radius:12px; padding:20px; width:280px; max-width:90vw; box-shadow:0 8px 32px rgba(0,0,0,.18); }
+
     /* ── カレンダー設定ページ ── */
     .gcal-section { padding:16px; border-bottom:1px solid var(--border); }
     .gcal-section:last-child { border-bottom:none; }
@@ -560,6 +580,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
+    <button class="tab-btn" data-tab="basechange">📋 参照元変更</button>
     <button class="tab-btn" data-tab="calendar">📅 カレンダー設定</button>
     <button class="tab-btn" data-tab="firebase">🔥 Firebase設定</button>
     <button class="tab-btn" data-tab="help">📖 使い方</button>
@@ -719,6 +740,61 @@
   </div>
 </div>
 
+
+<!-- 参照元変更ページ -->
+<div id="pageBaseChange" class="container" style="display:none">
+  <div class="card" id="baseCurrentCard">
+    <div class="base-section-head">
+      <span class="list-title">現在の基本時間割</span>
+      <span id="baseCurrentBadge" class="base-fromdate-badge base-status-active">適用中</span>
+    </div>
+    <div class="base-grid-wrap">
+      <div class="base-grid" id="baseCurrentGrid"></div>
+    </div>
+  </div>
+  <div class="card" id="baseNextCard" style="margin-top:12px">
+    <div class="base-section-head">
+      <span class="list-title">次の基本時間割</span>
+      <span id="baseNextBadge" class="base-fromdate-badge base-status-none">未設定</span>
+    </div>
+    <div class="base-fromdate-row" id="baseNextDateRow">
+      <label style="font-size:.82rem;font-weight:700;color:var(--muted)">適用開始日</label>
+      <input type="date" id="baseNextFromDate" class="form-input" style="width:150px;font-size:.85rem" />
+      <button class="btn btn-save" id="btnBaseNextApplyDate" style="font-size:.8rem;padding:5px 12px">設定</button>
+    </div>
+    <div id="baseNextGridWrap" style="display:none">
+      <div class="base-grid-wrap">
+        <div class="base-grid" id="baseNextGrid"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="btnBaseCopyFromCurrent" style="font-size:.8rem;padding:5px 12px;background:#edf2ff;color:#3730a3;border:1px solid #c7d2fe">現在の時間割をコピー</button>
+        <button class="btn" id="btnBaseNextDelete" style="font-size:.8rem;padding:5px 12px;background:#fff0f0;color:#c53030;border:1px solid #fed7d7">次の時間割を削除</button>
+      </div>
+    </div>
+    <div id="baseNextEmptyMsg" style="color:var(--muted);font-size:.82rem;padding:4px 0">
+      開始日を設定すると、その日以降に適用する新しい時間割を編集できます。
+    </div>
+  </div>
+</div>
+
+<!-- 参照元セル編集モーダル -->
+<div id="baseCellModal">
+  <div class="base-cell-modal-inner">
+    <div style="font-size:.9rem;font-weight:700;margin-bottom:12px" id="baseCellModalTitle">セルを編集</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:.75rem;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">クラス</label>
+      <select id="baseCellClass" class="form-input" style="width:100%;font-size:.85rem"></select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:.75rem;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">授業内容</label>
+      <select id="baseCellSubject" class="form-input" style="width:100%;font-size:.85rem"></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="baseCellModalCancel" style="font-size:.85rem">キャンセル</button>
+      <button class="btn btn-save" id="baseCellModalSave" style="font-size:.85rem">保存</button>
+    </div>
+  </div>
+</div>
 
 <!-- カレンダー設定ページ -->
 <div id="pageCalendar" class="container" style="display:none">
@@ -1560,6 +1636,8 @@ let ttScrollReady  = false; // スクロールリスナー登録済み
 let selKey         = null;
 let bukatsuOverrides = {}; // { "YYYY-MM-DD": true(あり)/false(なし)/undefined(自動) }
 let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業ありにした日
+let baseCurrent = null; // 現在の基本時間割（null のとき hardcoded BASE を使う）
+let baseNext = null;    // { fromDate: "YYYY-MM-DD", base: {...} } 次の基本時間割
 
 /* ── 永続化 ── */
 function loadOverrides() {
@@ -1621,6 +1699,27 @@ function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStora
 function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush(); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
 function saveWeekendClassDays() { safeSave('tt_weekend_classes_v1', weekendClassDays); schedulePush(); }
+function loadBaseCurrent() {
+  try {
+    const raw = localStorage.getItem('tt_base_current_v1');
+    baseCurrent = raw ? JSON.parse(raw) : null;
+  } catch { baseCurrent = null; }
+}
+function saveBaseCurrent() { safeSave('tt_base_current_v1', baseCurrent || BASE); schedulePush(); }
+function loadBaseNext() {
+  try {
+    const raw = localStorage.getItem('tt_base_next_v1');
+    baseNext = raw ? JSON.parse(raw) : null;
+  } catch { baseNext = null; }
+}
+function saveBaseNext() {
+  if (baseNext) { safeSave('tt_base_next_v1', baseNext); } else { localStorage.removeItem('tt_base_next_v1'); }
+  schedulePush();
+}
+function getEffectiveBase(dateStr) {
+  if (baseNext && dateStr >= baseNext.fromDate) return baseNext.base;
+  return baseCurrent || BASE;
+}
 
 function getHolidayEntry(dateStr) {
   const val = holidays[dateStr];
@@ -1719,12 +1818,12 @@ function getEntry(dateStr, period) {
   if (ok in overrides) return overrides[ok];
   if (ok in cellSources) {
     const src = cellSources[ok];
-    return BASE[`${src.di}-${src.p}`] || null;
+    return getEffectiveBase(dateStr)[`${src.di}-${src.p}`] || null;
   }
   const d  = parseDateStr(dateStr);
   const di = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
   if (di < 0 || di > 6) return null;
-  return BASE[`${di}-${period}`] || null;
+  return getEffectiveBase(dateStr)[`${di}-${period}`] || null;
 }
 
 function getEffectiveSrc(dateStr, period) {
@@ -3191,19 +3290,190 @@ function el(tag, cls) { const e=document.createElement(tag); if(cls) e.className
 function esc(s) { return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ── タブ切り替え ── */
+/* ── 参照元変更ページ ── */
+function _buildBaseGrid(gridEl, baseData, onCellClick) {
+  gridEl.innerHTML = '';
+  // ヘッダー行
+  gridEl.appendChild(Object.assign(document.createElement('div'), { className:'base-grid-header', textContent:'' }));
+  ['月','火','水','木','金'].forEach(d => {
+    gridEl.appendChild(Object.assign(document.createElement('div'), { className:'base-grid-header', textContent:d }));
+  });
+  // 6限分
+  for (let p = 1; p <= 6; p++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'base-period-label';
+    lbl.textContent = p;
+    gridEl.appendChild(lbl);
+    for (let di = 0; di <= 4; di++) {
+      const entry = baseData[`${di}-${p}`] || null;
+      const cell = document.createElement('div');
+      cell.className = 'base-cell';
+      const color = entry ? (pastelizeColor(entry.color) || '#f0f0f0') : '#f7fafc';
+      cell.style.background = color;
+      cell.style.border = `1.5px solid ${entry?.color || '#e2e8f0'}`;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'base-cell-name';
+      nameEl.textContent = entry?.name || '─';
+      const subEl = document.createElement('div');
+      subEl.className = 'base-cell-sub';
+      subEl.textContent = entry?.room || '';
+      cell.appendChild(nameEl);
+      cell.appendChild(subEl);
+      cell.addEventListener('click', () => onCellClick(di, p));
+      gridEl.appendChild(cell);
+    }
+  }
+}
+
+let _baseCellTarget = null; // { which: 'current'|'next', di, p }
+
+function openBaseCellModal(which, di, p) {
+  _baseCellTarget = { which, di, p };
+  const baseData = which === 'next' ? (baseNext?.base || {}) : (baseCurrent || BASE);
+  const entry = baseData[`${di}-${p}`] || null;
+  document.getElementById('baseCellModalTitle').textContent =
+    `${['月','火','水','木','金'][di]}曜 ${p}限 を編集`;
+  // クラス選択肢
+  const classEl = document.getElementById('baseCellClass');
+  classEl.innerHTML = '<option value="">（空き）</option>' +
+    CLASSES.map(c => `<option value="${esc(c.name)}"${entry?.name === c.name ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  _updateBaseCellSubjects(entry?.room);
+  document.getElementById('baseCellModal').classList.add('open');
+}
+
+function _updateBaseCellSubjects(preselect) {
+  const cls = document.getElementById('baseCellClass').value;
+  const subs = CLASSES.find(c => c.name === cls)?.subjects || [];
+  const subEl = document.getElementById('baseCellSubject');
+  subEl.innerHTML = '<option value="">─</option>' +
+    subs.map(s => `<option value="${esc(s.name)}"${preselect === s.name ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+}
+
+function closeBaseCellModal() {
+  document.getElementById('baseCellModal').classList.remove('open');
+  _baseCellTarget = null;
+}
+
+document.getElementById('baseCellClass').addEventListener('change', () => _updateBaseCellSubjects());
+document.getElementById('baseCellModalCancel').addEventListener('click', closeBaseCellModal);
+document.getElementById('baseCellModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('baseCellModal')) closeBaseCellModal();
+});
+document.getElementById('baseCellModalSave').addEventListener('click', () => {
+  if (!_baseCellTarget) return;
+  const { which, di, p } = _baseCellTarget;
+  const cls = document.getElementById('baseCellClass').value;
+  const sub = document.getElementById('baseCellSubject').value || '';
+  const color = cls ? getColor(cls, sub) : '#B0BEC5';
+  const newEntry = cls ? { name: cls, room: sub, color } : null;
+  if (which === 'current') {
+    if (!baseCurrent) baseCurrent = Object.assign({}, BASE);
+    if (newEntry) baseCurrent[`${di}-${p}`] = newEntry;
+    else delete baseCurrent[`${di}-${p}`];
+    saveBaseCurrent();
+  } else {
+    if (!baseNext) return;
+    if (newEntry) baseNext.base[`${di}-${p}`] = newEntry;
+    else delete baseNext.base[`${di}-${p}`];
+    saveBaseNext();
+  }
+  closeBaseCellModal();
+  renderBaseChangePage();
+  renderTimetable();
+});
+
+function renderBaseChangePage() {
+  const today = toDateStr(new Date());
+  const currentBase = baseCurrent || BASE;
+
+  // 現在の時間割グリッド
+  const curBadge = document.getElementById('baseCurrentBadge');
+  if (baseNext) {
+    if (today >= baseNext.fromDate) {
+      curBadge.textContent = `〜 ${baseNext.fromDate} の前日まで`;
+      curBadge.className = 'base-fromdate-badge base-status-none';
+    } else {
+      curBadge.textContent = '適用中';
+      curBadge.className = 'base-fromdate-badge base-status-active';
+    }
+  } else {
+    curBadge.textContent = '適用中';
+    curBadge.className = 'base-fromdate-badge base-status-active';
+  }
+  _buildBaseGrid(document.getElementById('baseCurrentGrid'), currentBase, (di, p) => openBaseCellModal('current', di, p));
+
+  // 次の時間割セクション
+  const nextBadge = document.getElementById('baseNextBadge');
+  const nextGridWrap = document.getElementById('baseNextGridWrap');
+  const nextEmptyMsg = document.getElementById('baseNextEmptyMsg');
+  const dateInput = document.getElementById('baseNextFromDate');
+
+  if (baseNext) {
+    dateInput.value = baseNext.fromDate;
+    nextGridWrap.style.display = '';
+    nextEmptyMsg.style.display = 'none';
+    if (today >= baseNext.fromDate) {
+      nextBadge.textContent = `${baseNext.fromDate} から適用中`;
+      nextBadge.className = 'base-fromdate-badge base-status-active';
+    } else {
+      nextBadge.textContent = `${baseNext.fromDate} から適用予定`;
+      nextBadge.className = 'base-fromdate-badge base-status-future';
+    }
+    _buildBaseGrid(document.getElementById('baseNextGrid'), baseNext.base, (di, p) => openBaseCellModal('next', di, p));
+  } else {
+    nextBadge.textContent = '未設定';
+    nextBadge.className = 'base-fromdate-badge base-status-none';
+    nextGridWrap.style.display = 'none';
+    nextEmptyMsg.style.display = '';
+  }
+}
+
+document.getElementById('btnBaseNextApplyDate').addEventListener('click', () => {
+  const val = document.getElementById('baseNextFromDate').value;
+  if (!val) { alert('適用開始日を入力してください。'); return; }
+  if (!baseNext) {
+    // 現在の時間割をコピーして新しいベースを作成
+    baseNext = { fromDate: val, base: Object.assign({}, baseCurrent || BASE) };
+  } else {
+    baseNext.fromDate = val;
+  }
+  saveBaseNext();
+  renderBaseChangePage();
+  renderTimetable();
+});
+
+document.getElementById('btnBaseCopyFromCurrent').addEventListener('click', () => {
+  if (!baseNext) return;
+  if (!confirm('現在の時間割の内容を「次の時間割」にコピーします。現在の編集内容は上書きされます。よろしいですか？')) return;
+  baseNext.base = Object.assign({}, baseCurrent || BASE);
+  saveBaseNext();
+  renderBaseChangePage();
+});
+
+document.getElementById('btnBaseNextDelete').addEventListener('click', () => {
+  if (!confirm('次の時間割を削除します。よろしいですか？')) return;
+  baseNext = null;
+  saveBaseNext();
+  document.getElementById('baseNextFromDate').value = '';
+  renderBaseChangePage();
+  renderTimetable();
+});
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
 
     const tab = this.dataset.tab;
-    document.getElementById('pageTimetable').style.display  = tab === 'timetable' ? '' : 'none';
-    document.getElementById('navBar').style.display         = tab === 'timetable' ? '' : 'none';
-    document.getElementById('pageHoliday').style.display    = tab === 'holiday'   ? '' : 'none';
-    document.getElementById('pageCalendar').style.display   = tab === 'calendar'  ? '' : 'none';
-    document.getElementById('pageFirebase').style.display   = tab === 'firebase'  ? '' : 'none';
-    document.getElementById('pageHelp').style.display       = tab === 'help'      ? '' : 'none';
-    if (tab === 'holiday')  renderHolidayPage();
+    document.getElementById('pageTimetable').style.display   = tab === 'timetable'  ? '' : 'none';
+    document.getElementById('navBar').style.display          = tab === 'timetable'  ? '' : 'none';
+    document.getElementById('pageHoliday').style.display     = tab === 'holiday'    ? '' : 'none';
+    document.getElementById('pageBaseChange').style.display  = tab === 'basechange' ? '' : 'none';
+    document.getElementById('pageCalendar').style.display    = tab === 'calendar'   ? '' : 'none';
+    document.getElementById('pageFirebase').style.display    = tab === 'firebase'   ? '' : 'none';
+    document.getElementById('pageHelp').style.display        = tab === 'help'       ? '' : 'none';
+    if (tab === 'holiday')    renderHolidayPage();
+    if (tab === 'basechange') renderBaseChangePage();
     if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; }
     if (tab === 'firebase') _renderFbPage();
   });
@@ -3653,6 +3923,8 @@ function _applyFbData(data) {
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
   if (data.tt_bukatsu_v1   !== undefined)       { bukatsuOverrides   = data.tt_bukatsu_v1        || {}; safeSave('tt_bukatsu_v1',           bukatsuOverrides);   changed = true; }
   if (data.tt_weekend_classes_v1 !== undefined) { weekendClassDays   = data.tt_weekend_classes_v1 || {}; safeSave('tt_weekend_classes_v1',  weekendClassDays);   changed = true; }
+  if (data.tt_base_current_v1 !== undefined) { baseCurrent = data.tt_base_current_v1 || null; safeSave('tt_base_current_v1', baseCurrent); changed = true; }
+  if (data.tt_base_next_v1 !== undefined) { baseNext = data.tt_base_next_v1 || null; if (baseNext) safeSave('tt_base_next_v1', baseNext); else localStorage.removeItem('tt_base_next_v1'); changed = true; }
   if (data.tt_calevents_v1 !== undefined)       { calEvents       = data.tt_calevents_v1         || {}; safeSave('tt_calevents_v1',         calEvents);       changed = true; }
   if (data.tt_prog_manual  !== undefined)       { progManual      = data.tt_prog_manual          || []; safeSave('tt_prog_manual',          progManual);      changed = true; }
   if (data.tt_prog2_manual !== undefined)       { prog2Manual     = data.tt_prog2_manual         || []; safeSave('tt_prog2_manual',         prog2Manual);     changed = true; }
@@ -3679,6 +3951,8 @@ async function syncPush() {
     tt_holidays_seen:      JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
     tt_bukatsu_v1:         bukatsuOverrides,
     tt_weekend_classes_v1: weekendClassDays,
+    tt_base_current_v1:    baseCurrent || null,
+    tt_base_next_v1:       baseNext || null,
     tt_calevents_v1:       calEvents,
     tt_prog_manual:        progManual,
     tt_prog2_manual:       prog2Manual,
@@ -3967,6 +4241,8 @@ document.getElementById('btnAutoAssign').addEventListener('click', () => {
 });
 
 /* ── 起動 ── */
+loadBaseCurrent();
+loadBaseNext();
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
