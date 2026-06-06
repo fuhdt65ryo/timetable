@@ -747,6 +747,29 @@
     </div>
     <div id="holidayList"></div>
   </div>
+
+  <!-- 長期休業カード -->
+  <div class="card" style="margin-top:14px">
+    <div class="list-top">
+      <span class="list-title">🏫 長期休業の設定</span>
+    </div>
+    <div class="hol-page-form">
+      <div class="form-group fg-name">
+        <label class="form-label">名称</label>
+        <input type="text" class="form-input" id="vacName" placeholder="例: 夏季休業、冬季休業">
+      </div>
+      <div class="form-group">
+        <label class="form-label">開始日</label>
+        <input type="date" class="form-input" id="vacFrom" style="width:150px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">終了日</label>
+        <input type="date" class="form-input" id="vacTo" style="width:150px">
+      </div>
+      <button class="btn btn-save" id="vacSave">追加</button>
+    </div>
+    <div id="vacList" style="padding:8px 0"></div>
+  </div>
 </div>
 
 
@@ -1137,7 +1160,7 @@
         <div class="help-step-num">3</div>
         <div class="help-step-txt">「年休」「出張」は個別コマへの設定も可能です（編集パネルから設定）。</div>
       </div>
-      <div class="help-note">Googleカレンダーに「<b>夏季休業</b>」「<b>冬季休業</b>」などの「休業」を含む予定があると、その期間は長期休業として自動的に授業なし表示になります。</div>
+      <div class="help-note">「祝日・休校日」タブ下部の「長期休業の設定」から、夏季休業・冬季休業などの期間を手動で登録できます。登録した期間は時間割上で🏫マークの授業なし表示になります。</div>
     </div>
   </div>
 
@@ -1162,7 +1185,7 @@
         <span class="help-desc">• <b>部活動なし</b>と書かれた予定 → 部活なし（赤枠強調）に自動設定</span>
       </div>
       <div class="help-row">
-        <span class="help-desc">• <b>〇〇休業</b>（夏季休業など）を含む予定 → その期間を長期休業として自動表示</span>
+        <span class="help-desc">• 「祝日・休校日」→「長期休業の設定」で登録した期間 → 時間割上で🏫授業なし表示</span>
       </div>
 
       <p class="help-sub" style="margin-top:14px">カレンダー種別ごとの列分け表示</p>
@@ -1645,6 +1668,7 @@ let ttEnd          = null; // レンダリング範囲の終了日
 let ttRendering    = false; // 再レンダリング中フラグ（スクロール多重起動防止）
 let ttScrollReady  = false; // スクロールリスナー登録済み
 let selKey         = null;
+let longVacations    = []; // [{ name:'夏季休業', from:'YYYY-MM-DD', to:'YYYY-MM-DD' }, ...]
 let bukatsuOverrides = {}; // { "YYYY-MM-DD": true(あり)/false(なし)/undefined(自動) }
 let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業ありにした日
 let baseCurrent = null; // 現在の基本時間割（null のとき hardcoded BASE を使う）
@@ -1720,6 +1744,8 @@ function loadHolidays() {
   }
 }
 function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush(); }
+function loadLongVacations()  { try { longVacations = JSON.parse(localStorage.getItem('tt_long_vac_v1') || '[]'); } catch { longVacations = []; } }
+function saveLongVacations()  { safeSave('tt_long_vac_v1', longVacations); schedulePush(); }
 function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
 function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush(); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
@@ -1764,8 +1790,10 @@ function isActualHoliday(dateStr) {
   return !!e && e.type === 'holiday';
 }
 function isCalendarLongVacation(dateStr) {
-  const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
-  return allEvs.some(ev => ev.title && ev.title.includes('休業'));
+  return longVacations.some(v => v.from <= dateStr && dateStr <= v.to);
+}
+function getLongVacationName(dateStr) {
+  return (longVacations.find(v => v.from <= dateStr && dateStr <= v.to) || {}).name || '長期休業';
 }
 function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
@@ -2236,13 +2264,11 @@ function renderTimetable() {
     const dateStr = toDateStr(d);
     if (isActualHoliday(dateStr)) return; // 祝日が優先
     if (!isCalendarLongVacation(dateStr)) return;
-    const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
-    const vacEv = allEvs.find(ev => ev.title && ev.title.includes('休業'));
     const block = el('div', 'cell-vacation-span');
     block.style.cssText = `grid-column:${i+2};grid-row:5 / ${holRowEnd}`;
     block.innerHTML = `
       <div class="vac-span-icon">🏫</div>
-      <div class="vac-span-name">${esc(vacEv ? vacEv.title : '長期休業')}</div>
+      <div class="vac-span-name">${esc(getLongVacationName(dateStr))}</div>
       <div class="vac-span-label">授業なし</div>
     `;
     grid.appendChild(block);
@@ -3310,6 +3336,52 @@ function renderHolidayPage() {
   });
 }
 
+/* ── 長期休業UI ── */
+function renderVacList() {
+  const container = document.getElementById('vacList');
+  if (!container) return;
+  if (!longVacations.length) {
+    container.innerHTML = '<div class="hol-empty">長期休業は登録されていません</div>';
+    return;
+  }
+  container.innerHTML = '';
+  [...longVacations].sort((a,b) => a.from.localeCompare(b.from)).forEach((v, origIdx) => {
+    const idx = longVacations.indexOf(v);
+    const from = parseDateStr(v.from), to = parseDateStr(v.to);
+    const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+    const row = el('div', 'hol-item');
+    row.innerHTML = `
+      <div class="hol-dot" style="background:#1a7a3a"></div>
+      <span class="hol-date" style="color:#2e7d32">${fmt(from)}〜${fmt(to)}</span>
+      <span class="hol-name-text">${esc(v.name)}</span>
+      <button class="hol-del" data-idx="${idx}" title="削除">✕</button>
+    `;
+    row.querySelector('.hol-del').addEventListener('click', () => {
+      longVacations.splice(idx, 1);
+      saveLongVacations();
+      renderVacList();
+      renderTimetable();
+    });
+    container.appendChild(row);
+  });
+}
+
+document.getElementById('vacSave')?.addEventListener('click', () => {
+  const name = document.getElementById('vacName').value.trim();
+  const from = document.getElementById('vacFrom').value;
+  const to   = document.getElementById('vacTo').value;
+  if (!name) { alert('名称を入力してください'); return; }
+  if (!from || !to)  { alert('開始日と終了日を入力してください'); return; }
+  if (from > to)     { alert('終了日は開始日以降にしてください'); return; }
+  longVacations.push({ name, from, to });
+  saveLongVacations();
+  renderVacList();
+  renderTimetable();
+  document.getElementById('vacName').value = '';
+  document.getElementById('vacFrom').value = '';
+  document.getElementById('vacTo').value   = '';
+});
+
 /* ── 祝日URLインポート ── */
 async function importHolidaysFromUrl() {
   const urlInput = document.getElementById('holImportUrl');
@@ -3580,7 +3652,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('pageBaseChange').style.display  = tab === 'basechange' ? '' : 'none';
     document.getElementById('pageCalendar').style.display    = tab === 'calendar'   ? '' : 'none';
     document.getElementById('pageHelp').style.display        = tab === 'help'       ? '' : 'none';
-    if (tab === 'holiday')    renderHolidayPage();
+    if (tab === 'holiday')    { renderHolidayPage(); renderVacList(); }
     if (tab === 'basechange') renderBaseChangePage();
     if (tab === 'calendar') { renderCalendarPage(); document.getElementById('gcalStatusMsg').className = 'gcal-status-msg'; _renderFbPage(); }
   });
@@ -3884,6 +3956,20 @@ function navScrollWeek(delta) {
   renderTimetable();
   renderProgress(); renderProgress2();
 }
+// スワイプで週移動（モバイル）
+(function() {
+  let _tx = null;
+  const el = document.getElementById('ttScroll');
+  el.addEventListener('touchstart', e => { _tx = e.touches[0].clientX; }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (_tx === null) return;
+    const dx = e.changedTouches[0].clientX - _tx;
+    _tx = null;
+    if (Math.abs(dx) < 50) return; // 50px未満は無視
+    navScrollWeek(dx < 0 ? 7 : -7);
+  }, { passive: true });
+})();
+
 document.getElementById('btnToday').addEventListener('click', () => navScrollWeek(0));
 document.getElementById('btnPrev').addEventListener('click', () => navScrollWeek(-7));
 document.getElementById('btnNext').addEventListener('click', () => navScrollWeek(7));
@@ -4028,6 +4114,7 @@ function _applyFbData(data) {
   if (data.tt_daysched_v1  !== undefined)       { daySchedules    = data.tt_daysched_v1          || {}; safeSave('tt_daysched_v1',          daySchedules);    changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
+  if (data.tt_long_vac_v1  !== undefined)       { longVacations   = data.tt_long_vac_v1          || []; safeSave('tt_long_vac_v1',          longVacations);   changed = true; }
   if (data.tt_bukatsu_v1   !== undefined)       { bukatsuOverrides   = data.tt_bukatsu_v1        || {}; safeSave('tt_bukatsu_v1',           bukatsuOverrides);   changed = true; }
   if (data.tt_weekend_classes_v1 !== undefined) { weekendClassDays   = data.tt_weekend_classes_v1 || {}; safeSave('tt_weekend_classes_v1',  weekendClassDays);   changed = true; }
   if (data.tt_base_current_v1 !== undefined) { baseCurrent = data.tt_base_current_v1 || null; safeSave('tt_base_current_v1', baseCurrent); changed = true; }
@@ -4055,6 +4142,7 @@ async function syncPush() {
     tt_daysched_v1:        daySchedules,
     tt_cellsrc_v1:         cellSources,
     tt_holidays_v1:        holidays,
+    tt_long_vac_v1:        longVacations,
     tt_holidays_seen:      JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
     tt_bukatsu_v1:         bukatsuOverrides,
     tt_weekend_classes_v1: weekendClassDays,
@@ -4353,6 +4441,7 @@ loadBaseNext();
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
+loadLongVacations();
 loadBukatsuOverrides();
 loadWeekendClassDays();
 loadCalEvents();
