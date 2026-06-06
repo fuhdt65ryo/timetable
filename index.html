@@ -742,6 +742,7 @@
         <input type="text" id="holImportUrl" value="https://holidays-jp.github.io/api/v1/date.json"
           style="flex:1;min-width:200px;padding:5px 8px;border:1.5px solid #c5dff0;border-radius:7px;font-size:.78rem;font-family:inherit;outline:none;color:#333;">
         <button id="holImportBtn" class="btn btn-save" style="white-space:nowrap;padding:5px 14px;font-size:.78rem;">取得・差分登録</button>
+        <button id="holImportCleanBtn" style="white-space:nowrap;padding:5px 14px;font-size:.78rem;background:#fff3f3;border:1.5px solid #fca5a5;border-radius:7px;color:#b91c1c;cursor:pointer;font-family:inherit;font-weight:600;">今年度前を削除</button>
       </div>
       <div id="holImportStatus" style="margin-top:6px;font-size:.75rem;color:var(--muted);display:none;"></div>
     </div>
@@ -1744,6 +1745,7 @@ function loadHolidays() {
   }
 }
 function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush(); }
+function loadExtraJpHolidays() { try { Object.assign(JP_HOLIDAYS, JSON.parse(localStorage.getItem('tt_jp_holidays_extra') || '{}')); } catch {} }
 function loadLongVacations()  { try { longVacations = JSON.parse(localStorage.getItem('tt_long_vac_v1') || '[]'); } catch { longVacations = []; } }
 function saveLongVacations()  { safeSave('tt_long_vac_v1', longVacations); schedulePush(); }
 function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
@@ -3430,12 +3432,23 @@ async function importHolidaysFromUrl() {
       throw new Error('祝日データを読み取れませんでした（CSVフォーマットを確認してください）');
     }
 
-    // 差分チェック：現在 holidays に存在しないものだけ追加
+    // 今年度（4月〜翌3月）のみに絞る
+    const now = new Date();
+    const syYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    const syStart = `${syYear}-04-01`;
+    const syEnd   = `${syYear + 1}-03-31`;
+
+    // 差分チェック：今年度かつ JP_HOLIDAYS にないもののみ追加
     const seen = JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}');
+    const extraNational = JSON.parse(localStorage.getItem('tt_jp_holidays_extra') || '{}');
     let addCount = 0;
     Object.entries(imported).forEach(([date, name]) => {
+      if (date < syStart || date > syEnd) return; // 今年度以外スキップ
+      if (date in JP_HOLIDAYS) { seen[date] = true; return; } // 既にJP_HOLIDAYSにある → スキップ
       if (!(date in holidays)) {
         holidays[date] = name;
+        JP_HOLIDAYS[date] = name;   // 実行時にバッジ反映
+        extraNational[date] = name; // 永続化用
         addCount++;
       }
       seen[date] = true;
@@ -3444,13 +3457,14 @@ async function importHolidaysFromUrl() {
     if (addCount > 0) {
       saveHolidays();
       safeSave('tt_holidays_seen', seen);
+      localStorage.setItem('tt_jp_holidays_extra', JSON.stringify(extraNational));
       renderHolidayPage();
       renderTimetable();
       status.style.color = '#2e7d32';
-      status.textContent = `✅ ${addCount}件の祝日を新たに追加しました（既存データはそのまま）`;
+      status.textContent = `✅ ${addCount}件の祝日を新たに追加しました（今年度分のみ）`;
     } else {
       status.style.color = '#5b7fa0';
-      status.textContent = `ℹ️ 追加できる新しい祝日はありませんでした（${Object.keys(imported).length}件確認済み）`;
+      status.textContent = `ℹ️ 今年度の新しい祝日はありませんでした（JP_HOLIDAYSに登録済み）`;
     }
   } catch (e) {
     status.style.color = '#c0392b';
@@ -3465,6 +3479,21 @@ async function importHolidaysFromUrl() {
 }
 
 document.getElementById('holImportBtn')?.addEventListener('click', importHolidaysFromUrl);
+
+document.getElementById('holImportCleanBtn')?.addEventListener('click', () => {
+  const now = new Date();
+  const syStart = `${now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1}-04-01`;
+  // JP_HOLIDAYSにないもの（手動登録）かつ今年度より前の日付を削除
+  let count = 0;
+  Object.keys(holidays).forEach(d => {
+    if (d < syStart && !(d in JP_HOLIDAYS)) { delete holidays[d]; count++; }
+  });
+  if (count === 0) { alert('削除対象はありませんでした'); return; }
+  saveHolidays();
+  renderHolidayPage();
+  renderTimetable();
+  alert(`${count}件の過去データを削除しました`);
+});
 
 /* ── ユーティリティ ── */
 function el(tag, cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
@@ -4441,6 +4470,7 @@ loadBaseNext();
 loadDaySchedules();
 loadCellSources();
 loadHolidays();
+loadExtraJpHolidays();
 loadLongVacations();
 loadBukatsuOverrides();
 loadWeekendClassDays();
