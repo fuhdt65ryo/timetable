@@ -595,7 +595,7 @@
         <button class="nav-btn" id="btnPrev">◀</button>
       </div>
       <div class="nav-center">
-        <div class="week-label" id="weekLabel"><input type="date" id="weekDatePicker"></div>
+        <div class="week-label" id="weekLabel" title="クリックで日付を選択"><input type="date" id="weekDatePicker"></div>
         <button class="nav-btn today-btn" id="btnToday">今週</button>
       </div>
       <div class="nav-right">
@@ -734,6 +734,16 @@
         </span>
       </div>
       <button class="btn btn-save" id="hSave">追加</button>
+    </div>
+    <!-- URLインポートセクション -->
+    <div id="holImportSection" style="padding:12px 16px;border-bottom:1px solid var(--border);background:#f9fbff;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:.78rem;font-weight:700;color:#4a6fa5;white-space:nowrap;">🔗 URLから祝日をインポート</span>
+        <input type="text" id="holImportUrl" value="https://holidays-jp.github.io/api/v1/date.json"
+          style="flex:1;min-width:200px;padding:5px 8px;border:1.5px solid #c5dff0;border-radius:7px;font-size:.78rem;font-family:inherit;outline:none;color:#333;">
+        <button id="holImportBtn" class="btn btn-save" style="white-space:nowrap;padding:5px 14px;font-size:.78rem;">取得・差分登録</button>
+      </div>
+      <div id="holImportStatus" style="margin-top:6px;font-size:.75rem;color:var(--muted);display:none;"></div>
     </div>
     <div id="holidayList"></div>
   </div>
@@ -1658,8 +1668,22 @@ function safeSave(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.error('localStorage save failed:', key, e);
-    if (e.name === 'QuotaExceededError') {
-      alert('データの保存に失敗しました（ブラウザの空き容量が不足しています）');
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      const cacheSize = (localStorage.getItem(GCAL_CACHE_KEY) || '').length;
+      const cacheSizeKB = Math.round(cacheSize / 1024);
+      const msg = `ブラウザの保存容量が不足しています。\n\n`
+        + (cacheSizeKB > 0 ? `カレンダーキャッシュ（約${cacheSizeKB}KB）を削除して再試行しますか？` : `保存に失敗しました。ブラウザの設定からサイトデータを削除してください。`);
+      if (cacheSizeKB > 0 && confirm(msg)) {
+        localStorage.removeItem(GCAL_CACHE_KEY);
+        gcalEvents = {};
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+          alert('キャッシュ削除後も保存できませんでした。ブラウザの設定からサイトデータを削除してください。');
+        }
+      } else if (cacheSizeKB === 0) {
+        alert(msg);
+      }
     }
   }
 }
@@ -3280,6 +3304,90 @@ function renderHolidayPage() {
     list.appendChild(listDiv);
   });
 }
+
+/* ── 祝日URLインポート ── */
+async function importHolidaysFromUrl() {
+  const urlInput = document.getElementById('holImportUrl');
+  const status   = document.getElementById('holImportStatus');
+  const btn      = document.getElementById('holImportBtn');
+  const url = urlInput.value.trim();
+  if (!url) { alert('URLを入力してください'); return; }
+
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '取得中…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    // Shift-JIS / UTF-8 両対応
+    const contentType = res.headers.get('content-type') || '';
+    const imported = {};
+
+    if (contentType.includes('json') || url.endsWith('.json')) {
+      // JSON形式: { "YYYY-MM-DD": "名称", ... }
+      const json = await res.json();
+      Object.entries(json).forEach(([date, name]) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date) && name) imported[date] = name;
+      });
+    } else {
+      // CSV形式: 「YYYY/M/D,名称」または「YYYY-MM-DD,名称」(Shift-JIS or UTF-8)
+      const buf = await res.arrayBuffer();
+      let text;
+      try { text = new TextDecoder('shift-jis').decode(buf); } catch { text = new TextDecoder('utf-8').decode(buf); }
+      text.split('\n').forEach(line => {
+        const cols = line.trim().split(',');
+        if (cols.length < 2) return;
+        const rawDate = cols[0].trim();
+        const name    = cols[1].trim();
+        if (!name || name === '名称' || name === '休日名') return;
+        const m = rawDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (!m) return;
+        imported[`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`] = name;
+      });
+    }
+
+    if (!Object.keys(imported).length) {
+      throw new Error('祝日データを読み取れませんでした（CSVフォーマットを確認してください）');
+    }
+
+    // 差分チェック：現在 holidays に存在しないものだけ追加
+    const seen = JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}');
+    let addCount = 0;
+    Object.entries(imported).forEach(([date, name]) => {
+      if (!(date in holidays)) {
+        holidays[date] = name;
+        addCount++;
+      }
+      seen[date] = true;
+    });
+
+    if (addCount > 0) {
+      saveHolidays();
+      safeSave('tt_holidays_seen', seen);
+      renderHolidayPage();
+      renderTimetable();
+      status.style.color = '#2e7d32';
+      status.textContent = `✅ ${addCount}件の祝日を新たに追加しました（既存データはそのまま）`;
+    } else {
+      status.style.color = '#5b7fa0';
+      status.textContent = `ℹ️ 追加できる新しい祝日はありませんでした（${Object.keys(imported).length}件確認済み）`;
+    }
+  } catch (e) {
+    status.style.color = '#c0392b';
+    if (e instanceof TypeError && e.message.includes('fetch')) {
+      status.textContent = '❌ 取得失敗：CORSエラーの可能性があります。CSVファイルをダウンロードして直接入力するか、別のURLをお試しください。';
+    } else {
+      status.textContent = `❌ エラー：${e.message}`;
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('holImportBtn')?.addEventListener('click', importHolidaysFromUrl);
 
 /* ── ユーティリティ ── */
 function el(tag, cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
