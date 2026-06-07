@@ -2271,7 +2271,6 @@ function renderTimetable() {
     block.innerHTML = `
       <div class="vac-span-icon">🏫</div>
       <div class="vac-span-name">${esc(getLongVacationName(dateStr))}</div>
-      <div class="vac-span-label">授業なし</div>
     `;
     grid.appendChild(block);
   });
@@ -2836,10 +2835,14 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
         if (manual) {
           const idx = manualArr.indexOf(oldVal);
           if (idx !== -1) { manualArr[idx] = newVal; saveFn(); }
-        } else {
-          Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
-          save(); schedulePush();
         }
+        // 並び順も更新
+        const oi = orderArr.indexOf(oldVal);
+        if (oi !== -1) { orderArr[oi] = newVal; saveOrderFn(); }
+        // 時間割のoverridesも更新（manual/非manual共通）
+        Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
+        save(); schedulePush();
+        renderTimetable();
         renderProgress(); renderProgress2();
       } else { renderSelf(); }
     };
