@@ -27,6 +27,7 @@
     .reload-btn:hover { background:rgba(255,255,255,.32); transform:rotate(30deg); }
     .reload-btn:active { transform:rotate(180deg); }
     h1 { font-size:1.1rem; font-weight:800; letter-spacing:.06em; }
+    .last-updated-label { font-size:.65rem; color:rgba(255,255,255,.65); line-height:1.4; }
     .nav-bar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:8px 8px 6px; gap:4px; }
     .nav-left { display:flex; align-items:center; justify-content:flex-start; }
     .nav-center { display:flex; align-items:center; gap:6px; justify-content:center; }
@@ -573,7 +574,7 @@
 
 <header>
   <div class="header-top">
-    <div></div>
+    <div id="lastUpdatedLabel" class="last-updated-label"></div>
     <h1>時間割</h1>
     <button class="reload-btn" onclick="location.reload()" title="更新">↻</button>
   </div>
@@ -2304,7 +2305,7 @@ function positionEditPanel() {
   if (!ep || !selKey) { if (ep) ep.style.display = 'none'; return; }
   const [, pStr] = selKeyParts();
   const pi = +pStr - 1; // 0-indexed
-  const editSlotRow = pi * 2 + 5;
+  const editSlotRow = pi * 2 + 6;
   ep.style.gridRow    = String(editSlotRow);
   ep.style.gridColumn = '1 / -1';
   ep.style.top   = '';
@@ -2711,7 +2712,7 @@ function renderTodayCal() {
   if (groupKeys.length <= 1) {
     body.innerHTML = allEvs.map(ev => {
       const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
-      return `<div class="day-event-item" style="${style};margin:2px 0;padding:3px 8px;border-radius:6px;">${ev.time ? `<span style="font-size:.75rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+      return `<div style="${style};margin:2px 0;padding:2px 8px;border-radius:6px;font-size:.78rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
     }).join('');
     return;
   }
@@ -4212,9 +4213,23 @@ async function syncPush() {
   }
 }
 
+function updateLastUpdatedLabel() {
+  const el = document.getElementById('lastUpdatedLabel');
+  if (!el) return;
+  const iso = localStorage.getItem(LOCAL_UPDATED_KEY);
+  if (!iso) { el.textContent = ''; return; }
+  const d = new Date(iso);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const min = String(d.getMinutes()).padStart(2,'0');
+  el.textContent = `更新 ${mm}/${dd} ${hh}:${min}`;
+}
+
 function schedulePush() {
   localDirty = true;
   localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
+  updateLastUpdatedLabel();
   clearTimeout(syncTimer);
   syncTimer = setTimeout(syncPush, 1500);
 }
@@ -4488,6 +4503,7 @@ renderTimetable();
 renderTodayCal();
 renderProgress();
 renderProgress2(); renderChanges();
+updateLastUpdatedLabel();
 (function() {
   function setHeaderH() {
     document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');
