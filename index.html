@@ -428,6 +428,27 @@
       .src-grid-label::after { content: ' ▶'; font-size: .6rem; }
       .src-grid-wrap.src-grid-open .src-grid-label::after { content: ' ▼'; }
       .src-grid-wrap:not(.src-grid-open) .src-grid { display: none; }
+
+      /* ── 編集パネル：ボトムシート ── */
+      .edit-inline {
+        position: fixed !important;
+        bottom: 0; left: 0; right: 0;
+        max-height: 65vh;
+        overflow-y: auto;
+        border-radius: 16px 16px 0 0 !important;
+        margin: 0 !important;
+        grid-row: unset !important;
+        grid-column: unset !important;
+        z-index: 200;
+        box-shadow: 0 -4px 24px rgba(0,0,0,.2) !important;
+      }
+      .edit-panel-overlay {
+        display: block !important;
+      }
+    }
+    .edit-panel-overlay {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 199;
     }
 
     /* ── 参照元変更ページ ── */
@@ -607,6 +628,7 @@
     <div id="ttScroll" class="tt-scroll">
       <div class="timetable" id="timetable"></div>
     </div>
+    <div id="editPanelOverlay" class="edit-panel-overlay"></div>
     <div id="editPanel" class="edit-inline" style="display:none;"></div>
   </div>
 
@@ -2184,6 +2206,8 @@ function renderTimetable() {
     const selLabel = `${selD.getMonth()+1}月${selD.getDate()}日(${DAY_JP[selD.getDay()]}) ${selP}限`;
     const selSub   = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
     editPanel.style.display = '';
+    const _ov = document.getElementById('editPanelOverlay');
+    if (_ov) _ov.style.display = '';
     editPanel.innerHTML = `
       <div class="edit-inline-head">
         <div class="edit-inline-title">
@@ -2197,6 +2221,8 @@ function renderTimetable() {
     editPanel.querySelector('#editClose').addEventListener('click', clearSelect);
   } else {
     editPanel.style.display = 'none';
+    const _ov2 = document.getElementById('editPanelOverlay');
+    if (_ov2) _ov2.style.display = 'none';
   }
 
   // 部活行（6限の下）
@@ -2303,6 +2329,13 @@ function renderTimetable() {
 function positionEditPanel() {
   const ep = document.getElementById('editPanel');
   if (!ep || !selKey) { if (ep) ep.style.display = 'none'; return; }
+  if (window.innerWidth <= 640) {
+    // モバイル：fixed ボトムシート（CSS側で制御）
+    ep.style.gridRow    = '';
+    ep.style.gridColumn = '';
+    ep.style.display = '';
+    return;
+  }
   const [, pStr] = selKeyParts();
   const pi = +pStr - 1; // 0-indexed
   const editSlotRow = pi * 2 + 6;
@@ -4213,23 +4246,15 @@ async function syncPush() {
   }
 }
 
-function updateLastUpdatedLabel() {
+const APP_VERSION = 'v2026.06.08';
+(function() {
   const el = document.getElementById('lastUpdatedLabel');
-  if (!el) return;
-  const iso = localStorage.getItem(LOCAL_UPDATED_KEY);
-  if (!iso) { el.textContent = ''; return; }
-  const d = new Date(iso);
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const dd = String(d.getDate()).padStart(2,'0');
-  const hh = String(d.getHours()).padStart(2,'0');
-  const min = String(d.getMinutes()).padStart(2,'0');
-  el.textContent = `更新 ${mm}/${dd} ${hh}:${min}`;
-}
+  if (el) el.textContent = APP_VERSION;
+})();
 
 function schedulePush() {
   localDirty = true;
   localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
-  updateLastUpdatedLabel();
   clearTimeout(syncTimer);
   syncTimer = setTimeout(syncPush, 1500);
 }
@@ -4364,6 +4389,7 @@ document.addEventListener('click', function(e) {
 
 /* ── カレンダー設定ページ イベント ── */
 document.getElementById('btnGcalRefresh').addEventListener('click', fetchGcalEvents);
+document.getElementById('editPanelOverlay').addEventListener('click', clearSelect);
 document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
   const val = document.getElementById('gcalUrlInput').value.trim();
   if (!val) return;
@@ -4503,7 +4529,6 @@ renderTimetable();
 renderTodayCal();
 renderProgress();
 renderProgress2(); renderChanges();
-updateLastUpdatedLabel();
 (function() {
   function setHeaderH() {
     document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');
