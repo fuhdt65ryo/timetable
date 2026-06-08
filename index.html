@@ -4100,6 +4100,14 @@ function _showFbConfigForm() {
     <div style="background:#fff;border-radius:12px;padding:28px 24px;width:min(480px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.3);">
       <h2 style="margin:0 0 6px;font-size:18px;">🔥 Firebase 接続設定</h2>
       <p style="margin:0 0 16px;font-size:13px;color:#555;">Firebase Console の「プロジェクトの設定」からコピーした値を入力してください。設定はこのブラウザに保存されます。</p>
+      <div style="margin-bottom:16px;padding:12px;background:#f8f9fa;border-radius:8px;border:2px dashed #bbb;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#333;">📂 バックアップファイルから読み込む</p>
+        <label id="fbcUploadLabel" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;font-size:13px;cursor:pointer;">
+          ファイルを選択…
+          <input type="file" id="fbc_uploadFile" accept=".json" style="display:none;" />
+        </label>
+        <span id="fbcUploadName" style="margin-left:8px;font-size:12px;color:#1a73e8;"></span>
+      </div>
       ${[
         ['apiKey','API キー'],
         ['authDomain','Auth ドメイン'],
@@ -4133,6 +4141,21 @@ function _showFbConfigForm() {
       appId:             document.getElementById('fbc_appId').value.trim(),
     };
   }
+
+  document.getElementById('fbc_uploadFile').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById('fbcUploadName').textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const cfg = JSON.parse(e.target.result);
+        const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+        keys.forEach(k => { const el = document.getElementById('fbc_' + k); if (el && cfg[k]) el.value = cfg[k]; });
+      } catch(err) { alert('ファイルの読み込みに失敗しました'); }
+    };
+    reader.readAsText(file);
+  });
 
   document.getElementById('fbcSaveBtn').addEventListener('click', () => {
     const cfg = getInputValues();
