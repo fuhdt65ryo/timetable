@@ -2065,9 +2065,13 @@ function renderTimetable() {
       const isNarrowCol  = isWeekendCol && narrowFlags[i];
       const isDark  = entry && DARK_CLASSES.has(entry.name);
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
+      const isTaninOwn = !!(entry && CLASSES.find(c => c.name === entry.name)?.tanin && ['学活','総合','道徳'].includes(entry.room));
+      const hasJugyohenkou = overrides[key]?.jugyohenkou;
+      const MY_SUBJECTS = ['理科','学活','総合','道徳'];
+      const henkouToMine = hasJugyohenkou && MY_SUBJECTS.includes(entry?.room);
       let cls = 'cell';
       if (entry) cls += ' has-entry';
-      if (entry && (entry.teacher || isLight)) cls += ' has-content';
+      if (entry && (entry.teacher || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
       if (isWeekendCol) cls += ' is-weekend-col';
@@ -2083,8 +2087,7 @@ function renderTimetable() {
       if (entry && !isDark && !isLight && entry.teacher) cls += ' cell-with-content';
 
       const naturalDi = dayIdx(d);
-      const ok2 = overrideKey(dateStr, p);
-      const hasJugyohenkou = overrides[ok2]?.jugyohenkou;
+      const ok2 = key;
       const src = getEffectiveSrc(dateStr, p);
       let srcBadge = '';
       if (ok2 in cellSources && (src.di !== naturalDi || src.p !== p)) {
@@ -2126,10 +2129,9 @@ function renderTimetable() {
       if (entry) {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
-        const isTaninOwn = !!(CLASSES.find(c => c.name === entry.name)?.tanin) && ['学活','総合','道徳'].includes(entry.room);
         cell.style.background = bg;
-        if (!isDark && (entry.teacher || isLight || isTaninOwn)) cell.style.borderColor = color;
-        if (!isDark && !isLight && !entry.teacher && !isTaninOwn) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
+        if (!isDark) cell.style.borderColor = color;
+        if (!isDark && !isLight && !entry.teacher && !isTaninOwn && (!hasJugyohenkou || henkouToMine)) { cell.style.borderStyle = 'dashed'; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
