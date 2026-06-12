@@ -2136,7 +2136,7 @@ function renderTimetable() {
           ? `<span class="c-src">${srcBadge}</span>`
           : isJikojiCell ? `<span class="c-event-label">行事</span>` : '';
         const subjectHtml = chgSubjectText
-          ? `<div class="c-subject-chg"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText)}</div>`
+          ? `<div class="${isTaninOwn ? 'c-subject' : 'c-subject-chg'}"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText)}</div>`
           : entry.room ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>`
           : `<div class="c-subject-empty"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>未入力</div>`;
         cell.innerHTML = `
