@@ -150,6 +150,7 @@
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
+    .cell-tanin-badge { position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#fff; color:#6A3093; border:1.5px solid #9C6ADE; border-radius:3px; padding:0 4px; line-height:1.6; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
     .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
     .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
@@ -2170,13 +2171,15 @@ function renderTimetable() {
       if (entry) {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
+        const isTaninOwn = !!(CLASSES.find(c => c.name === entry.name)?.tanin) && ['学活','総合','道徳'].includes(entry.room);
         cell.style.background = bg;
-        if (!isDark && (entry.teacher || isLight)) cell.style.borderColor = color;
-        if (!isDark && !isLight && !entry.teacher) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
+        if (!isDark && (entry.teacher || isLight || isTaninOwn)) cell.style.borderColor = color;
+        if (!isDark && !isLight && !entry.teacher && !isTaninOwn) { cell.style.borderStyle = 'dashed'; cell.style.borderColor = color; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
           : isJikojiCell ? `<span class="c-event-label">行事</span>` : '';
+        const taninBadge = isTaninOwn ? `<span class="cell-tanin-badge">担</span>` : '';
         const subjectHtml = chgSubjectText
           ? `<div class="c-subject-chg"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText)}</div>`
           : entry.room ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>`
@@ -2187,7 +2190,7 @@ function renderTimetable() {
             ${subjectHtml}
             ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           </div>
-          ${bottomLeft}${chgBadge}${absenceBadge}
+          ${bottomLeft}${taninBadge}${chgBadge}${absenceBadge}
         `;
       } else {
         cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}${absenceBadge}`;
