@@ -51,7 +51,7 @@
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
       #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
       #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; padding:6px 8px 12px; scrollbar-gutter:auto; }
-      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
@@ -81,16 +81,12 @@
     .cell-day.is-weekend.narrow { padding:4px 2px; }
     .cell-day.is-weekend.narrow .day-date { font-size:.72rem; }
     .cell-events.narrow .day-event-item { font-size:.52rem; padding:1px 3px; }
-    .cell-day.is-weekend.narrow .day-sched-change-badge { display:none; }
+
     .cell.is-weekend-col.narrow { min-height:42px; padding:3px 2px; }
     .cell.is-weekend-col.narrow .add-mark { font-size:1rem; }
 
     .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; border:1.5px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; z-index:2; }
-    .cell-sched { display:flex; align-items:center; padding:2px 2px 0; }
-    .day-sched-sel { display:block; width:100%; font-size:.62rem; font-weight:500; font-family:inherit; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.12); border-radius:5px; color:#999; padding:2px 2px; cursor:pointer; text-align:center; -webkit-appearance:none; appearance:none; }
-    .day-sched-sel.is-changed { background:linear-gradient(135deg,#e8411a,#c0320e); color:#fff; font-weight:800; border-color:transparent; box-shadow:0 1px 4px rgba(200,60,20,.35); }
     .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
-    .cell-day.is-today .day-sched-sel { background:#fff; border-color:rgba(0,0,0,.12); color:#666; }
     .cell-day.is-holiday  { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
     .cell-day.is-nenkyuu { background:#fff8f0 !important; color:#E65100 !important; border-color:#ffe0b2 !important; }
     .cell-day.is-shuccho { background:#f0f8f0 !important; color:#2e7d32 !important; border-color:#b8dfc0 !important; }
@@ -99,7 +95,7 @@
     .day-hol-badge     { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:rgba(255,120,120,.95); background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.3); border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-nenkyuu-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#FB8C00; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
     .day-shuccho-badge { display:inline-block; margin-top:4px; font-size:.55rem; font-weight:700; color:#fff; background:#388E3C; border-radius:4px; padding:1px 5px; letter-spacing:.02em; }
-    .day-sched-change-badge { display:inline-block; margin-top:4px; font-size:.58rem; font-weight:800; color:#fff; background:linear-gradient(135deg,#4A6DB5,#2c47a0); border-radius:4px; padding:2px 6px; letter-spacing:.02em; white-space:nowrap; }
+
 
     /* ── Day events (カレンダー行・row2) ── */
     .cell-events { display:flex; flex-direction:column; gap:2px; padding:3px 4px 4px; background:#f7fafc; border-radius:0; border:1px solid var(--border); border-top:none; border-bottom:none; max-height:100px; overflow-y:auto; }
@@ -150,7 +146,6 @@
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
-    .cell-tanin-badge { position:absolute; top:3px; left:4px; font-size:.55rem; font-weight:800; background:#fff; color:#6A3093; border:1.5px solid #9C6ADE; border-radius:3px; padding:0 4px; line-height:1.6; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
     .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
     .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
@@ -1677,7 +1672,6 @@ function gcalEventStyle(cal) {
 
 /* ── 状態 ── */
 let overrides    = {};
-let daySchedules = {};
 let cellSources  = {};
 let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
@@ -1744,10 +1738,6 @@ function safeSave(key, value) {
   }
 }
 function save() { safeSave('tt_overrides_v1', overrides); }
-function loadDaySchedules() {
-  try { daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1') || '{}'); } catch { daySchedules = {}; }
-}
-function saveDaySchedules() { safeSave('tt_daysched_v1', daySchedules); schedulePush(); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
 }
@@ -1902,7 +1892,7 @@ function getEntry(dateStr, period) {
     return getEffectiveBase(dateStr)[`${src.di}-${src.p}`] || null;
   }
   const d  = parseDateStr(dateStr);
-  const di = dateStr in daySchedules ? daySchedules[dateStr] : dayIdx(d);
+  const di = dayIdx(d);
   if (di < 0 || di > 6) return null;
   return getEffectiveBase(dateStr)[`${di}-${period}`] || null;
 }
@@ -1911,8 +1901,7 @@ function getEffectiveSrc(dateStr, period) {
   const ok = overrideKey(dateStr, period);
   if (ok in cellSources) return cellSources[ok];
   const d  = parseDateStr(dateStr);
-  const naturalDi = dayIdx(d);
-  const di = dateStr in daySchedules ? daySchedules[dateStr] : naturalDi;
+  const di = dayIdx(d);
   return { di, p: period };
 }
 
@@ -1973,18 +1962,10 @@ function renderTimetable() {
   grid.appendChild(corner);
 
   // 曜日ヘッダー行（日〜土の7列）
-  // 日曜セレクタ用: 日曜始まり順 [{name, di}]
-  const ALL_DAY_OPTIONS = [
-    {name:'日',di:6},{name:'月',di:0},{name:'火',di:1},{name:'水',di:2},
-    {name:'木',di:3},{name:'金',di:4},{name:'土',di:5}
-  ];
   dates.forEach((d, i) => {
     const col = i + 2;
     const dateStr   = toDateStr(d);
-    const naturalDi = dayIdx(d); // 月=0...金=4,土=5,日=6
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    const hasSched  = dateStr in daySchedules;
-    const schedDi   = hasSched ? daySchedules[dateStr] : naturalDi;
     const holEntry   = getHolidayEntry(dateStr);
     const isHoliday  = !!holEntry;
     const isActHol   = isHoliday && holEntry.type === 'holiday';
@@ -2053,29 +2034,6 @@ function renderTimetable() {
     memoDiv.appendChild(memoTa);
     grid.appendChild(memoDiv);
 
-    // 日課セレクタ（行4）— 土日はスキップ（空divで行高を維持）
-    const schedDiv = el('div', 'cell-sched');
-    schedDiv.style.cssText = `grid-column:${col};grid-row:4`;
-    if (!isActHol && !isWeekend && !isCalendarLongVacation(dateStr)) {
-      const sel = document.createElement('select');
-      const isChanged = hasSched && schedDi !== naturalDi;
-      sel.className = 'day-sched-sel' + (isChanged ? ' is-changed' : '');
-      sel.innerHTML = ALL_DAY_OPTIONS.map(({name,di}) =>
-        `<option value="${di}"${(hasSched ? schedDi : naturalDi) === di ? ' selected' : ''}>${name}曜</option>`
-      ).join('');
-      sel.addEventListener('change', function(e) {
-        e.stopPropagation();
-        const v = +this.value;
-        if (v === naturalDi) delete daySchedules[dateStr];
-        else daySchedules[dateStr] = v;
-        saveDaySchedules();
-        renderTimetable();
-        renderProgress();
-        renderProgress2(); renderChanges();
-      });
-      schedDiv.appendChild(sel);
-    }
-    grid.appendChild(schedDiv);
   });
 
   // 選択中の時限を取得
@@ -2083,7 +2041,7 @@ function renderTimetable() {
 
   // 時限ラベル列・授業セル
   PERIODS.forEach((p, pi) => {
-    const periodRow = pi * 2 + 5;
+    const periodRow = pi * 2 + 4;
 
     const pc = el('div', 'cell-period');
     pc.style.cssText = `grid-column:1;grid-row:${periodRow}`;
@@ -2132,8 +2090,6 @@ function renderTimetable() {
       let srcBadge = '';
       if (ok2 in cellSources && (src.di !== naturalDi || src.p !== p)) {
         srcBadge = entry ? `${DI_TO_NAME[src.di]}${src.p}` : '';
-      } else if (dateStr in daySchedules && entry) {
-        srcBadge = `${DI_TO_NAME[daySchedules[dateStr]]}${p}`;
       }
 
       // 授業変更の変更前→変更後テキスト
@@ -2179,7 +2135,6 @@ function renderTimetable() {
         const bottomLeft = srcBadge
           ? `<span class="c-src">${srcBadge}</span>`
           : isJikojiCell ? `<span class="c-event-label">行事</span>` : '';
-        const taninBadge = isTaninOwn ? `<span class="cell-tanin-badge">担</span>` : '';
         const subjectHtml = chgSubjectText
           ? `<div class="c-subject-chg"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText)}</div>`
           : entry.room ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>`
@@ -2190,7 +2145,7 @@ function renderTimetable() {
             ${subjectHtml}
             ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
           </div>
-          ${bottomLeft}${taninBadge}${chgBadge}${absenceBadge}
+          ${bottomLeft}${chgBadge}${absenceBadge}
         `;
       } else {
         cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}${absenceBadge}`;
@@ -2232,7 +2187,7 @@ function renderTimetable() {
   }
 
   // 部活行（6限の下）
-  const bukatsuRow = PERIODS.length * 2 + 5;
+  const bukatsuRow = PERIODS.length * 2 + 4;
   const bukatsuLabel = el('div', 'bukatsu-label');
   bukatsuLabel.style.cssText = `grid-column:1;grid-row:${bukatsuRow}`;
   bukatsuLabel.textContent = '部活';
@@ -2284,7 +2239,7 @@ function renderTimetable() {
     if (!isActualHoliday(dateStr)) return;
     const _he = getHolidayEntry(dateStr);
     const block = el('div', 'cell-holiday-span');
-    block.style.cssText = `grid-column:${i+2};grid-row:5 / ${holRowEnd};cursor:pointer`;
+    block.style.cssText = `grid-column:${i+2};grid-row:4 / ${holRowEnd};cursor:pointer`;
     block.innerHTML = `
       <div class="hol-span-icon">🎌</div>
       <div class="hol-span-name">${esc(_he.name)}</div>
@@ -2300,7 +2255,7 @@ function renderTimetable() {
     if (isActualHoliday(dateStr)) return; // 祝日が優先
     if (!isCalendarLongVacation(dateStr)) return;
     const block = el('div', 'cell-vacation-span');
-    block.style.cssText = `grid-column:${i+2};grid-row:5 / ${holRowEnd}`;
+    block.style.cssText = `grid-column:${i+2};grid-row:4 / ${holRowEnd}`;
     block.innerHTML = `
       <div class="vac-span-icon">🏫</div>
       <div class="vac-span-name">${esc(getLongVacationName(dateStr))}</div>
@@ -2422,11 +2377,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const [srcDateStr, srcPStr] = selKeyParts();
   const srcPeriod = +srcPStr;
   const srcDateObj = parseDateStr(srcDateStr);
-  const naturalDi2 = dayIdx(srcDateObj);
   const existSrc = cellSources[selKey];
-  const curSrcDi = existSrc ? existSrc.di : (srcDateStr in daySchedules ? daySchedules[srcDateStr] : naturalDi2);
+  const curSrcDi = existSrc ? existSrc.di : dayIdx(srcDateObj);
   const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
-  const srcChanged = existSrc || (srcDateStr in daySchedules);
+  const srcChanged = !!existSrc;
 
   const srcGridCells = PERIODS.map(pp => {
     const cells = DAY_NAMES.map((_, di) => {
@@ -2574,8 +2528,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
       const p  = +gc.dataset.p;
       const [ds] = selKeyParts();
       const d2  = parseDateStr(ds);
-      const ndi = dayIdx(d2);
-      const dsDi = ds in daySchedules ? daySchedules[ds] : ndi;
+      const dsDi = dayIdx(d2);
       if (di === dsDi && p === +selKeyParts()[1]) {
         delete cellSources[selKey];
       } else {
@@ -4066,7 +4019,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('click', e => {
   if (!selKey) return;
-  if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('.cell-sched') || e.target.closest('#progressPane')) return;
+  if (e.target.closest('.edit-inline') || e.target.closest('.cell') || e.target.closest('#progressPane')) return;
   clearSelect();
 });
 
@@ -4206,7 +4159,6 @@ function _applyFbData(data) {
   if (!data) return;
   let changed = false;
   if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; _migrateJikojiRoomToTeacher(); safeSave('tt_overrides_v1', overrides); changed = true; }
-  if (data.tt_daysched_v1  !== undefined)       { daySchedules    = data.tt_daysched_v1          || {}; safeSave('tt_daysched_v1',          daySchedules);    changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
   if (data.tt_long_vac_v1  !== undefined)       { longVacations   = data.tt_long_vac_v1          || []; safeSave('tt_long_vac_v1',          longVacations);   changed = true; }
@@ -4234,7 +4186,6 @@ async function syncPush() {
   updateSyncBtn('syncing');
   const payload = {
     tt_overrides_v1:       _encodeOverrides(overrides),
-    tt_daysched_v1:        daySchedules,
     tt_cellsrc_v1:         cellSources,
     tt_holidays_v1:        holidays,
     tt_long_vac_v1:        longVacations,
@@ -4540,7 +4491,6 @@ document.getElementById('btnAutoAssign').addEventListener('click', () => {
 /* ── 起動 ── */
 loadBaseCurrent();
 loadBaseNext();
-loadDaySchedules();
 loadCellSources();
 loadHolidays();
 loadExtraJpHolidays();
