@@ -2,267 +2,349 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>今日の時間割</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>時間割</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --accent: #F0A870;
+      --accent2: #D87840;
+      --today-bg: #FFF3B0;
+      --today-border: #E8D060;
+      --surface: #fff;
+      --bg: #f0f2f8;
+      --text: #1a202c;
+      --muted: #718096;
+      --border: #e2e8f0;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
-      background: #fff;
-      color: #2d3748;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overscroll-behavior: none;
     }
 
-    /* ── 全体レイアウト：左＝日付、右＝コマ一覧 ── */
-    .widget {
+    /* ── ヘッダー ── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+
+    .header-top {
       display: flex;
-      gap: 10px;
-      padding: 10px 12px;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
     }
 
-    /* 左：日付列 */
-    .date-col {
+    .header-title {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
+
+    .header-week {
+      font-size: .75rem;
+      color: rgba(255,255,255,.8);
+      font-weight: 600;
+    }
+
+    .sync-badge {
+      font-size: .65rem;
+      color: rgba(255,255,255,.75);
+      background: rgba(255,255,255,.15);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .sync-badge.ok     { color: rgba(200,255,200,.9); }
+    .sync-badge.syncing { color: rgba(255,255,200,.9); }
+
+    /* ── 曜日タブ ── */
+    .day-tabs {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .day-tabs::-webkit-scrollbar { display: none; }
+
+    .day-tab {
+      flex: 0 0 auto;
+      min-width: 52px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,.6);
+      padding: 8px 4px 7px;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      border-bottom: 3px solid transparent;
+      transition: all .15s;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      width: 52px;
-      min-width: 52px;
-      flex-shrink: 0;
-      padding-top: 2px;
-      overflow: hidden;
+      gap: 1px;
     }
 
-    .header-date {
-      font-size: 15px;
-      font-weight: 800;
-      color: #1a202c;
-      line-height: 1.1;
-      text-align: center;
-      white-space: nowrap;
+    .day-tab:hover { color: rgba(255,255,255,.85); }
+
+    .day-tab.active {
+      color: #fff;
+      border-bottom-color: rgba(255,255,255,.9);
+      background: rgba(255,255,255,.12);
     }
 
-    .header-day {
-      font-size: 11px;
-      color: #a0aec0;
-      font-weight: 600;
-      margin-top: 2px;
+    .day-tab.is-today .tab-day-name {
+      background: rgba(255,255,255,.25);
+      border-radius: 4px;
+      padding: 0 4px;
     }
 
-    .footer {
-      margin-top: 6px;
-      font-size: 9px;
-      text-align: center;
-      color: #a0aec0;
-      transition: color .2s;
-    }
-    .footer.syncing { color: #4a6cf7; }
-    .footer.ok      { color: #38a169; }
+    .day-tab.is-holiday { color: rgba(255,160,160,.8); }
+    .day-tab.is-holiday.active { color: #ffb3b3; }
 
-    /* 右：コマ一覧 */
-    .periods-col {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
+    .tab-day-name { font-size: .8rem; font-weight: 800; }
+    .tab-day-date { font-size: .65rem; font-weight: 600; opacity: .85; }
+
+    /* ── メインコンテンツ ── */
+    main {
+      padding: 12px 12px 40px;
     }
 
-    /* ── バナー ── */
+    /* ── 特殊バナー ── */
     .holiday-banner {
       background: #fff5f5;
       border: 1.5px solid #feb2b2;
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 12px;
+      padding: 20px;
       text-align: center;
       color: #c53030;
-      font-size: 13px;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .no-class-banner {
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .event-notice {
+      background: #fffbeb;
+      border: 1.5px solid #f6e05e;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      color: #744210;
+      font-size: .85rem;
       font-weight: 600;
     }
 
-    .event-banner {
-      background: #fffbeb;
-      border: 1.5px solid #f6e05e;
-      border-radius: 7px;
-      padding: 5px 10px;
-      margin-bottom: 4px;
-      color: #744210;
-      font-size: 11px;
-    }
-
-    .no-class {
-      text-align: center;
-      padding: 16px;
-      color: #a0aec0;
-      font-size: 12px;
-    }
-
-    /* ── コマ行 ── */
-    .period-row {
-      display: flex;
-      align-items: stretch;
-      border-radius: 7px;
-      overflow: hidden;
-      background: #f7fafc;
-      border: 1.5px dashed #e2e8f0;
-      height: 30px;
-    }
-
-    .period-row.has-content {
-      border-style: solid;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-
-    .period-row.is-dark { border-style: solid; }
-
-    /* コマ番号 */
-    .period-num {
-      width: 42px;
-      min-width: 42px;
-      display: grid;
-      grid-template-columns: 16px 1fr;
-      align-items: center;
-      justify-items: center;
-      border-right: 1px solid rgba(0,0,0,.07);
-      border-radius: 5px 0 0 5px;
-      padding: 0 3px;
-    }
-
-    .period-label {
-      font-size: 11px;
-      font-weight: 800;
-      line-height: 1;
-      justify-self: center;
-    }
-
-    /* セル内容 */
-    .period-content {
-      flex: 1;
-      padding: 4px 7px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-
-    .class-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .class-name {
-      font-size: 12px;
+    /* ── 年休・出張バナー ── */
+    .absence-banner {
+      border-radius: 10px;
+      padding: 7px 12px;
+      margin-bottom: 8px;
+      font-size: .82rem;
       font-weight: 700;
-      white-space: nowrap;
     }
+    .absence-banner.nenkyuu { background:#fff8f0; border:1.5px solid #fb8c00; color:#e65100; }
+    .absence-banner.shuccho { background:#f0f8f0; border:1.5px solid #388e3c; color:#2e7d32; }
 
-    .subject-tag {
-      font-size: 9px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .period-content-text {
-      font-size: 11px;
-      color: #4a5568;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      min-width: 0;
-    }
-
-    .empty-label {
-      font-size: 11px;
-      color: #cbd5e0;
-      padding: 4px 8px;
-      align-self: center;
-    }
-
-    /* dark系 */
-    .is-dark .class-name        { color: rgba(255,255,255,.9); }
-    .is-dark .period-content-text { color: rgba(255,255,255,.75); }
-
-    /* ── バッジ列 ── */
-    .badge-col {
+    /* ── コマカード ── */
+    .period-list {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .period-card {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1.5px dashed var(--border);
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      min-height: 60px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+
+    .period-card.has-content {
+      border-style: solid;
+      box-shadow: 0 2px 8px rgba(0,0,0,.09);
+    }
+
+    .period-card.is-dark {
+      border-style: solid;
+    }
+
+    /* 左：コマ番号 */
+    .period-num {
+      width: 52px;
+      min-width: 52px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
+      padding: 8px 4px;
+      border-right: 1px solid rgba(0,0,0,.07);
       gap: 2px;
-      padding: 3px 5px 3px 2px;
-      flex-shrink: 0;
     }
 
-    .badge-rinji {
-      font-size: .5rem;
-      font-weight: 800;
-      background: #fff;
-      color: #1565C0;
-      border: 1.5px solid #1565C0;
-      border-radius: 3px;
-      padding: 0 3px;
-      line-height: 1.6;
+    .num-label {
+      font-size: 1.1rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .num-time {
+      font-size: .55rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.3;
       white-space: nowrap;
     }
 
-    .badge-chg {
+    .num-src {
       font-size: .5rem;
-      font-weight: 800;
-      background: linear-gradient(135deg,#4A6DB5,#2c47a0);
-      color: #fff;
-      border-radius: 3px;
-      padding: 0 4px;
-      line-height: 1.6;
-      white-space: nowrap;
-    }
-
-    .badge-absence {
-      font-size: .5rem;
-      font-weight: 800;
-      background: #fff;
-      border-radius: 3px;
-      padding: 0 3px;
-      line-height: 1.6;
-      white-space: nowrap;
-    }
-
-    .badge-absence.nenkyuu { color: #E65100; border: 1.5px solid #FB8C00; }
-    .badge-absence.shuccho { color: #2E7D32; border: 1.5px solid #388E3C; }
-
-    .badge-src {
-      font-size: .48rem;
       font-weight: 700;
       background: #fff;
       color: #718096;
       border: 1px solid #e2e8f0;
       border-radius: 3px;
-      padding: 0 2px;
+      padding: 0 3px;
       line-height: 1.4;
+    }
+
+    /* 中：授業内容 */
+    .period-body {
+      flex: 1;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .class-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .class-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .class-name {
+      font-size: .95rem;
+      font-weight: 800;
       white-space: nowrap;
     }
+
+    .subject-tag {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .teacher-name {
+      font-size: .8rem;
+      color: #4a5568;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .is-dark .class-name  { color: rgba(255,255,255,.95); }
+    .is-dark .teacher-name { color: rgba(255,255,255,.75); }
+    .is-dark .num-time     { color: rgba(255,255,255,.6); }
+
+    .empty-dash {
+      font-size: .85rem;
+      color: #cbd5e0;
+      padding: 10px 12px;
+      align-self: center;
+    }
+
+    /* 右：バッジ列 */
+    .badge-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 8px 6px 4px;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      font-size: .55rem;
+      font-weight: 800;
+      border-radius: 3px;
+      padding: 1px 4px;
+      line-height: 1.6;
+      white-space: nowrap;
+    }
+
+    .badge-rinji   { background:#fff; color:#1565C0; border:1.5px solid #1565C0; }
+    .badge-chg     { background:linear-gradient(135deg,#4A6DB5,#2c47a0); color:#fff; }
+    .badge-nenkyuu { background:#fff; color:#E65100; border:1.5px solid #FB8C00; }
+    .badge-shuccho { background:#fff; color:#2E7D32; border:1.5px solid #388E3C; }
+
+    /* ── Firebase未設定メッセージ ── */
+    .setup-msg {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .setup-msg h2 { font-size: 1rem; margin-bottom: 8px; color: var(--text); }
+    .setup-msg p  { font-size: .85rem; color: var(--muted); line-height: 1.6; }
   </style>
 </head>
 <body>
-<div class="widget">
-  <div class="date-col">
-    <div class="header-date" id="headerDate"></div>
-    <div class="header-day"  id="headerDay"></div>
-    <div class="footer" id="footer"></div>
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="header-title">📅 今週の時間割</div>
+      <div class="header-week" id="weekLabel"></div>
+    </div>
+    <div class="sync-badge" id="syncBadge">読み込み中…</div>
   </div>
-  <div class="periods-col" id="content"></div>
-</div>
+  <div class="day-tabs" id="dayTabs"></div>
+</header>
+
+<main id="main"></main>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-/* ── 基本時間割（メインアプリと同期） ── */
+/* ── 基本時間割 ── */
 const BASE = {
   '0-1':{ name:'3-3',  room:'理科', color:'#D4BE00' },
   '0-2':{ name:'3-4',  room:'理科', color:'#3DAE65' },
@@ -296,32 +378,31 @@ const BASE = {
 };
 
 const CLASSES = [
-  { name:'2-4',  subjects:[{name:'理科',color:'#E06010'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
-  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'テスト',color:'#78909C'},{name:'学活',color:'#9C6ADE'},{name:'道徳',color:'#9C6ADE'},{name:'総合',color:'#9C6ADE'},{name:'自習',color:'#78909C'}] },
-  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
-  { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
-  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
+  { name:'2-4',  subjects:[{name:'理科',color:'#E06010'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#9C6ADE'},{name:'道徳',color:'#9C6ADE'},{name:'総合',color:'#9C6ADE'}] },
+  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'}] },
+  { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'}] },
+  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'}] },
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
-  { name:'行事',   color:'#9E9E9E', isEvent:true, subjects:[] },
+  { name:'行事',   color:'#9E9E9E', subjects:[] },
   { name:'空き',   color:'#B07D4E', subjects:[] },
 ];
 
 const PERIODS     = [1,2,3,4,5,6];
-const TIMES       = [
-  ['8:50','9:40'],['9:50','10:40'],['10:50','11:40'],
-  ['13:00','13:50'],['14:00','14:50'],['15:00','15:50']
-];
+const TIMES       = [['8:50','9:40'],['9:50','10:40'],['10:50','11:40'],['13:00','13:50'],['14:00','14:50'],['15:00','15:50']];
 const DARK_CLASSES  = new Set(['裁量']);
 const LIGHT_CLASSES = new Set(['空き','研究部','行事']);
 const EVENT_CLASSES = new Set(['行事']);
 const DI_TO_NAME    = ['月','火','水','木','金','土','日'];
 const DAY_JP        = ['日','月','火','水','木','金','土'];
 
+/* ── ユーティリティ ── */
 function pad2(n) { return String(n).padStart(2,'0'); }
 function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 function dayIdx(d) { const w = d.getDay(); return w === 0 ? 6 : w - 1; }
-function parseDateStr(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
+function parseDateStr(s) { const [y,m,dd] = s.split('-').map(Number); return new Date(y,m-1,dd); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function pastelizeColor(hex, strength = .42) {
   if (!hex || hex.length < 7) return hex;
@@ -337,26 +418,40 @@ function getColor(name, subject) {
   return c.subjects.find(s => s.name === subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
 }
 
-function getEntry(ds, period, overrides, daySchedules, cellSources) {
+/* ── 状態 ── */
+let _overrides    = {};
+let _daySchedules = {};
+let _cellSources  = {};
+let _holidays     = {};
+let _selectedDs   = null;
+
+try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch {}
+try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')  || '{}'); } catch {}
+try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')   || '{}'); } catch {}
+try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')  || '{}'); } catch {}
+
+/* ── 今日から7日間の日付リスト ── */
+function getThisWeek() {
+  const today = new Date();
+  return Array.from({length:7}, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return d;
+  });
+}
+
+/* ── エントリ取得 ── */
+function getEntry(ds, period) {
   const ok = `${ds}-${period}`;
-  if (ok in overrides) return overrides[ok];
-  if (ok in cellSources) {
-    const src = cellSources[ok];
+  if (ok in _overrides) return _overrides[ok];
+  if (ok in _cellSources) {
+    const src = _cellSources[ok];
     return BASE[`${src.di}-${src.p}`] || null;
   }
   const d  = parseDateStr(ds);
-  const di = ds in daySchedules ? daySchedules[ds] : dayIdx(d);
+  const di = ds in _daySchedules ? _daySchedules[ds] : dayIdx(d);
   if (di < 0 || di > 6) return null;
   return BASE[`${di}-${period}`] || null;
-}
-
-function getEffectiveSrc(ds, period, overrides, daySchedules, cellSources) {
-  const ok = `${ds}-${period}`;
-  if (ok in cellSources) return cellSources[ok];
-  const d  = parseDateStr(ds);
-  const naturalDi = dayIdx(d);
-  const di = ds in daySchedules ? daySchedules[ds] : naturalDi;
-  return { di, p: period };
 }
 
 function absenceCoversPeriod(holEntry, period) {
@@ -367,244 +462,256 @@ function absenceCoversPeriod(holEntry, period) {
   return period >= from && period <= to;
 }
 
-function setFooter(state) {
-  const el = document.getElementById('footer');
+/* ── 同期状態 ── */
+function setSyncBadge(state) {
+  const el = document.getElementById('syncBadge');
   const now = new Date();
   const t = `${now.getHours()}:${pad2(now.getMinutes())}`;
-  el.className = 'footer ' + state;
-  el.textContent = state === 'syncing' ? '⟳ 同期中…' : `✓ 同期済 ${t}`;
+  el.className = 'sync-badge ' + state;
+  el.textContent = state === 'syncing' ? '⟳ 同期中…' : `✓ ${t}`;
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+/* ── タブ描画 ── */
+function renderTabs() {
+  const week = getThisWeek();
+  const todayStr = toDateStr(new Date());
+  const tabs = document.getElementById('dayTabs');
+  tabs.innerHTML = '';
 
-// まずlocalStorageのキャッシュを読み込んで即座に表示
-let _overrides    = {};
-let _daySchedules = {};
-let _cellSources  = {};
-let _holidays     = {};
-try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch {}
-try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')  || '{}'); } catch {}
-try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')   || '{}'); } catch {}
-try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')  || '{}'); } catch {}
+  week.forEach(d => {
+    const ds = toDateStr(d);
+    const dow = d.getDay();
+    const holRaw = _holidays[ds];
+    const isHol = holRaw && (typeof holRaw === 'string' || holRaw.type === 'holiday');
+    const isToday = ds === todayStr;
+    const isActive = ds === _selectedDs;
 
-function applyFbData(data) {
-  if (!data) return;
-  if (data.tt_overrides_v1 !== undefined) {
-    _overrides = {};
-    for (const [k, v] of Object.entries(data.tt_overrides_v1 || {})) {
-      _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
-    }
-    localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
-  }
-  if (data.tt_daysched_v1 !== undefined) { _daySchedules = data.tt_daysched_v1 || {}; localStorage.setItem('tt_daysched_v1', JSON.stringify(_daySchedules)); }
-  if (data.tt_cellsrc_v1  !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {}; localStorage.setItem('tt_cellsrc_v1',  JSON.stringify(_cellSources));  }
-  if (data.tt_holidays_v1 !== undefined) { _holidays     = data.tt_holidays_v1 || {}; localStorage.setItem('tt_holidays_v1', JSON.stringify(_holidays));     }
-  render();
-}
+    const dayName = DAY_JP[dow];
+    const dateNum = d.getDate();
 
-// Firebase設定をlocalStorageから取得（index.htmlで保存済みの設定を共有）
-let _fbRef = null;
-
-function _initToday() {
-  const saved = localStorage.getItem('tt_firebase_config');
-  if (!saved) {
-    setFooter('ok');
-    document.getElementById('content').innerHTML = '<p style="text-align:center;padding:40px;color:#888;">先に時間割アプリ（index.html）でFirebase設定を行ってください。</p>';
-    return;
-  }
-  let cfg;
-  try { cfg = JSON.parse(saved); } catch(e) { return; }
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  _fbRef = firebase.database().ref('timetable_data');
-  setFooter('syncing');
-  firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
-    _fbRef.on('value', snap => { applyFbData(snap.val()); setFooter('ok'); }, () => setFooter('ok'));
+    const btn = document.createElement('button');
+    btn.className = 'day-tab' + (isActive ? ' active' : '') + (isToday ? ' is-today' : '') + (isHol ? ' is-holiday' : '');
+    btn.innerHTML = `<span class="tab-day-name">${esc(dayName)}</span><span class="tab-day-date">${dateNum}</span>`;
+    btn.addEventListener('click', () => { _selectedDs = ds; render(); });
+    tabs.appendChild(btn);
   });
+
+  // 週ラベル
+  const week0 = week[0], week6 = week[6];
+  document.getElementById('weekLabel').textContent =
+    `${week0.getMonth()+1}/${week0.getDate()} 〜 ${week6.getMonth()+1}/${week6.getDate()}`;
 }
-_initToday();
 
-function render() {
-  const today = new Date();
-  const ds    = toDateStr(today);
-  const dow   = today.getDay();
+/* ── 曜日コンテンツ描画 ── */
+function renderDay(ds) {
+  const main = document.getElementById('main');
+  const dow = parseDateStr(ds).getDay();
 
-  document.getElementById('headerDate').textContent = `${today.getMonth()+1}月${today.getDate()}日`;
-  document.getElementById('headerDay').textContent  = `（${DAY_JP[dow]}）`;
-
-  const overrides    = _overrides;
-  const daySchedules = _daySchedules;
-  const cellSources  = _cellSources;
-  const holidays     = _holidays;
-
-  const content = document.getElementById('content');
-
-  // 休日
-  const holRaw = holidays[ds];
+  const holRaw = _holidays[ds];
   if (holRaw) {
     const holName = typeof holRaw === 'string' ? holRaw : holRaw.name;
     const holType = typeof holRaw === 'object' ? holRaw.type : 'holiday';
     if (holType === 'holiday') {
-      content.innerHTML = `<div class="holiday-banner">🏖️ ${esc(holName)}</div>`;
-      // footer is managed separately
+      main.innerHTML = `<div class="holiday-banner">🏖️ ${esc(holName)}</div>`;
       return;
     }
   }
 
-  // 土日で授業なし
-  if ((dow === 0 || dow === 6) && !(ds in daySchedules)) {
-    const hasAny = PERIODS.some(p => getEntry(ds, p, overrides, daySchedules, cellSources));
+  if ((dow === 0 || dow === 6) && !(ds in _daySchedules)) {
+    const hasAny = PERIODS.some(p => getEntry(ds, p));
     if (!hasAny) {
-      content.innerHTML = `<div class="no-class">📅 今日は授業がありません</div>`;
-      // footer is managed separately
+      main.innerHTML = `<div class="no-class-banner">📅 授業はありません</div>`;
       return;
     }
   }
 
-  // 今日のholEntry（年休・出張用）
   const holEntry = (() => {
-    const v = holidays[ds];
+    const v = _holidays[ds];
     if (!v) return null;
     if (typeof v === 'string') return { name: v, type: 'holiday' };
     return { name: v.name, type: v.type || 'holiday', periodFrom: v.periodFrom, periodTo: v.periodTo };
   })();
 
-  // 行事バナー
-  const firstEntry = getEntry(ds, 1, overrides, daySchedules, cellSources);
-  const allEvent   = PERIODS.every(p => {
-    const e = getEntry(ds, p, overrides, daySchedules, cellSources);
-    return e && EVENT_CLASSES.has(e.name);
-  });
+  // 行事チェック
+  const firstEntry = getEntry(ds, 1);
+  const allEvent = PERIODS.every(p => { const e = getEntry(ds, p); return e && EVENT_CLASSES.has(e.name); });
 
   let html = '';
+
+  // 年休・出張バナー
+  if (holEntry && holEntry.type !== 'holiday') {
+    const cls = holEntry.type;
+    const label = cls === 'nenkyuu' ? '年休' : '出張';
+    const range = holEntry.periodFrom
+      ? (holEntry.periodFrom === 'all' ? '終日' : `${holEntry.periodFrom}〜${holEntry.periodTo || 6}限`)
+      : '終日';
+    html += `<div class="absence-banner ${cls}">📋 ${label}（${range}）</div>`;
+  }
+
+  // 行事バナー
   if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && firstEntry.teacher) {
-    html += `<div class="event-banner">📌 ${esc(firstEntry.teacher)}</div>`;
+    html += `<div class="event-notice">📌 ${esc(firstEntry.teacher)}</div>`;
   }
   if (allEvent) {
-    content.innerHTML = html + `<div class="no-class">📌 本日は行事日程です</div>`;
-    // footer is managed separately
+    main.innerHTML = html + `<div class="no-class-banner">📌 本日は行事日程です</div>`;
     return;
   }
 
-  html += '<div class="periods">';
+  html += '<div class="period-list">';
 
   for (const p of PERIODS) {
-    const entry = getEntry(ds, p, overrides, daySchedules, cellSources);
+    const entry = getEntry(ds, p);
     const [tStart, tEnd] = TIMES[p - 1];
 
     const isDark  = entry && DARK_CLASSES.has(entry.name);
     const isLight = entry && LIGHT_CLASSES.has(entry.name);
-    const hasContent = entry && (entry.teacher || isLight);
+    const hasContent = entry && !isLight && !isDark ? true : (entry && (isDark || (isLight && entry.teacher)));
 
-    let rowClass = 'period-row';
-    if (isDark)       rowClass += ' is-dark';
-    else if (isLight) rowClass += ' is-light';
-    if (hasContent)   rowClass += ' has-content';
+    // カードの hasContent クラス
+    const cardHasContent = entry && (isDark || (!isLight) || entry.teacher);
 
-    // 色
     const color = entry ? (getColor(entry.name, entry.room) || entry.color || '#B0BEC5') : '#B0BEC5';
-    const bg    = isDark ? color : pastelizeColor(color);
+    const bg    = isDark ? color : pastelizeColor(color, .12);
 
-    // 数字列スタイル
-    const numBg = entry ? pastelizeColor(color, .3) : '#f7fafc';
-    const numStyle = `background:${numBg}`;
-    const numLabelColor = isDark ? 'rgba(255,255,255,.85)' : (entry ? color : '#a0aec0');
-
-    // ボーダー＋行背景
-    let borderStyle = '';
-    if (!entry || (!hasContent && !isDark)) {
-      borderStyle = `border-color:${color || '#e2e8f0'}`;
-    } else if (hasContent && !isDark) {
-      borderStyle = `border-color:${color};border-style:solid;background:${pastelizeColor(color, .12)}`;
+    let cardStyle = '';
+    if (!entry) {
+      cardStyle = `border-color:${color || '#e2e8f0'}`;
     } else if (isDark) {
-      borderStyle = `border-color:${color};border-style:solid;background:${bg}`;
+      cardStyle = `border-color:${color};border-style:solid;background:${color}`;
+    } else if (!isLight) {
+      cardStyle = `border-color:${color};border-style:solid;background:${bg}`;
+    } else {
+      cardStyle = `border-color:${color}`;
+    }
+
+    const numBg = entry ? pastelizeColor(color, .25) : '#f7fafc';
+    const numLabelColor = isDark ? 'rgba(255,255,255,.9)' : (entry ? color : '#a0aec0');
+
+    // 移動元バッジ
+    const ok = `${ds}-${p}`;
+    let srcBadge = '';
+    if (ok in _cellSources) {
+      const src = _cellSources[ok];
+      srcBadge = entry ? `${DI_TO_NAME[src.di]}${src.p}` : '';
+    } else if (ds in _daySchedules) {
+      srcBadge = `${DI_TO_NAME[_daySchedules[ds]]}${p}`;
     }
 
     // バッジ
-    const isRinji       = entry?.rinji;
-    const isJugyoHenkou = entry?.jugyohenkou;
-    const absHolEntry   = holEntry;
-    const isAbsent      = absHolEntry && absenceCoversPeriod(absHolEntry, p);
-    const absType       = isAbsent ? absHolEntry.type : null;
+    const isAbsent = holEntry && absenceCoversPeriod(holEntry, p);
+    const absType  = isAbsent ? holEntry.type : null;
+    const badges = [
+      entry?.rinji       ? `<span class="badge badge-rinji">臨</span>` : '',
+      entry?.jugyohenkou ? `<span class="badge badge-chg">授業変更</span>` : '',
+      isAbsent && absType === 'nenkyuu' ? `<span class="badge badge-nenkyuu">年休</span>` : '',
+      isAbsent && absType === 'shuccho' ? `<span class="badge badge-shuccho">出張</span>` : '',
+    ].filter(Boolean).join('');
 
-    // 移動元バッジ（cellSources）
-    const ok = `${ds}-${p}`;
-    const d  = parseDateStr(ds);
-    let srcBadge = '';
-    if (ok in cellSources) {
-      const src = cellSources[ok];
-      srcBadge = entry ? `${DI_TO_NAME[src.di]}${src.p}` : '';
-    } else if (ds in daySchedules) {
-      srcBadge = `${DI_TO_NAME[daySchedules[ds]]}${p}`;
-    }
+    const numSrcHtml = srcBadge ? `<span class="num-src">${esc(srcBadge)}</span>` : '';
 
     if (!entry) {
       html += `
-        <div class="${rowClass}" style="${borderStyle}">
-          <div class="period-num" style="${numStyle}">
-            <div class="period-label" style="color:${numLabelColor}">${p}</div>
-
+        <div class="period-card" style="${cardStyle}">
+          <div class="period-num" style="background:${numBg}">
+            <span class="num-label" style="color:${numLabelColor}">${p}</span>
+            <span class="num-time">${tStart}<br>${tEnd}</span>
           </div>
-          <div class="empty-label">―</div>
+          <div class="empty-dash">―</div>
         </div>`;
       continue;
     }
 
-    const numBadge  = srcBadge ? `<span class="badge-src">${esc(srcBadge)}</span>` : '';
-    const sideBadges = [
-      isRinji       ? '<span class="badge-rinji">臨</span>' : '',
-      isJugyoHenkou ? '<span class="badge-chg">授業変更</span>' : '',
-      isAbsent      ? `<span class="badge-absence ${absType}">${absType==='nenkyuu'?'年休':'出張'}</span>` : '',
-    ].filter(Boolean).join('');
-    const badgeCol = sideBadges ? `<div class="badge-col">${sideBadges}</div>` : '';
-
-    if (isDark) {
-      html += `
-        <div class="${rowClass}" style="${borderStyle}">
-          <div class="period-num" style="${numStyle};border-right-color:rgba(255,255,255,.2)">
-            <div class="period-label" style="color:${numLabelColor}">${p}</div>
-            ${numBadge}
-          </div>
-          <div class="period-content">
-            <span class="class-name" style="color:rgba(255,255,255,.9)">${esc(entry.name)}</span>
-            ${entry.teacher ? `<span class="period-content-text" style="color:rgba(255,255,255,.75)">${esc(entry.teacher)}</span>` : ''}
-          </div>
-          ${badgeCol}
-        </div>`;
-      continue;
-    }
-
-    // 通常 / LIGHT
     const subjectColor = entry.room === '理科' ? '#2F9E44'
                        : entry.name === '行事'  ? '#868e96'
                        : '#9C6ADE';
     const subjectStyle = `background:${pastelizeColor(subjectColor)};color:${subjectColor}`;
-    const textColor = isLight ? '#4a5568' : '#1a202c';
+
+    const roomTag  = entry.room  ? `<span class="subject-tag" style="${subjectStyle}">${esc(entry.room)}</span>` : '';
+    const dotHtml  = !isDark ? `<span class="class-dot" style="background:${color}"></span>` : '';
+    const nameColor = isDark ? 'rgba(255,255,255,.95)' : '#1a202c';
+    const teacherHtml = entry.teacher ? `<div class="teacher-name">${esc(entry.teacher)}</div>` : '';
+    const badgeColHtml = badges ? `<div class="badge-col">${badges}</div>` : '';
 
     html += `
-      <div class="${rowClass}" style="${borderStyle}">
-        <div class="period-num" style="${numStyle}">
-          <div class="period-label" style="color:${numLabelColor}">${p}</div>
-          ${numBadge}
+      <div class="period-card${cardHasContent ? ' has-content' : ''}${isDark ? ' is-dark' : ''}" style="${cardStyle}">
+        <div class="period-num" style="background:${numBg}">
+          <span class="num-label" style="color:${numLabelColor}">${p}</span>
+          <span class="num-time">${tStart}<br>${tEnd}</span>
+          ${numSrcHtml}
         </div>
-        <div class="period-content">
-          <span class="class-dot" style="background:${color}"></span>
-          <span class="class-name" style="color:${textColor}">${esc(entry.name)}</span>
-          ${entry.room ? `<span class="subject-tag" style="${subjectStyle}">${esc(entry.room)}</span>` : ''}
-          ${entry.teacher ? `<span class="period-content-text" style="color:#4a5568">${esc(entry.teacher)}</span>` : ''}
+        <div class="period-body">
+          <div class="class-row">
+            ${dotHtml}
+            <span class="class-name" style="color:${nameColor}">${esc(entry.name)}</span>
+            ${roomTag}
+          </div>
+          ${teacherHtml}
         </div>
-        ${badgeCol}
+        ${badgeColHtml}
       </div>`;
   }
 
   html += '</div>';
-  content.innerHTML = html;
-  // footer is managed separately
+  main.innerHTML = html;
 }
 
+/* ── メイン描画 ── */
+function render() {
+  renderTabs();
+  const main = document.getElementById('main');
+
+  if (!_selectedDs) {
+    main.innerHTML = '<div class="no-class-banner" style="margin-top:12px">曜日を選択してください</div>';
+    return;
+  }
+
+  renderDay(_selectedDs);
+}
+
+/* ── Firebase 初期化 ── */
+function initFirebase() {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) {
+    setSyncBadge('ok');
+    document.getElementById('main').innerHTML = `
+      <div class="setup-msg">
+        <h2>⚠️ Firebase 未設定</h2>
+        <p>先に時間割アプリ（index.html）を同じブラウザで開き、Firebase 設定を行ってください。</p>
+      </div>`;
+    return;
+  }
+  let cfg;
+  try { cfg = JSON.parse(saved); } catch { return; }
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  const ref = firebase.database().ref('timetable_data');
+  setSyncBadge('syncing');
+  firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
+    ref.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        if (data.tt_overrides_v1 !== undefined) {
+          _overrides = {};
+          for (const [k,v] of Object.entries(data.tt_overrides_v1 || {})) {
+            _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
+          }
+          localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
+        }
+        if (data.tt_daysched_v1 !== undefined) { _daySchedules = data.tt_daysched_v1 || {}; localStorage.setItem('tt_daysched_v1', JSON.stringify(_daySchedules)); }
+        if (data.tt_cellsrc_v1  !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {}; localStorage.setItem('tt_cellsrc_v1',  JSON.stringify(_cellSources));  }
+        if (data.tt_holidays_v1 !== undefined) { _holidays     = data.tt_holidays_v1 || {}; localStorage.setItem('tt_holidays_v1', JSON.stringify(_holidays));     }
+      }
+      render();
+      setSyncBadge('ok');
+    }, () => setSyncBadge('ok'));
+  });
+}
+
+/* ── 起動 ── */
+// 今日を選択（常に一番左）
+_selectedDs = toDateStr(new Date());
+
 render();
-setInterval(render, 60 * 1000);
+initFirebase();
 </script>
 </body>
 </html>
