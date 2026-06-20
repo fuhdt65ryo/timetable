@@ -4288,12 +4288,8 @@ function _initFirebaseWithConfig(cfg) {
   if (!firebase.apps.length) firebase.initializeApp(cfg);
   _fbRef = firebase.database().ref('timetable_data');
   firebase.auth().signInAnonymously()
-    .then(() => initFirebaseSync())
-    .catch(e => {
-      console.error('auth error:', e);
-      updateSyncBtn('error');
-      showAutoAssignToast('Firebase 認証に失敗しました。設定を確認してください。', true);
-    });
+    .catch(e => { console.warn('Firebase auth failed, proceeding without auth:', e); })
+    .finally(() => initFirebaseSync());
   fetchGcalEvents();
 }
 
