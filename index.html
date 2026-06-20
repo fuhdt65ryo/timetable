@@ -1699,15 +1699,29 @@ let baseNext = null;    // { fromDate: "YYYY-MM-DD", base: {...} } 次の基本�
 /* ── 永続化 ── */
 function loadOverrides() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
+  _migrateTeacherToContent();
   _migrateJikojiRoomToTeacher();
+}
+
+/* teacher→content フィールド名変更移行（旧データ互換） */
+function _migrateTeacherToContent() {
+  let dirty = false;
+  Object.values(overrides).forEach(entry => {
+    if (entry && 'teacher' in entry && !('content' in entry)) {
+      entry.content = entry.teacher;
+      delete entry.teacher;
+      dirty = true;
+    }
+  });
+  if (dirty) save();
 }
 
 /* 行事エントリの room→teacher 一括移行（旧データ互換） */
 function _migrateJikojiRoomToTeacher() {
   let dirty = false;
   Object.values(overrides).forEach(entry => {
-    if (entry && entry.name === '行事' && entry.room && !entry.teacher) {
-      entry.teacher = entry.room;
+    if (entry && entry.name === '行事' && entry.room && !entry.content) {
+      entry.content = entry.room;
       entry.room = '';
       dirty = true;
     }
@@ -2074,7 +2088,7 @@ function renderTimetable() {
       const henkouToMine = hasJugyohenkou && MY_SUBJECTS.includes(entry?.room);
       let cls = 'cell';
       if (entry) cls += ' has-entry';
-      if (entry && (entry.teacher || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
+      if (entry && (entry.content || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
       if (isWeekendCol) cls += ' is-weekend-col';
@@ -2087,7 +2101,7 @@ function renderTimetable() {
       if (isSel)    cls += ' selected';
       if (isDark)   cls += ' cell-dark';
       if (isLight)  cls += ' cell-light';
-      if (entry && !isDark && !isLight && entry.teacher) cls += ' cell-with-content';
+      if (entry && !isDark && !isLight && entry.content) cls += ' cell-with-content';
 
       const naturalDi = dayIdx(d);
       const ok2 = key;
@@ -2134,7 +2148,7 @@ function renderTimetable() {
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark) cell.style.borderColor = color;
-        if (!isDark && !isLight && !entry.teacher && !isTaninOwn && (!hasJugyohenkou || henkouToMine)) { cell.style.borderStyle = 'dashed'; }
+        if (!isDark && !isLight && !entry.content && !isTaninOwn && (!hasJugyohenkou || henkouToMine)) { cell.style.borderStyle = 'dashed'; }
         if (hasJugyohenkou && !henkouToMine && !isDark && !isLight) { cell.style.borderStyle = 'dashed'; cell.style.borderWidth = '2px'; cell.style.opacity = '0.75'; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
@@ -2150,7 +2164,7 @@ function renderTimetable() {
           <div class="c-text-wrap">
             <div class="c-class">${esc(entry.name)}</div>
             ${subjectHtml}
-            ${(chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : (!chgSubjectText && entry.teacher) ? `<div class="c-content">${esc(entry.teacher)}</div>` : ''}
+            ${(chgSubjectText && entry.content) ? `<div class="c-content">${esc(entry.content)}</div>` : (!chgSubjectText && entry.content) ? `<div class="c-content">${esc(entry.content)}</div>` : ''}
           </div>
           ${bottomLeft}${chgBadge}${absenceBadge}
         `;
@@ -2360,10 +2374,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const isGrade2Class = PROG2_CLASSES.includes(currentClass);
   const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
   const pastContents = targetClasses
-    ? [...new Set(Object.values(overrides).filter(e => e && e.teacher && !e.rinji && targetClasses.includes(e.name)).map(e => e.teacher))]
+    ? [...new Set(Object.values(overrides).filter(e => e && e.content && !e.rinji && targetClasses.includes(e.name)).map(e => e.content))]
     : [];
   const currentSubject = entry?.room    || '';
-  const currentContent = entry?.teacher || '';
+  const currentContent = entry?.content || '';
 
   const classNames = CLASSES.map(c => c.name);
   const subjectNames = getSubjects(currentClass).map(s => s.name);
@@ -2645,7 +2659,7 @@ function autoSave(doRerender = true) {
   const fromName = isChgOn ? (document.getElementById('eFromClass')?.value.trim() || '') : '';
   const fromRoom = isChgOn ? (document.getElementById('eFromSubject')?.value.trim() || '') : '';
   const chgProps = isChgOn ? { jugyohenkou:true, fromName, fromRoom } : {};
-  overrides[selKey] = { name:klass, room:subject, teacher:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
+  overrides[selKey] = { name:klass, room:subject, content:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
   if (!doRerender) return;
   rerender();
@@ -2655,10 +2669,10 @@ function restoreBase() {
   const [ds, pStr] = selKeyParts();
   const prev = overrides[selKey];
   if (prev) {
-    overrides[selKey] = { ...prev, teacher: '' };
+    overrides[selKey] = { ...prev, content: '' };
   } else {
     const base = getEntry(ds, +pStr);
-    if (base) overrides[selKey] = { ...base, teacher: '' };
+    if (base) overrides[selKey] = { ...base, content: '' };
   }
   save();
   schedulePush();
@@ -2749,17 +2763,17 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
 
   const map = {};
   Object.entries(overrides).forEach(([key, entry]) => {
-    if (!entry || !entry.teacher) return;
+    if (!entry || !entry.content) return;
     if (entry.rinji) return;
     if (!classes.includes(entry.name)) return;
     if (entry.room !== '理科') return;
-    if (!map[entry.teacher]) map[entry.teacher] = { content: entry.teacher, classes: {} };
+    if (!map[entry.content]) map[entry.content] = { content: entry.content, classes: {} };
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period  = Number(parts[3]);
     const date    = parseDateStr(dateStr);
-    if (!map[entry.teacher].classes[entry.name] || date < map[entry.teacher].classes[entry.name].date) {
-      map[entry.teacher].classes[entry.name] = { date, period };
+    if (!map[entry.content].classes[entry.name] || date < map[entry.content].classes[entry.name].date) {
+      map[entry.content].classes[entry.name] = { date, period };
     }
   });
 
@@ -2842,7 +2856,7 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
         const oi = orderArr.indexOf(oldVal);
         if (oi !== -1) { orderArr[oi] = newVal; saveOrderFn(); }
         // 時間割のoverridesも更新（manual/非manual共通）
-        Object.values(overrides).forEach(ov => { if (ov && ov.teacher === oldVal) ov.teacher = newVal; });
+        Object.values(overrides).forEach(ov => { if (ov && ov.content === oldVal) ov.content = newVal; });
         save(); schedulePush();
         renderTimetable();
         renderProgress(); renderProgress2();
@@ -2952,7 +2966,7 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
       // 授業変更で理科以外に変更されたコマは割り当て不可
       if (ovr && ovr.jugyohenkou && ovr.room !== '理科') continue;
       // 手動入力でも進捗リスト内の授業なら再割り当て可。進捗リスト外の手動入力は固定。
-      if (ovr && ovr.teacher && !ovr.autoAssigned && !lessonList.includes(ovr.teacher)) continue;
+      if (ovr && ovr.content && !ovr.autoAssigned && !lessonList.includes(ovr.content)) continue;
       slots.push({ dateStr, period: p, entry, date: new Date(d) });
     }
   }
@@ -2963,7 +2977,7 @@ function getExistingFutureAssignment(lessonName, className) {
   const today = new Date(); today.setHours(0,0,0,0);
   let found = null;
   Object.entries(overrides).forEach(([key, entry]) => {
-    if (!entry || entry.teacher !== lessonName || entry.name !== className || entry.autoAssigned) return;
+    if (!entry || entry.content !== lessonName || entry.name !== className || entry.autoAssigned) return;
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const date = parseDateStr(dateStr);
@@ -3007,14 +3021,14 @@ function buildGradePlan(grade) {
   const pastSlotMap = {};
   const currentSlotMap = {};
   Object.entries(overrides).forEach(([key, e]) => {
-    if (!e || !e.teacher || !classes.includes(e.name)) return;
+    if (!e || !e.content || !classes.includes(e.name)) return;
     const parts = key.split('-');
     const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
     const period = +parts[3];
     const date = parseDateStr(dateStr);
     if (date < _today) {
-      if (lessonList.includes(e.teacher)) {
-        const k = `${e.teacher}__${e.name}`;
+      if (lessonList.includes(e.content)) {
+        const k = `${e.content}__${e.name}`;
         pastDoneSet.add(k);
         if (!pastSlotMap[k] || date > pastSlotMap[k].date) {
           pastSlotMap[k] = { dateStr, period, date };
@@ -3022,7 +3036,7 @@ function buildGradePlan(grade) {
       }
       return;
     }
-    const k = `${e.teacher}__${e.name}`;
+    const k = `${e.content}__${e.name}`;
     if (!currentSlotMap[k] || date < currentSlotMap[k].date) {
       currentSlotMap[k] = { dateStr, period, date };
     }
@@ -3135,7 +3149,7 @@ function applyAutoAssign() {
       const e = overrides[key];
       if (!e || !classes.includes(e.name)) return;
       if (e.jugyohenkou) return;
-      if (e.autoAssigned || planLessons.has(e.teacher)) {
+      if (e.autoAssigned || planLessons.has(e.content)) {
         const parts = key.split('-');
         const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
         if (date >= today) delete overrides[key];
@@ -3155,7 +3169,7 @@ function applyAutoAssign() {
         const chgProps = (existingOvr && existingOvr.jugyohenkou)
           ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
           : {};
-        overrides[ok] = { name: currentEntry.name, room: currentEntry.room, teacher: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
+        overrides[ok] = { name: currentEntry.name, room: currentEntry.room, content: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
         assigned++;
       });
       if (assigned > 0) assignedLessons.push(lesson);
@@ -3257,7 +3271,7 @@ function renderChanges() {
         ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
       const toHtml = to
-        ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.teacher ? ' '+to.teacher : '')}</span>`
+        ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.content ? ' '+to.content : '')}</span>`
         : '<span style="color:#aaa">なし</span>';
       const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
       tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
@@ -4359,11 +4373,11 @@ document.addEventListener('click', function(e) {
     const today = new Date(); today.setHours(0,0,0,0);
     Object.keys(overrides).forEach(oKey => {
       const e = overrides[oKey];
-      if (!e || e.teacher !== key) return;
+      if (!e || e.content !== key) return;
       const parts = oKey.split('-');
       const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
       if (date < today) return;
-      overrides[oKey] = { ...e, teacher: '' };
+      overrides[oKey] = { ...e, content: '' };
       delete overrides[oKey].autoAssigned;
     });
     if (list === 'prog') {
@@ -4426,7 +4440,7 @@ function updateChgFrom() {
   const toClassEl = document.getElementById('chgToClass');
   toClassEl.value = currentEntry?.name || (CLASSES[0]?.name || '');
   updateChgToSubjects(currentEntry?.room);
-  document.getElementById('chgToContent').value = currentEntry?.teacher || '';
+  document.getElementById('chgToContent').value = currentEntry?.content || '';
 }
 
 function updateChgToSubjects(preselectRoom) {
@@ -4478,7 +4492,7 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
   const toContent = document.getElementById('chgToContent').value.trim() || '';
   if (!dateStr || !period || !toClass) return;
   const ok = overrideKey(dateStr, period);
-  overrides[ok] = { name: toClass, room: toSubject, teacher: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
+  overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
   save();
   schedulePush();
   rerender();
