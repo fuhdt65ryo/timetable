@@ -2712,27 +2712,6 @@ function renderEditForm(entry, isOvr, baseEntry) {
     selectCell(...selKeyParts());
   });
   positionEditPanel();
-
-  // 編集パネルが開いたら最初の入力欄にフォーカス
-  const _ep = document.getElementById('editPanel');
-  if (_ep) {
-    const _first = _ep.querySelector('input, select, button:not(#editClose)');
-    if (_first) setTimeout(() => _first.focus(), 50);
-
-    // Escape で閉じる・Tab フォーカスをパネル内に閉じ込める
-    _ep._keyHandler && _ep.removeEventListener('keydown', _ep._keyHandler);
-    _ep._keyHandler = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); clearSelect(); return; }
-      if (e.key === 'Tab') {
-        const focusable = [..._ep.querySelectorAll('input, select, button, [tabindex="0"]')].filter(el => !el.disabled);
-        if (!focusable.length) return;
-        const first = focusable[0], last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    };
-    _ep.addEventListener('keydown', _ep._keyHandler);
-  }
 }
 
 function buildCdd(id, options, value, placeholder='') {
