@@ -106,6 +106,14 @@
     .day-events { display:flex; flex-direction:column; gap:2px; width:100%; }
     .day-event-item { font-size:.56rem; font-weight:600; color:#444; background:#f0f4ff; border:1px solid #c8d4ee; border-radius:4px; padding:1px 5px; line-height:1.4; text-align:left; white-space:normal; word-break:break-all; cursor:default; }
     .day-event-item.ev-type-event { background:#FFF8E0; border-color:#D4A017; color:#7A5A00; }
+    /* gcalイベント色クラス（gcalEventStyle の代替） */
+    .gcal-ev-other   { background:#F5F5F5; border-color:#BDBDBD; color:#757575; }
+    .gcal-ev-school  { background:#FFF0E0; border-color:#E8922A; color:#7A4500; }
+    .gcal-ev-sports  { background:#E0EEFF; border-color:#4A90D9; color:#1A4A8A; }
+    .gcal-ev-trip    { background:#E0F8EC; border-color:#3DAE65; color:#0D6B35; }
+    .gcal-ev-exam    { background:#FFF8E0; border-color:#D4A017; color:#7A5A00; }
+    .gcal-ev-study   { background:#F3EEFF; border-color:#8040C0; color:#4A1580; }
+    .gcal-ev-family  { background:#FFF0F0; border-color:#D44545; color:#8B1515; }
     .gcal-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 12px; border-radius:20px; font-size:.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
     .gcal-btn:hover { background:rgba(255,255,255,.25); }
     .gcal-btn.connected { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
@@ -885,6 +893,10 @@
           <span class="gcal-meta-label">取得期間</span>
           <span class="gcal-meta-value" id="gcalDateRange">-</span>
         </div>
+        <div class="gcal-meta-item">
+          <span class="gcal-meta-label">ストレージ使用量</span>
+          <span class="gcal-meta-value" id="storageUsed">-</span>
+        </div>
       </div>
       <div class="gcal-actions">
         <button class="btn btn-save" id="btnGcalRefresh">↻ 今すぐ更新</button>
@@ -1656,19 +1668,41 @@ function renderCalendarPage() {
       }
     }
   } catch {}
+  // ストレージ使用量
+  const storageEl = document.getElementById('storageUsed');
+  if (storageEl) {
+    try {
+      let total = 0;
+      for (const k of Object.keys(localStorage)) total += (localStorage.getItem(k) || '').length;
+      const usedKB  = Math.round(total / 1024);
+      const limitKB = 5120; // 一般的なlocalStorageの上限 5MB
+      const pct = Math.min(100, Math.round(usedKB / limitKB * 100));
+      const color = pct >= 80 ? '#c53030' : pct >= 60 ? '#c05c00' : '#2d7d46';
+      storageEl.innerHTML = `<span style="color:${color};font-weight:700">${usedKB} KB</span> / ${limitKB} KB（${pct}%）`;
+    } catch { storageEl.textContent = '取得不可'; }
+  }
 }
 
-function gcalEventStyle(cal) {
+const GCAL_EV_COLORS = {
+  'gcal-ev-other':  { border:'#BDBDBD', color:'#757575' },
+  'gcal-ev-school': { border:'#E8922A', color:'#7A4500' },
+  'gcal-ev-sports': { border:'#4A90D9', color:'#1A4A8A' },
+  'gcal-ev-trip':   { border:'#3DAE65', color:'#0D6B35' },
+  'gcal-ev-exam':   { border:'#D4A017', color:'#7A5A00' },
+  'gcal-ev-study':  { border:'#8040C0', color:'#4A1580' },
+  'gcal-ev-family': { border:'#D44545', color:'#8B1515' },
+};
+
+function gcalEventClass(cal) {
   const c = cal || '';
-  // 数字つきカレンダーまたはファミリーカレンダー → 自分の予定（カラー表示）
   const isMine = /\d/.test(c) || c.includes('ファミリー');
-  if (!isMine) return 'background:#F5F5F5;border-color:#BDBDBD;color:#757575'; // 妻の予定 → グレー
-  if (c.includes('学校'))  return 'background:#FFF0E0;border-color:#E8922A;color:#7A4500';
-  if (c.includes('部活'))  return 'background:#E0EEFF;border-color:#4A90D9;color:#1A4A8A';
-  if (c.includes('出張'))  return 'background:#E0F8EC;border-color:#3DAE65;color:#0D6B35';
-  if (c.includes('受験'))  return 'background:#FFF8E0;border-color:#D4A017;color:#7A5A00';
-  if (c.includes('勉強'))  return 'background:#F3EEFF;border-color:#8040C0;color:#4A1580';
-  return 'background:#FFF0F0;border-color:#D44545;color:#8B1515'; // ファミリー等 → 赤
+  if (!isMine)           return 'gcal-ev-other';
+  if (c.includes('学校')) return 'gcal-ev-school';
+  if (c.includes('部活')) return 'gcal-ev-sports';
+  if (c.includes('出張')) return 'gcal-ev-trip';
+  if (c.includes('受験')) return 'gcal-ev-exam';
+  if (c.includes('勉強')) return 'gcal-ev-study';
+  return 'gcal-ev-family';
 }
 
 /* ── 状態 ── */
@@ -1705,6 +1739,7 @@ function loadOverrides() {
 
 /* teacher→content フィールド名変更移行（旧データ互換） */
 function _migrateTeacherToContent() {
+  if (localStorage.getItem('tt_migrated_teacher_v1')) return;
   let dirty = false;
   Object.values(overrides).forEach(entry => {
     if (entry && 'teacher' in entry && !('content' in entry)) {
@@ -1714,10 +1749,12 @@ function _migrateTeacherToContent() {
     }
   });
   if (dirty) save();
+  localStorage.setItem('tt_migrated_teacher_v1', '1');
 }
 
 /* 行事エントリの room→teacher 一括移行（旧データ互換） */
 function _migrateJikojiRoomToTeacher() {
+  if (localStorage.getItem('tt_migrated_jikoji_room_v1')) return;
   let dirty = false;
   Object.values(overrides).forEach(entry => {
     if (entry && entry.name === '行事' && entry.room && !entry.content) {
@@ -1727,6 +1764,7 @@ function _migrateJikojiRoomToTeacher() {
     }
   });
   if (dirty) save();
+  localStorage.setItem('tt_migrated_jikoji_room_v1', '1');
 }
 function safeSave(key, value) {
   try {
@@ -1736,22 +1774,66 @@ function safeSave(key, value) {
     if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
       const cacheSize = (localStorage.getItem(GCAL_CACHE_KEY) || '').length;
       const cacheSizeKB = Math.round(cacheSize / 1024);
-      const msg = `ブラウザの保存容量が不足しています。\n\n`
-        + (cacheSizeKB > 0 ? `カレンダーキャッシュ（約${cacheSizeKB}KB）を削除して再試行しますか？` : `保存に失敗しました。ブラウザの設定からサイトデータを削除してください。`);
-      if (cacheSizeKB > 0 && confirm(msg)) {
-        localStorage.removeItem(GCAL_CACHE_KEY);
-        gcalEvents = {};
-        try {
-          localStorage.setItem(key, JSON.stringify(value));
-        } catch {
-          alert('キャッシュ削除後も保存できませんでした。ブラウザの設定からサイトデータを削除してください。');
-        }
-      } else if (cacheSizeKB === 0) {
-        alert(msg);
-      }
+      _showStorageErrorBanner(cacheSizeKB, key, value);
     }
   }
 }
+
+function _showStorageErrorBanner(cacheSizeKB, retryKey, retryValue) {
+  const existing = document.getElementById('storageErrBanner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'storageErrBanner';
+  banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;'
+    + 'background:#7f1d1d;color:#fff;border-radius:12px;padding:14px 18px;max-width:min(420px,92vw);'
+    + 'box-shadow:0 4px 20px rgba(0,0,0,.4);font-size:.85rem;line-height:1.6;';
+
+  if (cacheSizeKB > 0) {
+    banner.innerHTML = `<div style="font-weight:700;margin-bottom:6px">⚠️ 保存容量が不足しています</div>`
+      + `<div>カレンダーキャッシュ（約${cacheSizeKB}KB）を削除すると保存できます。</div>`
+      + `<div style="display:flex;gap:8px;margin-top:10px">`
+      + `<button id="storageErrClear" style="flex:1;padding:7px;background:#fff;color:#7f1d1d;border:none;border-radius:8px;font-weight:700;cursor:pointer">キャッシュ削除して再試行</button>`
+      + `<button id="storageErrClose" style="padding:7px 12px;background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;cursor:pointer">閉じる</button>`
+      + `</div>`;
+    document.body.appendChild(banner);
+    document.getElementById('storageErrClear').addEventListener('click', () => {
+      localStorage.removeItem(GCAL_CACHE_KEY);
+      gcalEvents = {};
+      banner.remove();
+      try {
+        localStorage.setItem(retryKey, JSON.stringify(retryValue));
+        _showStorageErrorBanner._showSuccess();
+      } catch {
+        _showStorageErrorBanner._showFatal();
+      }
+    });
+    document.getElementById('storageErrClose').addEventListener('click', () => banner.remove());
+  } else {
+    banner.innerHTML = `<div style="font-weight:700;margin-bottom:4px">⚠️ 保存容量が不足しています</div>`
+      + `<div>ブラウザの設定からこのサイトのデータを削除してください。</div>`
+      + `<div style="margin-top:8px"><button id="storageErrClose" style="padding:6px 14px;background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;cursor:pointer">閉じる</button></div>`;
+    document.body.appendChild(banner);
+    document.getElementById('storageErrClose').addEventListener('click', () => banner.remove());
+  }
+  setTimeout(() => banner.remove(), 15000);
+}
+_showStorageErrorBanner._showSuccess = function() {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;'
+    + 'background:#166534;color:#fff;border-radius:10px;padding:10px 20px;font-size:.85rem;font-weight:600;';
+  t.textContent = '✅ 保存しました';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+};
+_showStorageErrorBanner._showFatal = function() {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;'
+    + 'background:#7f1d1d;color:#fff;border-radius:10px;padding:10px 20px;font-size:.85rem;font-weight:600;max-width:min(380px,92vw);text-align:center;';
+  t.textContent = '❌ 削除後も保存できませんでした。ブラウザの設定からサイトデータを削除してください。';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
+};
 function save() { safeSave('tt_overrides_v1', overrides); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
@@ -1946,8 +2028,37 @@ function getSubjects(name) {
   return CLASSES.find(c=>c.name===name)?.subjects || [];
 }
 
+/* 部活セルのみ差分更新（全体再描画を避ける） */
+function refreshBukatsuCell(dateStr) {
+  const bc = document.querySelector(`[data-bukatsu-date="${dateStr}"]`);
+  if (!bc) return;
+  const d = parseDateStr(dateStr);
+  const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
+  const calNashi  = allEvs.some(ev => ev.title && ev.title.includes('部活動なし'));
+  const autoNashi = d.getDay() === 1 || calNashi;
+  const ovr       = bukatsuOverrides[dateStr];
+  const isNashi   = ovr !== undefined ? !ovr : autoNashi;
+  let emphClass = '';
+  if (ovr === undefined && calNashi)          emphClass = ' bukatsu-calendar';
+  else if (ovr !== undefined && isNashi !== autoNashi) emphClass = ' bukatsu-manual';
+  bc.className   = 'bukatsu-cell ' + (isNashi ? 'bukatsu-nashi' : 'bukatsu-ari') + emphClass;
+  bc.textContent = isNashi ? '部活なし' : '部活';
+  bc.title       = ovr !== undefined ? '手動設定（クリックで切替/右クリックでリセット）'
+                 : calNashi ? 'カレンダーで部活なし指定（クリックで切替）' : 'クリックで切替';
+}
+
 /* ── 時間割グリッド ── */
 function renderTimetable() {
+  if (ttRendering) return;
+  ttRendering = true;
+  try {
+  _renderTimetableInner();
+  } finally {
+    ttRendering = false;
+  }
+}
+
+function _renderTimetableInner() {
   const today = new Date(); today.setHours(0,0,0,0);
   const dates = getWeekDates();
   document.getElementById('weekLabel').textContent = formatWeekLabel();
@@ -2005,9 +2116,10 @@ function renderTimetable() {
     const googleEvs = (gcalEvents[dateStr] || []).map(ev => ({ ...ev, src: 'gcal' }));
     const allEvs = [...googleEvs, ...manualEvs].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const evHtml = allEvs.map(ev => {
-      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
-      const cls   = ev.src === 'gcal' ? 'day-event-item' : 'day-event-item ev-type-event';
-      return `<div class="${cls}" style="${style}" title="${esc(ev.calendar||'')} ${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`;
+      const cls = ev.src === 'gcal'
+        ? `day-event-item ${gcalEventClass(ev.calendar)}`
+        : 'day-event-item ev-type-event';
+      return `<div class="${cls}" title="${esc(ev.calendar||'')} ${esc(ev.title)}">${ev.time ? esc(ev.time)+' ' : ''}${esc(ev.title)}</div>`;
     }).join('');
     // 出張カレンダー（カレンダー名に「出張」を含む）の予定があればバッジ表示（手動登録の出張バッジと重複しない場合のみ）
     const calShucchoBadge = (!holEntry || holEntry.type !== 'shuccho') && allEvs.some(ev => ev.calendar && ev.calendar.includes('出張'))
@@ -2172,7 +2284,21 @@ function renderTimetable() {
         cell.innerHTML = `<span class="add-mark">+</span>${srcBadge ? `<span class="c-src">${srcBadge}</span>` : ''}${chgBadge}${absenceBadge}`;
       }
 
+      cell.setAttribute('tabindex', '0');
+      cell.setAttribute('role', 'button');
+      const _d = parseDateStr(dateStr);
+      const _ariaLabel = [
+        `${_d.getMonth()+1}月${_d.getDate()}日(${DAY_JP[_d.getDay()]}) ${p}限`,
+        entry ? `${entry.name}${entry.room ? ' ' + entry.room : ''}` : '空き',
+        isToday ? '今日' : isPast ? '過去' : '',
+      ].filter(Boolean).join(' ');
+      cell.setAttribute('aria-label', _ariaLabel);
+      if (isToday) cell.setAttribute('aria-current', 'date');
       cell.addEventListener('click', (e) => { e.stopPropagation(); selectCell(dateStr, p); });
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCell(dateStr, p); }
+        if (e.key === 'Escape') { clearSelect(); }
+      });
       grid.appendChild(cell);
     });
 
@@ -2237,18 +2363,19 @@ function renderTimetable() {
     }
     const bc = el('div', 'bukatsu-cell ' + (isNashi ? 'bukatsu-nashi' : 'bukatsu-ari') + emphClass);
     bc.style.cssText = `grid-column:${i+2};grid-row:${bukatsuRow};cursor:pointer`;
+    bc.dataset.bukatsuDate = dateStr;
     bc.title = ovr !== undefined ? '手動設定（クリックで切替/右クリックでリセット）' : calNashi ? 'カレンダーで部活なし指定（クリックで切替）' : 'クリックで切替';
     bc.textContent = isNashi ? '部活なし' : '部活';
     bc.addEventListener('click', () => {
-      bukatsuOverrides[dateStr] = isNashi; // 現状がなし→あり、あり→なし
+      bukatsuOverrides[dateStr] = isNashi;
       saveBukatsuOverrides();
-      renderTimetable();
+      refreshBukatsuCell(dateStr);
     });
     bc.addEventListener('contextmenu', e => {
       e.preventDefault();
       delete bukatsuOverrides[dateStr];
       saveBukatsuOverrides();
-      renderTimetable();
+      refreshBukatsuCell(dateStr);
     });
     grid.appendChild(bc);
   });
@@ -2585,6 +2712,27 @@ function renderEditForm(entry, isOvr, baseEntry) {
     selectCell(...selKeyParts());
   });
   positionEditPanel();
+
+  // 編集パネルが開いたら最初の入力欄にフォーカス
+  const _ep = document.getElementById('editPanel');
+  if (_ep) {
+    const _first = _ep.querySelector('input, select, button:not(#editClose)');
+    if (_first) setTimeout(() => _first.focus(), 50);
+
+    // Escape で閉じる・Tab フォーカスをパネル内に閉じ込める
+    _ep._keyHandler && _ep.removeEventListener('keydown', _ep._keyHandler);
+    _ep._keyHandler = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); clearSelect(); return; }
+      if (e.key === 'Tab') {
+        const focusable = [..._ep.querySelectorAll('input, select, button, [tabindex="0"]')].filter(el => !el.disabled);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    _ep.addEventListener('keydown', _ep._keyHandler);
+  }
 }
 
 function buildCdd(id, options, value, placeholder='') {
@@ -2726,8 +2874,8 @@ function renderTodayCal() {
   // 1グループのみなら列分け不要
   if (groupKeys.length <= 1) {
     body.innerHTML = allEvs.map(ev => {
-      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
-      return `<div style="${style};margin:2px 0;padding:2px 8px;border-radius:6px;font-size:.78rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+      const cls = ev.src === 'gcal' ? gcalEventClass(ev.calendar) : '';
+      return `<div class="${cls}" style="margin:2px 0;padding:2px 8px;border-radius:6px;font-size:.78rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:4px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
     }).join('');
     return;
   }
@@ -2735,12 +2883,11 @@ function renderTodayCal() {
   // 複数グループ → 列並び
   const cols = groupKeys.map(label => {
     const evs = groups[label];
-    const baseStyle = evs[0].src === 'gcal' ? gcalEventStyle(evs[0].calendar) : '';
-    const borderColor = (baseStyle.match(/border-color:([^;]+)/) || [])[1] || '#BDBDBD';
-    const headerColor = (baseStyle.match(/color:([^;]+)/) || [])[1] || '#333';
+    const baseCls = evs[0].src === 'gcal' ? gcalEventClass(evs[0].calendar) : '';
+    const { border: borderColor = '#BDBDBD', color: headerColor = '#333' } = GCAL_EV_COLORS[baseCls] || {};
     const items = evs.map(ev => {
-      const style = ev.src === 'gcal' ? gcalEventStyle(ev.calendar) : '';
-      return `<div style="${style};margin:2px 0;padding:2px 6px;border-radius:5px;font-size:.82rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:3px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
+      const cls = ev.src === 'gcal' ? gcalEventClass(ev.calendar) : '';
+      return `<div class="${cls}" style="margin:2px 0;padding:2px 6px;border-radius:5px;font-size:.82rem;">${ev.time ? `<span style="font-size:.7rem;color:#666;margin-right:3px;">${esc(ev.time)}</span>` : ''}${esc(ev.title)}</div>`;
     }).join('');
     return `<div style="flex:1;min-width:0;">
       <div style="font-size:.75rem;font-weight:700;padding:2px 6px 4px;border-bottom:2px solid ${borderColor};color:${headerColor};margin-bottom:4px;">${esc(label)}</div>
@@ -3285,7 +3432,48 @@ function renderChanges() {
 }
 
 /* ── 祝日管理ページ ── */
+function _renderJpHolidayImportNotice() {
+  const bannerId = 'jpHolImportNotice';
+  const container = document.getElementById('holImportSection');
+  if (!container) return;
+
+  // JP_HOLIDAYSの最終日を取得
+  const lastCoveredDate = Object.keys(JP_HOLIDAYS).sort().pop() || '';
+  const today = toDateStr(new Date());
+  // 今年度末（3月31日）を基準に判定
+  const now = new Date();
+  const syYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const syEnd = `${syYear + 1}-03-31`;
+
+  const existing = document.getElementById(bannerId);
+  if (lastCoveredDate >= syEnd) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  if (existing) return; // 既に表示中
+
+  const notice = document.createElement('div');
+  notice.id = bannerId;
+  notice.style.cssText = 'margin:8px 0 0;padding:8px 12px;background:#fffbe6;border:1.5px solid #D4A017;border-radius:8px;font-size:.78rem;color:#7A5A00;display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+  notice.innerHTML = `<span>⚠️ 組み込み祝日データは ${lastCoveredDate} までです。${syYear + 1}年度以降は「取得・差分登録」で最新データをインポートしてください。</span>`
+    + `<button id="jpHolImportNoticeDismiss" style="margin-left:auto;background:none;border:none;font-size:.75rem;color:#7A5A00;cursor:pointer;text-decoration:underline;white-space:nowrap;">非表示</button>`;
+  container.insertAdjacentElement('afterend', notice);
+
+  document.getElementById('jpHolImportNoticeDismiss').addEventListener('click', () => {
+    notice.remove();
+    localStorage.setItem('tt_jp_hol_notice_dismissed', syEnd);
+  });
+
+  // 過去に「今年度末まで非表示」にした場合は出さない
+  const dismissed = localStorage.getItem('tt_jp_hol_notice_dismissed') || '';
+  if (dismissed >= syEnd) notice.remove();
+}
+
 function renderHolidayPage() {
+  // JP_HOLIDAYSのカバー範囲外になっていたらインポート促進バナーを表示
+  _renderJpHolidayImportNotice();
+
   const list = document.getElementById('holidayList');
   const entries = Object.entries(holidays).sort(([a],[b]) => a < b ? -1 : 1);
 
@@ -3747,14 +3935,45 @@ document.getElementById('fbPageSaveBtn').addEventListener('click', () => {
   setTimeout(() => location.reload(), 1200);
 });
 
+/* ── Firebase設定バックアップ（パスワード暗号化オプション付き） ── */
+async function _encryptJson(jsonStr, password) {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:200000, hash:'SHA-256' },
+    keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt']
+  );
+  const cipher = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(jsonStr));
+  const buf = new Uint8Array(salt.length + iv.length + cipher.byteLength);
+  buf.set(salt, 0); buf.set(iv, 16); buf.set(new Uint8Array(cipher), 28);
+  return btoa(String.fromCharCode(...buf));
+}
+
+async function downloadFbConfig(jsonStr, filename) {
+  const pw = prompt('バックアップを暗号化しますか？\nパスワードを入力すると暗号化されます（空白のままでOKなら平文保存）:');
+  if (pw === null) return; // キャンセル
+  let content, ext;
+  if (pw.trim()) {
+    content = await _encryptJson(jsonStr, pw.trim());
+    ext = 'firebase-config.enc';
+    alert('✅ 暗号化して保存します。このパスワードは忘れないでください。');
+  } else {
+    content = jsonStr;
+    ext = filename || 'firebase-config.json';
+  }
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ext;
+  a.click();
+}
+
 document.getElementById('fbPageDownloadBtn').addEventListener('click', () => {
   const saved = localStorage.getItem('tt_firebase_config');
   if (!saved) { alert('先に設定を保存してください'); return; }
-  const blob = new Blob([saved], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'firebase-config.json';
-  a.click();
+  downloadFbConfig(saved, 'firebase-config.json');
 });
 
 document.getElementById('fbPageResetBtn').addEventListener('click', () => {
@@ -4070,7 +4289,11 @@ function _initFirebaseWithConfig(cfg) {
   _fbRef = firebase.database().ref('timetable_data');
   firebase.auth().signInAnonymously()
     .then(() => initFirebaseSync())
-    .catch(e => { console.error('auth error:', e); initFirebaseSync(); });
+    .catch(e => {
+      console.error('auth error:', e);
+      updateSyncBtn('error');
+      showAutoAssignToast('Firebase 認証に失敗しました。設定を確認してください。', true);
+    });
   fetchGcalEvents();
 }
 
@@ -4149,11 +4372,7 @@ function _showFbConfigForm() {
 
   document.getElementById('fbcDownloadBtn').addEventListener('click', () => {
     const cfg = getInputValues();
-    const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'firebase-config.json';
-    a.click();
+    downloadFbConfig(JSON.stringify(cfg, null, 2), 'firebase-config.json');
   });
 }
 
@@ -4354,11 +4573,7 @@ document.getElementById('syncModalReconfig').addEventListener('click', () => {
 document.getElementById('syncModalExportConfig').addEventListener('click', () => {
   const saved = localStorage.getItem('tt_firebase_config');
   if (!saved) { alert('Firebase設定が見つかりません'); return; }
-  const blob = new Blob([saved], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'firebase-config.json';
-  a.click();
+  downloadFbConfig(saved, 'firebase-config.json');
 });
 
 /* ── 授業進捗 手動追加・削除 ── */

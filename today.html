@@ -287,11 +287,18 @@ function getColor(name, subject) {
   return c.subjects.find(s => s.name === subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
 }
 
-let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {};
-try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch {}
-try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')  || '{}'); } catch {}
-try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')   || '{}'); } catch {}
-try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')  || '{}'); } catch {}
+let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {}, _baseCurrent = null, _baseNext = null;
+try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1')    || '{}'); } catch {}
+try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')     || '{}'); } catch {}
+try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')      || '{}'); } catch {}
+try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')     || '{}'); } catch {}
+try { _baseCurrent  = JSON.parse(localStorage.getItem('tt_base_current_v1') || 'null'); } catch {}
+try { _baseNext     = JSON.parse(localStorage.getItem('tt_base_next_v1')    || 'null'); } catch {}
+
+function getBase(ds) {
+  if (_baseNext && _baseNext.fromDate && ds >= _baseNext.fromDate && _baseNext.base) return _baseNext.base;
+  return _baseCurrent || BASE;
+}
 
 let _selectedDs = toDateStr(new Date());
 
@@ -303,11 +310,12 @@ function getWeek() {
 function getEntry(ds, p) {
   const ok = `${ds}-${p}`;
   if (ok in _overrides) return _overrides[ok];
-  if (ok in _cellSources) { const src = _cellSources[ok]; return BASE[`${src.di}-${src.p}`] || null; }
+  const base = getBase(ds);
+  if (ok in _cellSources) { const src = _cellSources[ok]; return base[`${src.di}-${src.p}`] || null; }
   const d = parseDateStr(ds);
   const di = ds in _daySchedules ? _daySchedules[ds] : dayIdx(d);
   if (di < 0 || di > 6) return null;
-  return BASE[`${di}-${p}`] || null;
+  return base[`${di}-${p}`] || null;
 }
 
 function absenceCoversPeriod(hol, p) {
@@ -464,7 +472,10 @@ function initFirebase() {
   if (!firebase.apps.length) firebase.initializeApp(cfg);
   const ref = firebase.database().ref('timetable_data');
   setSyncBadge('syncing');
-  firebase.auth().signInAnonymously().catch(()=>{}).finally(() => {
+  firebase.auth().signInAnonymously()
+    .catch(e => { console.error('auth error:', e); setSyncBadge('ok'); })
+    .then(cred => {
+    if (!cred) return; // 認証失敗時はデータ取得しない
     ref.on('value', snap => {
       const data = snap.val();
       if (data) {
@@ -474,9 +485,11 @@ function initFirebase() {
             _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
           localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
         }
-        if (data.tt_daysched_v1 !== undefined) { _daySchedules = data.tt_daysched_v1 || {}; localStorage.setItem('tt_daysched_v1', JSON.stringify(_daySchedules)); }
-        if (data.tt_cellsrc_v1  !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {}; localStorage.setItem('tt_cellsrc_v1',  JSON.stringify(_cellSources));  }
-        if (data.tt_holidays_v1 !== undefined) { _holidays     = data.tt_holidays_v1 || {}; localStorage.setItem('tt_holidays_v1', JSON.stringify(_holidays));     }
+        if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
+        if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
+        if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
+        if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
+        if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
       }
       render();
       setSyncBadge('ok');
