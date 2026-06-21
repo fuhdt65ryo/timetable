@@ -56,8 +56,10 @@
       padding: 1px 5px;
       border-radius: 10px;
     }
-    .sync-badge.ok      { color: rgba(200,255,200,.95); }
-    .sync-badge.syncing { color: rgba(255,255,180,.95); }
+    .sync-badge.ok       { color: rgba(200,255,200,.95); }
+    .sync-badge.syncing  { color: rgba(255,255,180,.95); }
+    .sync-badge.noconfig { color: rgba(255,220,100,.95); }
+    .sync-badge.error    { color: rgba(255,150,150,.95); }
 
     /* ── 曜日タブ ── */
     .day-tabs {
@@ -338,10 +340,58 @@ function setSyncBadge(state) {
   const el = document.getElementById('syncBadge');
   const now = new Date();
   el.className = 'sync-badge ' + state;
-  el.textContent = state === 'syncing' ? '⟳' : `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
+  if (state === 'syncing') el.textContent = '⟳';
+  else if (state === 'noconfig') el.textContent = '⚙ 未設定';
+  else if (state === 'error') el.textContent = '✗ エラー';
+  else el.textContent = `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
 }
 
-function renderTabs() {
+function _showFbSetup() {
+  const cfg = prompt('index.htmlで「設定をバックアップ」からコピーしたFirebase設定JSONを貼り付けてください:');
+  if (!cfg) return;
+  try { JSON.parse(cfg); } catch { alert('JSONの形式が正しくありません'); return; }
+  localStorage.setItem('tt_firebase_config', cfg);
+  location.reload();
+}
+
+function initFirebase() {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) {
+    setSyncBadge('noconfig');
+    document.getElementById('syncBadge').style.cursor = 'pointer';
+    document.getElementById('syncBadge').addEventListener('click', _showFbSetup);
+    return;
+  }
+  let cfg;
+  try { cfg = JSON.parse(saved); } catch { return; }
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  const ref = firebase.database().ref('timetable_data');
+  setSyncBadge('syncing');
+  firebase.auth().signInAnonymously()
+    .catch(e => { console.error('auth error:', e); setSyncBadge('error'); })
+    .then(cred => {
+    if (!cred) return; // 認証失敗時はデータ取得しない
+    ref.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        if (data.tt_overrides_v1 !== undefined) {
+          _overrides = {};
+          for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
+            _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
+          _migrateOverrides(_overrides);
+          localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
+        }
+        if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
+        if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
+        if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
+        if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
+        if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
+      }
+      render();
+      setSyncBadge('ok');
+    }, () => setSyncBadge('error'));
+  });
+}
   const week = getWeek();
   const todayStr = toDateStr(new Date());
   const tabs = document.getElementById('dayTabs');
@@ -470,40 +520,6 @@ function render() {
   renderTabs();
   if (!_selectedDs) { document.getElementById('main').innerHTML = ''; return; }
   renderDay(_selectedDs);
-}
-
-function initFirebase() {
-  const saved = localStorage.getItem('tt_firebase_config');
-  if (!saved) { setSyncBadge('ok'); return; }
-  let cfg;
-  try { cfg = JSON.parse(saved); } catch { return; }
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  const ref = firebase.database().ref('timetable_data');
-  setSyncBadge('syncing');
-  firebase.auth().signInAnonymously()
-    .catch(e => { console.error('auth error:', e); setSyncBadge('ok'); })
-    .then(cred => {
-    if (!cred) return; // 認証失敗時はデータ取得しない
-    ref.on('value', snap => {
-      const data = snap.val();
-      if (data) {
-        if (data.tt_overrides_v1 !== undefined) {
-          _overrides = {};
-          for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
-            _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
-          _migrateOverrides(_overrides);
-          localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
-        }
-        if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
-        if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
-        if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
-        if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
-        if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
-      }
-      render();
-      setSyncBadge('ok');
-    }, () => setSyncBadge('ok'));
-  });
 }
 
 render();
