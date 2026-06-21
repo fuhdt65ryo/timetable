@@ -199,9 +199,32 @@
     .badge-nenkyuu { background:#fff; color:#E65100; border:1px solid #FB8C00; }
     .badge-shuccho { background:#fff; color:#2E7D32; border:1px solid #388E3C; }
 
-    /* Firebase未設定 */
-    .setup-msg { padding: 12px 8px; text-align: center; color: #a0aec0; font-size: .72rem; line-height: 1.6; }
-    .setup-msg strong { color: #718096; display: block; margin-bottom: 4px; font-size: .78rem; }
+    /* Firebase設定モーダル */
+    .fb-modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.55);
+      align-items: center; justify-content: center;
+    }
+    .fb-modal-overlay.open { display: flex; }
+    .fb-modal {
+      background: #fff; border-radius: 12px;
+      padding: 20px 16px 16px; width: min(92vw, 400px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    }
+    .fb-modal h2 { font-size: .9rem; font-weight: 800; margin-bottom: 6px; color: #2d3748; }
+    .fb-modal p  { font-size: .7rem; color: #718096; margin-bottom: 10px; line-height: 1.6; }
+    .fb-modal textarea {
+      width: 100%; height: 110px; font-size: .68rem; font-family: monospace;
+      border: 1px solid #cbd5e0; border-radius: 6px; padding: 8px;
+      resize: none; color: #2d3748;
+    }
+    .fb-modal-btns { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+    .fb-modal-btns button {
+      font-size: .75rem; font-weight: 700; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer;
+    }
+    .fb-modal-cancel { background: #e2e8f0; color: #4a5568; }
+    .fb-modal-save   { background: #F0A870; color: #fff; }
   </style>
 </head>
 <body>
@@ -217,6 +240,18 @@
   <div class="day-tabs" id="dayTabs"></div>
 </header>
 <main id="main"></main>
+
+<div class="fb-modal-overlay" id="fbModalOverlay">
+  <div class="fb-modal">
+    <h2>🔥 Firebase 設定</h2>
+    <p>PCの <b>index.html</b> を開き「設定をバックアップ」でコピーした<br>Firebase 設定 JSON を貼り付けてください。</p>
+    <textarea id="fbCfgInput" placeholder='{"apiKey":"...","databaseURL":"...",...}'></textarea>
+    <div class="fb-modal-btns">
+      <button class="fb-modal-cancel" id="fbModalCancel">キャンセル</button>
+      <button class="fb-modal-save"   id="fbModalSave">保存してリロード</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -347,12 +382,20 @@ function setSyncBadge(state) {
 }
 
 function _showFbSetup() {
-  const cfg = prompt('index.htmlで「設定をバックアップ」からコピーしたFirebase設定JSONを貼り付けてください:');
+  document.getElementById('fbModalOverlay').classList.add('open');
+  document.getElementById('fbCfgInput').value = '';
+  setTimeout(() => document.getElementById('fbCfgInput').focus(), 100);
+}
+document.getElementById('fbModalCancel').addEventListener('click', () => {
+  document.getElementById('fbModalOverlay').classList.remove('open');
+});
+document.getElementById('fbModalSave').addEventListener('click', () => {
+  const cfg = document.getElementById('fbCfgInput').value.trim();
   if (!cfg) return;
-  try { JSON.parse(cfg); } catch { alert('JSONの形式が正しくありません'); return; }
+  try { JSON.parse(cfg); } catch { document.getElementById('fbCfgInput').style.borderColor = '#fc8181'; return; }
   localStorage.setItem('tt_firebase_config', cfg);
   location.reload();
-}
+});
 
 function initFirebase() {
   const saved = localStorage.getItem('tt_firebase_config');
