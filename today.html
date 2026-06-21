@@ -165,16 +165,18 @@
       overflow: hidden;
     }
     .p-dot  { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .p-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+    .p-main { display: flex; align-items: center; gap: 4px; }
     .p-name { font-size: .78rem; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
     .p-room {
       font-size: .6rem; font-weight: 700; padding: 1px 5px;
       border-radius: 10px; white-space: nowrap; flex-shrink: 0;
     }
-    .p-teacher { font-size: .65rem; color: #4a5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+    .p-teacher { font-size: .68rem; color: #4a5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .p-empty   { font-size: .7rem; color: #cbd5e0; padding: 3px 6px; align-self: center; }
 
     .is-dark .p-name    { color: rgba(255,255,255,.95); }
-    .is-dark .p-teacher { color: rgba(255,255,255,.7); }
+    .is-dark .p-teacher { color: rgba(255,255,255,.75); }
 
     /* バッジ列 */
     .p-badges {
@@ -309,18 +311,6 @@ function getBase(ds) {
 }
 
 let _selectedDs = toDateStr(new Date());
-let _userClicked = false;
-
-function _autoSelectActiveDay() {
-  const week = getWeek();
-  for (const d of week) {
-    const ds = toDateStr(d);
-    const holRaw = _holidays[ds];
-    const isHol = holRaw && (typeof holRaw === 'string' || holRaw.type === 'holiday');
-    if (isHol) continue;
-    if (PERIODS.some(p => getEntry(ds, p))) { _selectedDs = ds; return; }
-  }
-}
 
 function getWeek() {
   const today = new Date();
@@ -366,7 +356,7 @@ function renderTabs() {
       + (ds === todayStr ? ' is-today' : '')
       + (isHol ? ' is-holiday' : '');
     btn.innerHTML = `<span class="tab-dn">${DAY_JP[d.getDay()]}</span><span class="tab-dd">${d.getDate()}</span>`;
-    btn.addEventListener('click', () => { _userClicked = true; _selectedDs = ds; render(); });
+    btn.addEventListener('click', () => { _selectedDs = ds; render(); });
     tabs.appendChild(btn);
   });
   const week0 = week[0], week6 = week[6];
@@ -456,21 +446,19 @@ function renderDay(ds) {
     const roomTag = entry.room ? `<span class="p-room" style="background:${pastel(subColor)};color:${subColor}">${esc(entry.room)}</span>` : '';
     const dotHtml = !isDark ? `<span class="p-dot" style="background:${color}"></span>` : '';
     const nameColor = isDark ? 'rgba(255,255,255,.95)' : '#1a202c';
-    const teacherHtml = (entry.content || entry.teacher) ? `<span class="p-teacher">${esc(entry.content || entry.teacher)}</span>` : '';
+    const contentText = entry.content || entry.teacher;
     const srcHtml = srcBadge ? `<span class="p-num-src">${esc(srcBadge)}</span>` : '';
     const badgesHtml = badges ? `<div class="p-badges">${badges}</div>` : '';
+    const bodyInner = contentText
+      ? `${dotHtml}<div class="p-info"><div class="p-main"><span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>${roomTag}</div><span class="p-teacher">${esc(contentText)}</span></div>`
+      : `${dotHtml}<span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>${roomTag}`;
 
     html += `<div class="period-row${hasContent?' has-content':''}${isDark?' is-dark':''}" style="${rowStyle}">
       <div class="p-num" style="background:${numBg}">
         <span class="p-num-label" style="color:${numColor}">${p}</span>
         ${srcHtml}
       </div>
-      <div class="p-body">
-        ${dotHtml}
-        <span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>
-        ${roomTag}
-        ${teacherHtml}
-      </div>
+      <div class="p-body">${bodyInner}</div>
       ${badgesHtml}
     </div>`;
   }
@@ -512,14 +500,12 @@ function initFirebase() {
         if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
         if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
       }
-      if (!_userClicked) _autoSelectActiveDay();
       render();
       setSyncBadge('ok');
     }, () => setSyncBadge('ok'));
   });
 }
 
-_autoSelectActiveDay();
 render();
 initFirebase();
 </script>
