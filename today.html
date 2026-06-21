@@ -456,6 +456,8 @@ async function initFirebase() {
     }, () => setSyncBadge('error'));
   });
 }
+
+function renderTabs() {
   const week = getWeek();
   const todayStr = toDateStr(new Date());
   const tabs = document.getElementById('dayTabs');
