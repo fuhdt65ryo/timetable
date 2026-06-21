@@ -309,6 +309,18 @@ function getBase(ds) {
 }
 
 let _selectedDs = toDateStr(new Date());
+let _userClicked = false;
+
+function _autoSelectActiveDay() {
+  const week = getWeek();
+  for (const d of week) {
+    const ds = toDateStr(d);
+    const holRaw = _holidays[ds];
+    const isHol = holRaw && (typeof holRaw === 'string' || holRaw.type === 'holiday');
+    if (isHol) continue;
+    if (PERIODS.some(p => getEntry(ds, p))) { _selectedDs = ds; return; }
+  }
+}
 
 function getWeek() {
   const today = new Date();
@@ -354,7 +366,7 @@ function renderTabs() {
       + (ds === todayStr ? ' is-today' : '')
       + (isHol ? ' is-holiday' : '');
     btn.innerHTML = `<span class="tab-dn">${DAY_JP[d.getDay()]}</span><span class="tab-dd">${d.getDate()}</span>`;
-    btn.addEventListener('click', () => { _selectedDs = ds; render(); });
+    btn.addEventListener('click', () => { _userClicked = true; _selectedDs = ds; render(); });
     tabs.appendChild(btn);
   });
   const week0 = week[0], week6 = week[6];
@@ -500,12 +512,14 @@ function initFirebase() {
         if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
         if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
       }
+      if (!_userClicked) _autoSelectActiveDay();
       render();
       setSyncBadge('ok');
     }, () => setSyncBadge('ok'));
   });
 }
 
+_autoSelectActiveDay();
 render();
 initFirebase();
 </script>
