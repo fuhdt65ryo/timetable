@@ -253,9 +253,6 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 const BASE = {
   '0-1':{ name:'3-3',  room:'理科', color:'#D4BE00' },
@@ -403,7 +400,15 @@ document.getElementById('fbModalSave').addEventListener('click', () => {
   initFirebase();
 });
 
-function initFirebase() {
+function _loadScript(url) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function initFirebase() {
   const saved = localStorage.getItem('tt_firebase_config');
   if (!saved) {
     setSyncBadge('noconfig');
@@ -412,14 +417,24 @@ function initFirebase() {
     return;
   }
   let cfg;
-  try { cfg = JSON.parse(saved); } catch { return; }
+  try { cfg = JSON.parse(saved); } catch { setSyncBadge('error'); return; }
+
+  if (typeof firebase === 'undefined') {
+    setSyncBadge('syncing');
+    try {
+      await _loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+      await _loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
+      await _loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js');
+    } catch (e) { setSyncBadge('error'); return; }
+  }
+
   if (!firebase.apps.length) firebase.initializeApp(cfg);
   const ref = firebase.database().ref('timetable_data');
   setSyncBadge('syncing');
   firebase.auth().signInAnonymously()
     .catch(e => { console.error('auth error:', e); setSyncBadge('error'); })
     .then(cred => {
-    if (!cred) return; // 認証失敗時はデータ取得しない
+    if (!cred) return;
     ref.on('value', snap => {
       const data = snap.val();
       if (data) {
