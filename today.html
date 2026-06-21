@@ -56,8 +56,10 @@
       padding: 1px 5px;
       border-radius: 10px;
     }
-    .sync-badge.ok      { color: rgba(200,255,200,.95); }
-    .sync-badge.syncing { color: rgba(255,255,180,.95); }
+    .sync-badge.ok       { color: rgba(200,255,200,.95); }
+    .sync-badge.syncing  { color: rgba(255,255,180,.95); }
+    .sync-badge.noconfig { color: rgba(255,220,100,.95); }
+    .sync-badge.error    { color: rgba(255,150,150,.95); }
 
     /* ── 曜日タブ ── */
     .day-tabs {
@@ -165,16 +167,18 @@
       overflow: hidden;
     }
     .p-dot  { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .p-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+    .p-main { display: flex; align-items: center; gap: 4px; }
     .p-name { font-size: .78rem; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
     .p-room {
       font-size: .6rem; font-weight: 700; padding: 1px 5px;
       border-radius: 10px; white-space: nowrap; flex-shrink: 0;
     }
-    .p-teacher { font-size: .65rem; color: #4a5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+    .p-teacher { font-size: .68rem; color: #4a5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .p-empty   { font-size: .7rem; color: #cbd5e0; padding: 3px 6px; align-self: center; }
 
     .is-dark .p-name    { color: rgba(255,255,255,.95); }
-    .is-dark .p-teacher { color: rgba(255,255,255,.7); }
+    .is-dark .p-teacher { color: rgba(255,255,255,.75); }
 
     /* バッジ列 */
     .p-badges {
@@ -288,7 +292,15 @@ function getColor(name, subject) {
 }
 
 let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {}, _baseCurrent = null, _baseNext = null;
-try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1')    || '{}'); } catch {}
+
+function _migrateOverrides(ovr) {
+  Object.values(ovr).forEach(e => {
+    if (e && 'teacher' in e && !('content' in e)) { e.content = e.teacher; delete e.teacher; }
+  });
+  return ovr;
+}
+
+try { _overrides    = _migrateOverrides(JSON.parse(localStorage.getItem('tt_overrides_v1')    || '{}')); } catch {}
 try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')     || '{}'); } catch {}
 try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')      || '{}'); } catch {}
 try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')     || '{}'); } catch {}
@@ -328,10 +340,58 @@ function setSyncBadge(state) {
   const el = document.getElementById('syncBadge');
   const now = new Date();
   el.className = 'sync-badge ' + state;
-  el.textContent = state === 'syncing' ? '⟳' : `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
+  if (state === 'syncing') el.textContent = '⟳';
+  else if (state === 'noconfig') el.textContent = '⚙ 未設定';
+  else if (state === 'error') el.textContent = '✗ エラー';
+  else el.textContent = `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
 }
 
-function renderTabs() {
+function _showFbSetup() {
+  const cfg = prompt('index.htmlで「設定をバックアップ」からコピーしたFirebase設定JSONを貼り付けてください:');
+  if (!cfg) return;
+  try { JSON.parse(cfg); } catch { alert('JSONの形式が正しくありません'); return; }
+  localStorage.setItem('tt_firebase_config', cfg);
+  location.reload();
+}
+
+function initFirebase() {
+  const saved = localStorage.getItem('tt_firebase_config');
+  if (!saved) {
+    setSyncBadge('noconfig');
+    document.getElementById('syncBadge').style.cursor = 'pointer';
+    document.getElementById('syncBadge').addEventListener('click', _showFbSetup);
+    return;
+  }
+  let cfg;
+  try { cfg = JSON.parse(saved); } catch { return; }
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  const ref = firebase.database().ref('timetable_data');
+  setSyncBadge('syncing');
+  firebase.auth().signInAnonymously()
+    .catch(e => { console.error('auth error:', e); setSyncBadge('error'); })
+    .then(cred => {
+    if (!cred) return; // 認証失敗時はデータ取得しない
+    ref.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        if (data.tt_overrides_v1 !== undefined) {
+          _overrides = {};
+          for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
+            _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
+          _migrateOverrides(_overrides);
+          localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
+        }
+        if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
+        if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
+        if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
+        if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
+        if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
+      }
+      render();
+      setSyncBadge('ok');
+    }, () => setSyncBadge('error'));
+  });
+}
   const week = getWeek();
   const todayStr = toDateStr(new Date());
   const tabs = document.getElementById('dayTabs');
@@ -385,8 +445,8 @@ function renderDay(ds) {
     const range = holEntry.periodFrom ? (holEntry.periodFrom === 'all' ? '終日' : `${holEntry.periodFrom}〜${holEntry.periodTo||6}限`) : '終日';
     html += `<div class="banner-absence ${holEntry.type}">📋 ${lbl}（${range}）</div>`;
   }
-  if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && firstEntry.content)
-    html += `<div class="banner banner-event" style="text-align:left;padding:4px 8px">📌 ${esc(firstEntry.content)}</div>`;
+  if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && (firstEntry.content || firstEntry.teacher))
+    html += `<div class="banner banner-event" style="text-align:left;padding:4px 8px">📌 ${esc(firstEntry.content || firstEntry.teacher)}</div>`;
   if (allEvent) { main.innerHTML = html + `<div class="banner banner-no-class">📌 行事日程</div>`; return; }
 
   html += '<div class="period-list">';
@@ -394,7 +454,7 @@ function renderDay(ds) {
     const entry = getEntry(ds, p);
     const isDark  = entry && DARK_CLASSES.has(entry.name);
     const isLight = entry && LIGHT_CLASSES.has(entry.name);
-    const hasContent = entry && (!isLight || entry.content || isDark);
+    const hasContent = entry && (!isLight || entry.content || entry.teacher || isDark);
 
     const color = entry ? (getColor(entry.name, entry.room) || entry.color || '#B0BEC5') : '#B0BEC5';
     const numBg = entry ? pastel(color, .22) : '#f7fafc';
@@ -436,21 +496,19 @@ function renderDay(ds) {
     const roomTag = entry.room ? `<span class="p-room" style="background:${pastel(subColor)};color:${subColor}">${esc(entry.room)}</span>` : '';
     const dotHtml = !isDark ? `<span class="p-dot" style="background:${color}"></span>` : '';
     const nameColor = isDark ? 'rgba(255,255,255,.95)' : '#1a202c';
-    const teacherHtml = entry.content ? `<span class="p-teacher">${esc(entry.content)}</span>` : '';
+    const contentText = entry.content || entry.teacher;
     const srcHtml = srcBadge ? `<span class="p-num-src">${esc(srcBadge)}</span>` : '';
     const badgesHtml = badges ? `<div class="p-badges">${badges}</div>` : '';
+    const bodyInner = contentText
+      ? `${dotHtml}<div class="p-info"><div class="p-main"><span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>${roomTag}</div><span class="p-teacher">${esc(contentText)}</span></div>`
+      : `${dotHtml}<span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>${roomTag}`;
 
     html += `<div class="period-row${hasContent?' has-content':''}${isDark?' is-dark':''}" style="${rowStyle}">
       <div class="p-num" style="background:${numBg}">
         <span class="p-num-label" style="color:${numColor}">${p}</span>
         ${srcHtml}
       </div>
-      <div class="p-body">
-        ${dotHtml}
-        <span class="p-name" style="color:${nameColor}">${esc(entry.name)}</span>
-        ${roomTag}
-        ${teacherHtml}
-      </div>
+      <div class="p-body">${bodyInner}</div>
       ${badgesHtml}
     </div>`;
   }
@@ -462,39 +520,6 @@ function render() {
   renderTabs();
   if (!_selectedDs) { document.getElementById('main').innerHTML = ''; return; }
   renderDay(_selectedDs);
-}
-
-function initFirebase() {
-  const saved = localStorage.getItem('tt_firebase_config');
-  if (!saved) { setSyncBadge('ok'); return; }
-  let cfg;
-  try { cfg = JSON.parse(saved); } catch { return; }
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  const ref = firebase.database().ref('timetable_data');
-  setSyncBadge('syncing');
-  firebase.auth().signInAnonymously()
-    .catch(e => { console.error('auth error:', e); setSyncBadge('ok'); })
-    .then(cred => {
-    if (!cred) return; // 認証失敗時はデータ取得しない
-    ref.on('value', snap => {
-      const data = snap.val();
-      if (data) {
-        if (data.tt_overrides_v1 !== undefined) {
-          _overrides = {};
-          for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
-            _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
-          localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
-        }
-        if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
-        if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
-        if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
-        if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
-        if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
-      }
-      render();
-      setSyncBadge('ok');
-    }, () => setSyncBadge('ok'));
-  });
 }
 
 render();
