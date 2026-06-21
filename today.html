@@ -244,11 +244,16 @@
 <div class="fb-modal-overlay" id="fbModalOverlay">
   <div class="fb-modal">
     <h2>🔥 Firebase 設定</h2>
-    <p>PCの <b>index.html</b> を開き「設定をバックアップ」でコピーした<br>Firebase 設定 JSON を貼り付けてください。</p>
+    <p>index.htmlの「設定をバックアップ」で保存したJSONファイルを選択するか、テキストを貼り付けてください。</p>
+    <label id="fbFileLabel" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;">
+      <span style="background:#e2e8f0;color:#4a5568;font-size:.75rem;font-weight:700;padding:7px 14px;border-radius:6px;white-space:nowrap;">📁 ファイルを選択</span>
+      <span id="fbFileName" style="font-size:.68rem;color:#a0aec0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">未選択</span>
+      <input type="file" id="fbFileInput" accept=".json,application/json" style="display:none">
+    </label>
     <textarea id="fbCfgInput" placeholder='{"apiKey":"...","databaseURL":"...",...}'></textarea>
     <div class="fb-modal-btns">
       <button class="fb-modal-cancel" id="fbModalCancel">キャンセル</button>
-      <button class="fb-modal-save"   id="fbModalSave">保存してリロード</button>
+      <button class="fb-modal-save"   id="fbModalSave">保存して接続</button>
     </div>
   </div>
 </div>
@@ -391,6 +396,14 @@ document.getElementById('fbModalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('fbModalOverlay')) _closeFbModal();
 });
 document.getElementById('fbModalCancel').addEventListener('click', _closeFbModal);
+document.getElementById('fbFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('fbFileName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => { document.getElementById('fbCfgInput').value = ev.target.result; document.getElementById('fbCfgInput').style.borderColor = ''; };
+  reader.readAsText(file);
+});
 document.getElementById('fbModalSave').addEventListener('click', () => {
   const cfg = document.getElementById('fbCfgInput').value.trim();
   if (!cfg) return;
