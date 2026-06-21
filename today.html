@@ -381,20 +381,26 @@ function setSyncBadge(state) {
   else el.textContent = `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
 }
 
+function _closeFbModal() {
+  document.getElementById('fbModalOverlay').classList.remove('open');
+}
 function _showFbSetup() {
   document.getElementById('fbModalOverlay').classList.add('open');
   document.getElementById('fbCfgInput').value = '';
+  document.getElementById('fbCfgInput').style.borderColor = '';
   setTimeout(() => document.getElementById('fbCfgInput').focus(), 100);
 }
-document.getElementById('fbModalCancel').addEventListener('click', () => {
-  document.getElementById('fbModalOverlay').classList.remove('open');
+document.getElementById('fbModalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('fbModalOverlay')) _closeFbModal();
 });
+document.getElementById('fbModalCancel').addEventListener('click', _closeFbModal);
 document.getElementById('fbModalSave').addEventListener('click', () => {
   const cfg = document.getElementById('fbCfgInput').value.trim();
   if (!cfg) return;
   try { JSON.parse(cfg); } catch { document.getElementById('fbCfgInput').style.borderColor = '#fc8181'; return; }
   localStorage.setItem('tt_firebase_config', cfg);
-  location.reload();
+  _closeFbModal();
+  initFirebase();
 });
 
 function initFirebase() {
