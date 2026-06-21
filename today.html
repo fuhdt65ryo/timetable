@@ -288,7 +288,15 @@ function getColor(name, subject) {
 }
 
 let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {}, _baseCurrent = null, _baseNext = null;
-try { _overrides    = JSON.parse(localStorage.getItem('tt_overrides_v1')    || '{}'); } catch {}
+
+function _migrateOverrides(ovr) {
+  Object.values(ovr).forEach(e => {
+    if (e && 'teacher' in e && !('content' in e)) { e.content = e.teacher; delete e.teacher; }
+  });
+  return ovr;
+}
+
+try { _overrides    = _migrateOverrides(JSON.parse(localStorage.getItem('tt_overrides_v1')    || '{}')); } catch {}
 try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')     || '{}'); } catch {}
 try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')      || '{}'); } catch {}
 try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')     || '{}'); } catch {}
@@ -385,8 +393,8 @@ function renderDay(ds) {
     const range = holEntry.periodFrom ? (holEntry.periodFrom === 'all' ? '終日' : `${holEntry.periodFrom}〜${holEntry.periodTo||6}限`) : '終日';
     html += `<div class="banner-absence ${holEntry.type}">📋 ${lbl}（${range}）</div>`;
   }
-  if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && firstEntry.content)
-    html += `<div class="banner banner-event" style="text-align:left;padding:4px 8px">📌 ${esc(firstEntry.content)}</div>`;
+  if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && (firstEntry.content || firstEntry.teacher))
+    html += `<div class="banner banner-event" style="text-align:left;padding:4px 8px">📌 ${esc(firstEntry.content || firstEntry.teacher)}</div>`;
   if (allEvent) { main.innerHTML = html + `<div class="banner banner-no-class">📌 行事日程</div>`; return; }
 
   html += '<div class="period-list">';
@@ -394,7 +402,7 @@ function renderDay(ds) {
     const entry = getEntry(ds, p);
     const isDark  = entry && DARK_CLASSES.has(entry.name);
     const isLight = entry && LIGHT_CLASSES.has(entry.name);
-    const hasContent = entry && (!isLight || entry.content || isDark);
+    const hasContent = entry && (!isLight || entry.content || entry.teacher || isDark);
 
     const color = entry ? (getColor(entry.name, entry.room) || entry.color || '#B0BEC5') : '#B0BEC5';
     const numBg = entry ? pastel(color, .22) : '#f7fafc';
@@ -436,7 +444,7 @@ function renderDay(ds) {
     const roomTag = entry.room ? `<span class="p-room" style="background:${pastel(subColor)};color:${subColor}">${esc(entry.room)}</span>` : '';
     const dotHtml = !isDark ? `<span class="p-dot" style="background:${color}"></span>` : '';
     const nameColor = isDark ? 'rgba(255,255,255,.95)' : '#1a202c';
-    const teacherHtml = entry.content ? `<span class="p-teacher">${esc(entry.content)}</span>` : '';
+    const teacherHtml = (entry.content || entry.teacher) ? `<span class="p-teacher">${esc(entry.content || entry.teacher)}</span>` : '';
     const srcHtml = srcBadge ? `<span class="p-num-src">${esc(srcBadge)}</span>` : '';
     const badgesHtml = badges ? `<div class="p-badges">${badges}</div>` : '';
 
@@ -483,6 +491,7 @@ function initFirebase() {
           _overrides = {};
           for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
             _overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v;
+          _migrateOverrides(_overrides);
           localStorage.setItem('tt_overrides_v1', JSON.stringify(_overrides));
         }
         if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
