@@ -349,6 +349,8 @@
     .prog-upcoming .prog-p { color:#1976D2; }
     .prog-today { background:#FFF9C4; color:#F57F17; font-weight:800; }
     .prog-today .prog-p { color:#F9A825; }
+    .prog-tomorrow { background:#FFE0B2; color:#E65100; font-weight:800; }
+    .prog-tomorrow .prog-p { color:#EF6C00; }
 
     .prog-add-wrap { display:flex; gap:6px; margin:6px 12px 8px; }
     .prog-add-inp { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; outline:none; }
@@ -1162,6 +1164,10 @@
       <div class="help-row">
         <span class="help-badge" style="background:#FFF9C4;color:#F57F17;border:1px solid #FFE082;min-width:60px">今日</span>
         <span class="help-desc">今日実施予定のコマ</span>
+      </div>
+      <div class="help-row">
+        <span class="help-badge" style="background:#FFE0B2;color:#E65100;border:1px solid #FFCC80;min-width:60px">明日</span>
+        <span class="help-desc">明日実施予定のコマ</span>
       </div>
       <div class="help-row">
         <span class="help-badge" style="background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9;min-width:60px">今後</span>
@@ -2909,6 +2915,7 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = addDays(today, 1);
   const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ classes: cls }) =>
@@ -2949,6 +2956,9 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
       } else if (info && isSameDay(info.date, today)) {
         const d = info.date;
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
+      } else if (info && isSameDay(info.date, tomorrow)) {
+        const d = info.date;
+        html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-tomorrow">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
         const d = info.date;
         const badgeClass = (d >= weekStart && d <= weekEnd) ? 'prog-thisweek' : 'prog-upcoming';
