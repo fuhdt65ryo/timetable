@@ -554,7 +554,7 @@
 
     /* ── 授業変更入力モーダル ── */
     .chgmod-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
-    .chgmod { background:#fff; border-radius:16px; width:min(480px,96vw); box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
+    .chgmod { background:#fff; border-radius:16px; width:min(560px,96vw); box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
     .chgmod-head { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
     .chgmod-head h2 { font-size:.95rem; font-weight:800; margin:0; }
     .chgmod-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; font-size:.9rem; cursor:pointer; }
@@ -566,12 +566,19 @@
     .chgmod-preview { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; flex-wrap:wrap; min-height:42px; }
     .chgmod-cancel-check { display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:#8a4a00; cursor:pointer; user-select:none; }
     .chgmod-cancel-check input { accent-color:#c05c00; width:14px; height:14px; }
+    .chgmod-fromto { display:flex; gap:6px; align-items:stretch; }
+    .chgmod-fromto .chgmod-section { flex:1; min-width:0; }
+    .chgmod-arrow-mid { align-self:center; color:#94a3b8; font-weight:800; font-size:1.1rem; flex-shrink:0; }
     .chgmod-section { display:flex; flex-direction:column; gap:10px; padding:12px; border-radius:10px; }
     .chgmod-section-from { background:#f8fafc; border:1.5px solid #e2e8f0; }
     .chgmod-section-to { background:#f0f4ff; border:1.5px solid #c8d4ee; }
     .chgmod-section-title { font-size:.72rem; font-weight:800; color:#475569; letter-spacing:.04em; }
     .chgmod-section-to .chgmod-section-title { color:#1d4ed8; }
     .chgmod { max-height:92vh; overflow-y:auto; }
+    @media (max-width:560px) {
+      .chgmod-fromto { flex-direction:column; }
+      .chgmod-arrow-mid { transform:rotate(90deg); }
+    }
     .chgmod-preview .chg-type-badge { padding:2px 8px; border-radius:5px; font-size:.72rem; font-weight:800; background:#e2e8f0; color:#4a5568; }
     .chgmod-preview .chg-type-badge.chg-type-cancel { background:#fde8e8; color:#c53030; }
     .chgmod-preview .chg-type-badge.chg-type-add { background:#e3f2fd; color:#1565c0; }
@@ -1362,53 +1369,50 @@
           </select>
         </div>
       </div>
-      <div class="chgmod-section chgmod-section-from">
-        <div class="chgmod-section-title">変更前　─ 元のこのコマの授業</div>
-        <div class="chgmod-row">
-          <div class="chgmod-field" style="flex:1">
+      <div class="chgmod-fromto">
+        <div class="chgmod-section chgmod-section-from">
+          <div class="chgmod-section-title">変更前（元の授業）</div>
+          <div class="chgmod-field">
             <span class="chgmod-label">クラス</span>
-            <input class="form-input" id="chgFromClass" type="text" list="chgFromClassList" placeholder="例: 3-1（空きコマなら空欄）">
+            <input class="form-input" id="chgFromClass" type="text" list="chgFromClassList" placeholder="空きコマなら空欄">
             <datalist id="chgFromClassList"></datalist>
           </div>
-          <div class="chgmod-field" style="flex:1">
+          <div class="chgmod-field">
             <span class="chgmod-label">教科</span>
             <input class="form-input" id="chgFromSubject" type="text" list="chgFromSubjectList" placeholder="例: 理科">
             <datalist id="chgFromSubjectList"></datalist>
           </div>
+          <div class="chgmod-field" id="chgFromNextField" style="display:none">
+            <span class="chgmod-label">このクラスが代わりにやる教科</span>
+            <input class="form-input" id="chgFromNext" type="text" list="chgFromNextList" placeholder="例: 国語">
+            <datalist id="chgFromNextList"></datalist>
+          </div>
         </div>
-        <div class="chgmod-field" id="chgFromNextField" style="display:none">
-          <span class="chgmod-label">このクラスが代わりにやる教科</span>
-          <input class="form-input" id="chgFromNext" type="text" list="chgFromNextList" placeholder="例: 国語">
-          <datalist id="chgFromNextList"></datalist>
-        </div>
-      </div>
-      <div class="chgmod-section chgmod-section-to">
-        <div class="chgmod-section-title">変更後　─ 実際にやる授業</div>
-        <label class="chgmod-cancel-check">
-          <input type="checkbox" id="chgCancelCheck">空きコマになる（授業が潰れた）
-        </label>
-        <div class="chgmod-row" id="chgToRow">
-          <div class="chgmod-field" style="flex:1">
+        <div class="chgmod-arrow-mid">→</div>
+        <div class="chgmod-section chgmod-section-to">
+          <div class="chgmod-section-title">変更後（実際にやる授業）</div>
+          <label class="chgmod-cancel-check">
+            <input type="checkbox" id="chgCancelCheck">空きコマになる（潰れた）
+          </label>
+          <div class="chgmod-field" id="chgToRow">
             <span class="chgmod-label">クラス</span>
             <input class="form-input" id="chgToClass" type="text" list="chgToClassList" placeholder="例: 3-1、行事">
             <datalist id="chgToClassList"></datalist>
           </div>
-          <div class="chgmod-field" style="flex:1">
+          <div class="chgmod-field">
             <span class="chgmod-label">教科</span>
             <input class="form-input" id="chgToSubject" type="text" list="chgToSubjectList" placeholder="例: 理科、自習">
             <datalist id="chgToSubjectList"></datalist>
           </div>
-        </div>
-        <div class="chgmod-row" id="chgContentRow">
-          <div class="chgmod-field" style="flex:1">
+          <div class="chgmod-field" id="chgContentRow">
             <span class="chgmod-label">授業内容（任意）</span>
             <input class="form-input" id="chgToContent" type="text" placeholder="例: 光合成のまとめ">
           </div>
-        </div>
-        <div class="chgmod-field" id="chgToOrigField" style="display:none">
-          <span class="chgmod-label">このクラスの元々の教科</span>
-          <input class="form-input" id="chgToOrig" type="text" list="chgToOrigList" placeholder="例: 社会">
-          <datalist id="chgToOrigList"></datalist>
+          <div class="chgmod-field" id="chgToOrigField" style="display:none">
+            <span class="chgmod-label">このクラスの元々の教科</span>
+            <input class="form-input" id="chgToOrig" type="text" list="chgToOrigList" placeholder="例: 社会">
+            <datalist id="chgToOrigList"></datalist>
+          </div>
         </div>
       </div>
       <div class="chgmod-preview" id="chgPreview">
