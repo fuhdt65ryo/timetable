@@ -578,9 +578,6 @@
       .chgmod-fromto { flex-direction:column; }
       .chgmod-arrow-mid { transform:rotate(90deg); }
     }
-    .chgmod-preview .chg-type-badge { padding:2px 8px; border-radius:5px; font-size:.72rem; font-weight:800; background:#e2e8f0; color:#4a5568; }
-    .chgmod-preview .chg-type-badge.chg-type-cancel { background:#fde8e8; color:#c53030; }
-    .chgmod-preview .chg-type-badge.chg-type-add { background:#e3f2fd; color:#1565c0; }
     .chgmod-preview .chg-from-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; background:#f7fafc; border:1.5px solid var(--border); }
     .chgmod-preview .chg-to-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; }
     .chgmod-actions { display:flex; gap:8px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--border); }
@@ -1412,7 +1409,6 @@
         </div>
       </div>
       <div class="chgmod-preview" id="chgPreview">
-        <span id="chgPreviewType" class="chg-type-badge"></span>
         <span id="chgPreviewFrom" class="chg-from-badge"></span>
         <span class="chg-arrow">→</span>
         <span id="chgPreviewTo" class="chg-to-badge"></span>
@@ -2064,7 +2060,6 @@ function isOverride(dateStr, period) {
 /* ── 授業変更（新形式 chgType: replace/cancel/add、旧形式 jugyohenkou は表示のみ） ──
    toOrigRoom  : 変更後クラスで元々予定されていた教科（例: 空き→3-2理科 のとき 3-2の「社会」）
    fromNextRoom: 変更前クラスで代わりに行われる教科（例: 3-4理科→空き のとき 3-4の「国語」） */
-const CHG_TYPE_LABEL = { replace: '変更', cancel: '中止', add: '追加' };
 function getChgInfo(entry) {
   if (!entry) return null;
   if (entry.chgType) return { type: entry.chgType, legacy: false, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '', toOrigRoom: entry.toOrigRoom || '', fromNextRoom: entry.fromNextRoom || '' };
@@ -2662,7 +2657,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     </div>
     ${chgInfo ? `
     <div id="eChgWrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1.5px solid #93c5fd;margin-top:2px">
-      <span style="font-size:.7rem;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:4px;padding:1px 7px">${chgInfo.legacy ? '授業変更' : CHG_TYPE_LABEL[chgInfo.type]}</span>
+      <span style="font-size:.7rem;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:4px;padding:1px 7px">授業変更</span>
       <span style="font-size:.82rem;font-weight:700;color:#334155">${esc(chgFromLabel)} <span style="color:#94a3b8">→</span> ${esc(chgToLabel)}</span>
       ${chgPairBits.length ? `<span style="font-size:.72rem;font-weight:600;color:#64748b">（${esc(chgPairBits.join('　'))}）</span>` : ''}
       <button class="btn btn-secondary" id="eBtnChgClear" style="font-size:.72rem;padding:4px 10px;margin-left:auto">変更を解除</button>
@@ -4749,10 +4744,6 @@ function updateChgPreview() {
   const toSubject = document.getElementById('chgToSubject').value || '';
   const toColor = getColor(toClass, toSubject);
   const toText = toClass + (toSubject && toSubject !== '──' ? ' ' + toSubject : '');
-
-  const typeBadge = document.getElementById('chgPreviewType');
-  typeBadge.textContent = CHG_TYPE_LABEL[type];
-  typeBadge.className = `chg-type-badge${type === 'cancel' ? ' chg-type-cancel' : type === 'add' ? ' chg-type-add' : ''}`;
 
   document.getElementById('chgPreviewFrom').textContent = fromText;
   const toBadge = document.getElementById('chgPreviewTo');
