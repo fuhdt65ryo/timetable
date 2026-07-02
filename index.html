@@ -279,6 +279,7 @@
     .form-select { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; padding-right:24px; cursor:pointer; }
     .form-select:focus, .form-input:focus { border-color:var(--accent); }
     .form-select.err { border-color:#e53e3e; }
+    .form-input.err { border-color:#e53e3e; }
     .cdd-wrap { position:relative; }
     .cdd-input-wrap { position:relative; }
     .cdd-arrow { position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; color:#718096; font-size:.7rem; }
@@ -370,6 +371,7 @@
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
     .chg-class { opacity: 0.35; }
     .chg-class.chg-class-mine { opacity: 1; }
+    .chg-pair-note { font-size:.7rem; color:#8a94a3; margin-top:3px; font-weight:600; }
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -1098,7 +1100,7 @@
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
-        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。授業が潰れた場合は「<b>変更後は空きコマ</b>」にチェックを入れます（授業なし＝空きコマ）。空きコマに授業が入った場合は変更前を空欄のままにします。</div>
+        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。授業が潰れた場合は「<b>変更後は空きコマ</b>」にチェックを入れます（授業なし＝空きコマ）。空きコマに授業が入った場合は変更前を空欄のままにします。あわせてクラス側の動き（追加→そのクラスの<b>元の教科</b>、中止→そのクラスの<b>代わりの教科</b>）も記録できます。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">3</div>
@@ -1387,11 +1389,24 @@
           <input class="form-input" id="chgToContent" type="text" placeholder="例: 光合成のまとめ">
         </div>
       </div>
+      <div class="chgmod-row" id="chgPairRow" style="display:none">
+        <div class="chgmod-field" style="flex:1" id="chgToOrigField">
+          <span class="chgmod-label">変更後クラスの元の教科</span>
+          <input class="form-input" id="chgToOrig" type="text" list="chgToOrigList" placeholder="例: 社会">
+          <datalist id="chgToOrigList"></datalist>
+        </div>
+        <div class="chgmod-field" style="flex:1" id="chgFromNextField">
+          <span class="chgmod-label">変更前クラスの代わりの教科</span>
+          <input class="form-input" id="chgFromNext" type="text" list="chgFromNextList" placeholder="例: 国語">
+          <datalist id="chgFromNextList"></datalist>
+        </div>
+      </div>
       <div class="chgmod-preview" id="chgPreview">
         <span id="chgPreviewType" class="chg-type-badge"></span>
         <span id="chgPreviewFrom" class="chg-from-badge"></span>
         <span class="chg-arrow">→</span>
         <span id="chgPreviewTo" class="chg-to-badge"></span>
+        <span id="chgPreviewPair" style="flex-basis:100%;font-size:.75rem;font-weight:600;color:#64748b"></span>
       </div>
     </div>
     <div class="chgmod-actions">
@@ -1750,6 +1765,21 @@ function loadOverrides() {
   try { overrides = JSON.parse(localStorage.getItem('tt_overrides_v1') || '{}'); } catch { overrides = {}; }
   _migrateTeacherToContent();
   _migrateJikojiRoomToTeacher();
+  _normalizeCancelEntries();
+}
+
+/* 旧・中止形式（name:''）を「空き」クラスへ正規化（授業なし＝空きコマ） */
+function _normalizeCancelEntries() {
+  let dirty = false;
+  Object.values(overrides).forEach(e => {
+    if (e && e.chgType === 'cancel' && !e.name) {
+      e.name = '空き';
+      e.room = '';
+      e.color = getColor('空き', '');
+      dirty = true;
+    }
+  });
+  if (dirty) save();
 }
 
 /* teacher→content フィールド名変更移行（旧データ互換） */
@@ -2021,18 +2051,26 @@ function isOverride(dateStr, period) {
   return overrideKey(dateStr, period) in overrides;
 }
 
-/* ── 授業変更（新形式 chgType: replace/cancel/add、旧形式 jugyohenkou は表示のみ） ── */
+/* ── 授業変更（新形式 chgType: replace/cancel/add、旧形式 jugyohenkou は表示のみ） ──
+   toOrigRoom  : 変更後クラスで元々予定されていた教科（例: 空き→3-2理科 のとき 3-2の「社会」）
+   fromNextRoom: 変更前クラスで代わりに行われる教科（例: 3-4理科→空き のとき 3-4の「国語」） */
 const CHG_TYPE_LABEL = { replace: '変更', cancel: '中止', add: '追加' };
 function getChgInfo(entry) {
   if (!entry) return null;
-  if (entry.chgType) return { type: entry.chgType, legacy: false, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
-  if (entry.jugyohenkou) return { type: 'replace', legacy: true, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  if (entry.chgType) return { type: entry.chgType, legacy: false, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '', toOrigRoom: entry.toOrigRoom || '', fromNextRoom: entry.fromNextRoom || '' };
+  if (entry.jugyohenkou) return { type: 'replace', legacy: true, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '', toOrigRoom: '', fromNextRoom: '' };
   return null;
 }
 /* 編集時に既存の変更情報を失わないための引き継ぎ用プロパティ */
 function chgPropsOf(entry) {
   if (!entry) return {};
-  if (entry.chgType)     return { chgType: entry.chgType, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  if (entry.chgType) {
+    return {
+      chgType: entry.chgType, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '',
+      ...(entry.toOrigRoom ? { toOrigRoom: entry.toOrigRoom } : {}),
+      ...(entry.fromNextRoom ? { fromNextRoom: entry.fromNextRoom } : {}),
+    };
+  }
   if (entry.jugyohenkou) return { jugyohenkou: true, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
   return {};
 }
@@ -2530,6 +2568,9 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const chgInfo       = getChgInfo(selKey ? overrides[selKey] : null);
   const chgFromLabel  = chgInfo ? [chgInfo.fromName, chgInfo.fromRoom].filter(Boolean).join(' ') || '空き' : '';
   const chgToLabel    = chgInfo ? [currentClass, entry?.room].filter(Boolean).join(' ') || '(未入力)' : '';
+  const chgPairBits   = [];
+  if (chgInfo?.toOrigRoom) chgPairBits.push(`${currentClass}: ${chgInfo.toOrigRoom}→${entry?.room || '─'}`);
+  if (chgInfo?.fromNextRoom && chgInfo?.fromName) chgPairBits.push(`${chgInfo.fromName}: ${chgInfo.fromRoom || '─'}→${chgInfo.fromNextRoom}`);
   const isGrade3Class = PROG_CLASSES.includes(currentClass);
   const isGrade2Class = PROG2_CLASSES.includes(currentClass);
   const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
@@ -2607,6 +2648,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     <div id="eChgWrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1.5px solid #93c5fd;margin-top:2px">
       <span style="font-size:.7rem;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:4px;padding:1px 7px">${chgInfo.legacy ? '授業変更' : CHG_TYPE_LABEL[chgInfo.type]}</span>
       <span style="font-size:.82rem;font-weight:700;color:#334155">${esc(chgFromLabel)} <span style="color:#94a3b8">→</span> ${esc(chgToLabel)}</span>
+      ${chgPairBits.length ? `<span style="font-size:.72rem;font-weight:600;color:#64748b">（${esc(chgPairBits.join('　'))}）</span>` : ''}
       <button class="btn btn-secondary" id="eBtnChgClear" style="font-size:.72rem;padding:4px 10px;margin-left:auto">変更を解除</button>
     </div>` : ''}
     <div class="edit-actions">
@@ -3359,7 +3401,7 @@ function renderChanges() {
       : (chg.type === 'add' ? null : baseEntry);
     const toEntry = newEntry.name ? newEntry : null;
 
-    changes.push({ dateStr, date, period, from: origEntry, to: toEntry });
+    changes.push({ dateStr, date, period, from: origEntry, to: toEntry, chg });
   });
 
   changes.sort((a, b) => a.date - b.date || a.period - b.period);
@@ -3390,7 +3432,7 @@ function renderChanges() {
       : dayLabel;
 
     const MY_SUBJECTS = ['理科', '総合', '学活', '道徳'];
-    items.forEach(({ period, from, to }, i) => {
+    items.forEach(({ period, from, to, chg }, i) => {
       const tr = document.createElement('tr');
       const fromMine = from && MY_SUBJECTS.includes(from.room);
       const toMine   = to   && MY_SUBJECTS.includes(to.room);
@@ -3400,8 +3442,13 @@ function renderChanges() {
       const toHtml = to
         ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.content ? ' '+to.content : '')}</span>`
         : '<span style="color:#aaa">なし</span>';
+      // クラス側の動きの併記（例: 3-2: 社会→理科 ／ 3-4: 理科→国語）
+      const pairBits = [];
+      if (chg?.toOrigRoom && to) pairBits.push(`${to.name}: ${chg.toOrigRoom}→${to.room || '─'}`);
+      if (chg?.fromNextRoom && from) pairBits.push(`${from.name}: ${from.room || '─'}→${chg.fromNextRoom}`);
+      const pairHtml = pairBits.length ? `<div class="chg-pair-note">${esc(pairBits.join('　'))}</div>` : '';
       const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
-      tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}</td>`;
+      tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}${pairHtml}</td>`;
       tbody.appendChild(tr);
     });
   });
@@ -4376,7 +4423,7 @@ function _applyFbData(data) {
   updateSyncBtn('ok');
   if (!data) return;
   let changed = false;
-  if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; _migrateJikojiRoomToTeacher(); safeSave('tt_overrides_v1', overrides); changed = true; }
+  if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; _migrateJikojiRoomToTeacher(); _normalizeCancelEntries(); safeSave('tt_overrides_v1', overrides); changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
   if (data.tt_long_vac_v1  !== undefined)       { longVacations   = data.tt_long_vac_v1          || []; safeSave('tt_long_vac_v1',          longVacations);   changed = true; }
@@ -4635,6 +4682,8 @@ function updateChgFrom() {
   toClassEl.value = (isCancel || curIsAki) ? '' : (currentEntry?.name || '');
   updateChgToSubjects((isCancel || curIsAki) ? '' : currentEntry?.room);
   document.getElementById('chgToContent').value = (isCancel || curIsAki) ? '' : (currentEntry?.content || '');
+  document.getElementById('chgToOrig').value   = existingChg?.toOrigRoom || '';
+  document.getElementById('chgFromNext').value = existingChg?.fromNextRoom || '';
   applyChgCancelState();
 }
 
@@ -4659,6 +4708,20 @@ function detectChgType() {
   return ((fromClass && fromClass !== '空き') || fromSubject) ? 'replace' : 'add';
 }
 
+/* クラス側教科フィールドの表示切り替え（追加→元の教科、中止→代わりの教科、差し替え→両方任意） */
+function updateChgPairFields() {
+  const type = detectChgType();
+  const toClass = document.getElementById('chgToClass').value.trim();
+  const fromClass = document.getElementById('chgFromClass').value.trim();
+  const showToOrig   = type !== 'cancel' && !!toClass && toClass !== '空き';
+  const showFromNext = type !== 'add' && !!fromClass && fromClass !== '空き';
+  document.getElementById('chgToOrigField').style.display   = showToOrig ? '' : 'none';
+  document.getElementById('chgFromNextField').style.display = showFromNext ? '' : 'none';
+  document.getElementById('chgPairRow').style.display = (showToOrig || showFromNext) ? '' : 'none';
+  document.getElementById('chgToOrigList').innerHTML   = getSubjects(toClass).map(s => `<option value="${s.name}">`).join('');
+  document.getElementById('chgFromNextList').innerHTML = getSubjects(fromClass).map(s => `<option value="${s.name}">`).join('');
+}
+
 function updateChgToSubjects(preselectRoom) {
   const cls = document.getElementById('chgToClass').value;
   const subs = getSubjects(cls);
@@ -4668,6 +4731,7 @@ function updateChgToSubjects(preselectRoom) {
 }
 
 function updateChgPreview() {
+  updateChgPairFields();
   const type = detectChgType();
   const fromClass = document.getElementById('chgFromClass').value;
   const fromSubject = document.getElementById('chgFromSubject').value || '';
@@ -4693,6 +4757,14 @@ function updateChgPreview() {
     toBadge.style.background = pastelizeColor(toColor);
     toBadge.style.border = `1.5px solid ${toColor}`;
   }
+
+  // クラス側の動きの併記（例: 3-2: 社会→理科 ／ 3-4: 理科→国語）
+  const toOrig = document.getElementById('chgToOrig').value.trim();
+  const fromNext = document.getElementById('chgFromNext').value.trim();
+  const pairBits = [];
+  if (toOrig && toClass && type !== 'cancel') pairBits.push(`${toClass}: ${toOrig}→${toSubject || '─'}`);
+  if (fromNext && fromClass && type !== 'add') pairBits.push(`${fromClass}: ${fromSubject || '─'}→${fromNext}`);
+  document.getElementById('chgPreviewPair').textContent = pairBits.join('　');
 }
 
 document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
@@ -4711,6 +4783,8 @@ document.getElementById('chgFromSubject').addEventListener('input', updateChgPre
 document.getElementById('chgToClass').addEventListener('input', () => updateChgToSubjects());
 document.getElementById('chgToSubject').addEventListener('input', updateChgPreview);
 document.getElementById('chgCancelCheck').addEventListener('change', applyChgCancelState);
+document.getElementById('chgToOrig').addEventListener('input', updateChgPreview);
+document.getElementById('chgFromNext').addEventListener('input', updateChgPreview);
 document.getElementById('chgModalSave').addEventListener('click', () => {
   const dateStr = document.getElementById('chgDate').value;
   const period = +document.getElementById('chgPeriod').value;
@@ -4721,15 +4795,29 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
   const toClass = document.getElementById('chgToClass').value;
   const toSubject = document.getElementById('chgToSubject').value || '';
   const toContent = document.getElementById('chgToContent').value.trim() || '';
+  const toOrig = document.getElementById('chgToOrig').value.trim();
+  const fromNext = document.getElementById('chgFromNext').value.trim();
   const ok = overrideKey(dateStr, period);
 
+  // 追加→変更後クラスの元の教科、中止→変更前クラスの代わりの教科は必須
+  const toOrigEl = document.getElementById('chgToOrig');
+  const fromNextEl = document.getElementById('chgFromNext');
+  toOrigEl.classList.remove('err');
+  fromNextEl.classList.remove('err');
+  if (type === 'add' && !toOrig) { toOrigEl.classList.add('err'); toOrigEl.focus(); return; }
+  if (type === 'cancel' && fromClass && fromClass !== '空き' && !fromNext) { fromNextEl.classList.add('err'); fromNextEl.focus(); return; }
+
+  const pairProps = {
+    ...(toOrig && type !== 'cancel' ? { toOrigRoom: toOrig } : {}),
+    ...(fromNext && type !== 'add' ? { fromNextRoom: fromNext } : {}),
+  };
   if (type === 'cancel') {
     if (!fromClass && !fromSubject) return; // 中止対象の授業が未入力
     // 授業なし＝「空き」クラスとして保存
-    overrides[ok] = { name: '空き', room: '', content: '', color: getColor('空き', ''), chgType: 'cancel', fromName: fromClass, fromRoom: fromSubject };
+    overrides[ok] = { name: '空き', room: '', content: '', color: getColor('空き', ''), chgType: 'cancel', fromName: fromClass, fromRoom: fromSubject, ...pairProps };
   } else {
     if (!toClass) return;
-    overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), chgType: type, fromName: fromClass, fromRoom: fromSubject };
+    overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), chgType: type, fromName: fromClass, fromRoom: fromSubject, ...pairProps };
   }
   save();
   schedulePush();
