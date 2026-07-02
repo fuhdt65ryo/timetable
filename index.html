@@ -564,7 +564,11 @@
     .chgmod-field { display:flex; flex-direction:column; gap:4px; }
     .chgmod-label { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
     .chgmod-from { font-size:.88rem; font-weight:700; padding:7px 12px; background:#f7fafc; border:1.5px solid var(--border); border-radius:8px; min-width:130px; line-height:1.4; }
-    .chgmod-preview { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; flex-wrap:wrap; min-height:42px; }
+    .chgmod-preview { display:flex; flex-direction:column; align-items:stretch; gap:7px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; min-height:42px; }
+    .chgmod-preview-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .chg-preview-label { font-size:.7rem; font-weight:800; color:#475569; background:#e2e8f0; border-radius:4px; padding:2px 8px; min-width:3.2em; text-align:center; flex-shrink:0; }
+    .chg-preview-before { font-size:.85rem; font-weight:600; color:#94a3b8; text-decoration:line-through; }
+    .chg-preview-after { font-size:.85rem; font-weight:800; color:#334155; }
     .chgmod-fromto { display:flex; gap:6px; align-items:stretch; }
     .chgmod-fromto .chgmod-section { flex:1; min-width:0; }
     .chgmod-arrow-mid { align-self:center; color:#94a3b8; font-weight:800; font-size:1.1rem; flex-shrink:0; }
@@ -1409,10 +1413,24 @@
         </div>
       </div>
       <div class="chgmod-preview" id="chgPreview">
-        <span id="chgPreviewFrom" class="chg-from-badge"></span>
-        <span class="chg-arrow">→</span>
-        <span id="chgPreviewTo" class="chg-to-badge"></span>
-        <span id="chgPreviewPair" style="flex-basis:100%;font-size:.75rem;font-weight:600;color:#64748b"></span>
+        <div class="chgmod-preview-row">
+          <span class="chg-preview-label">自分</span>
+          <span id="chgPreviewFrom" class="chg-from-badge"></span>
+          <span class="chg-arrow">→</span>
+          <span id="chgPreviewTo" class="chg-to-badge"></span>
+        </div>
+        <div class="chgmod-preview-row" id="chgPreviewToClassRow" style="display:none">
+          <span class="chg-preview-label" id="chgPreviewToClassName"></span>
+          <span class="chg-preview-before" id="chgPreviewToClassBefore"></span>
+          <span class="chg-arrow">→</span>
+          <span class="chg-preview-after" id="chgPreviewToClassAfter"></span>
+        </div>
+        <div class="chgmod-preview-row" id="chgPreviewFromClassRow" style="display:none">
+          <span class="chg-preview-label" id="chgPreviewFromClassName"></span>
+          <span class="chg-preview-before" id="chgPreviewFromClassBefore"></span>
+          <span class="chg-arrow">→</span>
+          <span class="chg-preview-after" id="chgPreviewFromClassAfter"></span>
+        </div>
       </div>
     </div>
     <div class="chgmod-actions">
@@ -4758,13 +4776,23 @@ function updateChgPreview() {
     toBadge.style.border = `1.5px solid ${toColor}`;
   }
 
-  // クラス側の動きの併記（例: 3-2: 社会→理科 ／ 3-4: 理科→国語）
+  // 各クラスの授業の前後（例: 3-1: 道徳→総合 ／ 3-5: 道徳→総合）
   const toOrig = document.getElementById('chgToOrig').value.trim();
   const fromNext = document.getElementById('chgFromNext').value.trim();
-  const pairBits = [];
-  if (toOrig && toClass && type !== 'cancel') pairBits.push(`${toClass}: ${toOrig}→${toSubject || '─'}`);
-  if (fromNext && fromClass && type !== 'add') pairBits.push(`${fromClass}: ${fromSubject || '─'}→${fromNext}`);
-  document.getElementById('chgPreviewPair').textContent = pairBits.join('　');
+  const showToClassRow = !!(toOrig && toClass && type !== 'cancel');
+  document.getElementById('chgPreviewToClassRow').style.display = showToClassRow ? '' : 'none';
+  if (showToClassRow) {
+    document.getElementById('chgPreviewToClassName').textContent = toClass;
+    document.getElementById('chgPreviewToClassBefore').textContent = toOrig;
+    document.getElementById('chgPreviewToClassAfter').textContent = toSubject || '─';
+  }
+  const showFromClassRow = !!(fromNext && fromClass && type !== 'add');
+  document.getElementById('chgPreviewFromClassRow').style.display = showFromClassRow ? '' : 'none';
+  if (showFromClassRow) {
+    document.getElementById('chgPreviewFromClassName').textContent = fromClass;
+    document.getElementById('chgPreviewFromClassBefore').textContent = fromSubject || '─';
+    document.getElementById('chgPreviewFromClassAfter').textContent = fromNext;
+  }
 }
 
 document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
