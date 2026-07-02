@@ -565,8 +565,6 @@
     .chgmod-label { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
     .chgmod-from { font-size:.88rem; font-weight:700; padding:7px 12px; background:#f7fafc; border:1.5px solid var(--border); border-radius:8px; min-width:130px; line-height:1.4; }
     .chgmod-preview { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; flex-wrap:wrap; min-height:42px; }
-    .chgmod-cancel-check { display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:#8a4a00; cursor:pointer; user-select:none; }
-    .chgmod-cancel-check input { accent-color:#c05c00; width:14px; height:14px; }
     .chgmod-fromto { display:flex; gap:6px; align-items:stretch; }
     .chgmod-fromto .chgmod-section { flex:1; min-width:0; }
     .chgmod-arrow-mid { align-self:center; color:#94a3b8; font-weight:800; font-size:1.1rem; flex-shrink:0; }
@@ -1114,7 +1112,7 @@
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
-        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。授業が潰れた場合は「<b>変更後は空きコマ</b>」にチェックを入れます（授業なし＝空きコマ）。空きコマに授業が入った場合は変更前を空欄のままにします。あわせてクラス側の動き（追加→そのクラスの<b>元の教科</b>、中止→そのクラスの<b>代わりの教科</b>）も記録できます。</div>
+        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。授業が潰れた場合は変更後のクラスを「<b>空き</b>」にします（授業なし＝空きコマ）。空きコマに授業が入った場合は変更前を空欄のままにします。あわせてクラス側の動き（追加→そのクラスの<b>元の教科</b>、中止→そのクラスの<b>代わりの教科</b>）も記録できます。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">3</div>
@@ -1392,12 +1390,9 @@
         <div class="chgmod-arrow-mid">→</div>
         <div class="chgmod-section chgmod-section-to">
           <div class="chgmod-section-title">変更後（実際にやる授業）</div>
-          <label class="chgmod-cancel-check">
-            <input type="checkbox" id="chgCancelCheck">空きコマになる（潰れた）
-          </label>
           <div class="chgmod-field" id="chgToRow">
             <span class="chgmod-label">クラス</span>
-            <input class="form-input" id="chgToClass" type="text" list="chgToClassList" placeholder="例: 3-1、行事">
+            <input class="form-input" id="chgToClass" type="text" list="chgToClassList" placeholder="例: 3-1、行事（潰れたら空き）">
             <datalist id="chgToClassList"></datalist>
           </div>
           <div class="chgmod-field">
@@ -4697,32 +4692,19 @@ function updateChgFrom() {
   document.getElementById('chgFromSubjectList').innerHTML = getSubjects(fromClass).map(s => `<option value="${s.name}">`).join('');
   document.getElementById('chgFromSubject').value = fromRoom;
 
-  // 変更後の初期値（既存の中止変更ならチェックを入れる）
+  // 変更後の初期値（既存の中止変更なら「空き」を入れる）
   const isCancel = existingChg?.type === 'cancel';
-  document.getElementById('chgCancelCheck').checked = isCancel;
   const toClassEl = document.getElementById('chgToClass');
-  toClassEl.value = (isCancel || curIsAki) ? '' : (currentEntry?.name || '');
+  toClassEl.value = isCancel ? '空き' : curIsAki ? '' : (currentEntry?.name || '');
   updateChgToSubjects((isCancel || curIsAki) ? '' : currentEntry?.room);
   document.getElementById('chgToContent').value = (isCancel || curIsAki) ? '' : (currentEntry?.content || '');
   document.getElementById('chgToOrig').value   = existingChg?.toOrigRoom || '';
   document.getElementById('chgFromNext').value = existingChg?.fromNextRoom || '';
-  applyChgCancelState();
-}
-
-/* 中止チェックに応じて変更後フィールドの有効/無効を切り替え */
-function applyChgCancelState() {
-  const isCancel = document.getElementById('chgCancelCheck').checked;
-  ['chgToClass', 'chgToSubject', 'chgToContent'].forEach(id => {
-    const el = document.getElementById(id);
-    el.disabled = isCancel;
-    el.style.opacity = isCancel ? '.45' : '';
-  });
   updateChgPreview();
 }
 
-/* 入力内容から変更の種類を自動判定（授業なし＝「空き」クラス） */
+/* 入力内容から変更の種類を自動判定（授業なし＝「空き」クラス。変更後を空きにすると中止） */
 function detectChgType() {
-  if (document.getElementById('chgCancelCheck').checked) return 'cancel';
   const toClass = document.getElementById('chgToClass').value.trim();
   if (toClass === '空き') return 'cancel';
   const fromClass = document.getElementById('chgFromClass').value.trim();
@@ -4739,6 +4721,13 @@ function updateChgPairFields() {
   const showFromNext = type !== 'add' && !!fromClass && fromClass !== '空き';
   document.getElementById('chgToOrigField').style.display   = showToOrig ? '' : 'none';
   document.getElementById('chgFromNextField').style.display = showFromNext ? '' : 'none';
+  // 変更後が「空き」（中止）のときは教科・内容を無効化
+  const isCancel = type === 'cancel';
+  ['chgToSubject', 'chgToContent'].forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = isCancel;
+    el.style.opacity = isCancel ? '.45' : '';
+  });
   document.getElementById('chgToOrigList').innerHTML   = getSubjects(toClass).map(s => `<option value="${s.name}">`).join('');
   document.getElementById('chgFromNextList').innerHTML = getSubjects(fromClass).map(s => `<option value="${s.name}">`).join('');
 }
@@ -4803,7 +4792,6 @@ document.getElementById('chgFromClass').addEventListener('input', () => {
 document.getElementById('chgFromSubject').addEventListener('input', updateChgPreview);
 document.getElementById('chgToClass').addEventListener('input', () => updateChgToSubjects());
 document.getElementById('chgToSubject').addEventListener('input', updateChgPreview);
-document.getElementById('chgCancelCheck').addEventListener('change', applyChgCancelState);
 document.getElementById('chgToOrig').addEventListener('input', updateChgPreview);
 document.getElementById('chgFromNext').addEventListener('input', updateChgPreview);
 document.getElementById('chgModalSave').addEventListener('click', () => {
