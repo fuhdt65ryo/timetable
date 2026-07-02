@@ -569,16 +569,6 @@ function renderDay(ds) {
       continue;
     }
 
-    if (entry.chgType === 'cancel') {
-      const cancelFrom = [entry.fromName, entry.fromRoom].filter(Boolean).join(' ') || '授業';
-      html += `<div class="period-row" style="border-color:#d5dbe4;border-style:dashed">
-        <div class="p-num" style="background:#f7fafc"><span class="p-num-label" style="color:#a0aec0">${p}</span></div>
-        <div class="p-body"><span class="p-name" style="color:#9aa5b1;text-decoration:line-through">${esc(cancelFrom)}</span><span class="p-empty" style="margin-left:6px">なし</span></div>
-        ${badges ? `<div class="p-badges">${badges}</div>` : ''}
-      </div>`;
-      continue;
-    }
-
     const subColor = entry.room === '理科' ? '#2F9E44' : entry.name === '行事' ? '#868e96' : '#9C6ADE';
     const roomTag = entry.room ? `<span class="p-room" style="background:${pastel(subColor)};color:${subColor}">${esc(entry.room)}</span>` : '';
     const dotHtml = !isDark ? `<span class="p-dot" style="background:${color}"></span>` : '';

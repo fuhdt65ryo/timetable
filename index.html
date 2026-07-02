@@ -152,10 +152,6 @@
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
-    .cell-chg-badge.cell-chg-cancel { color:#9aa5b1; border-color:#c3ccd6; }
-    .cell-cancelled { background:#fafbfc !important; border:1.5px dashed #d5dbe4 !important; }
-    .c-cancel-from { font-size:clamp(.42rem,1.05vw,.62rem); font-weight:700; color:#9aa5b1; text-decoration:line-through; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-    .c-cancel-label { font-size:clamp(.4rem,1vw,.58rem); font-weight:700; color:#c0c8d2; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
     .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
     .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
@@ -1102,11 +1098,11 @@
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
-        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。コマが潰れた場合は「<b>変更後は授業なし</b>」にチェックを入れます。空きコマに授業が入った場合は変更前を空欄のままにします。</div>
+        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。授業が潰れた場合は「<b>変更後は空きコマ</b>」にチェックを入れます（授業なし＝空きコマ）。空きコマに授業が入った場合は変更前を空欄のままにします。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">3</div>
-        <div class="help-step-txt">変更されたコマには <span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">変更</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">中止</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">追加</span> バッジが表示されます。中止コマは元の授業が取り消し線で残ります。</div>
+        <div class="help-step-txt">変更されたコマには <span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">変更</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">中止</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">追加</span> バッジが表示され、教科名に「変更前→変更後」が出ます。中止コマは空きコマとして表示されます。</div>
       </div>
       <div class="help-note">授業変更コマは自動割り当てで使用されません。授業進捗は変更後の姿でカウントされます。</div>
     </div>
@@ -1371,7 +1367,7 @@
         </div>
       </div>
       <label class="chgmod-cancel-check">
-        <input type="checkbox" id="chgCancelCheck">変更後は授業なし（コマが潰れた）
+        <input type="checkbox" id="chgCancelCheck">変更後は空きコマ（授業が潰れた）
       </label>
       <div class="chgmod-row" id="chgToRow">
         <div class="chgmod-field" style="flex:1">
@@ -2231,13 +2227,11 @@ function _renderTimetableInner() {
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
       const isTaninOwn = !!(entry && CLASSES.find(c => c.name === entry.name)?.tanin && ['学活','総合','道徳'].includes(entry.room));
       const cellChg = getChgInfo(overrides[key]);
-      const isCancelledCell = cellChg?.type === 'cancel';
-      const hasJugyohenkou = !!cellChg && !isCancelledCell;
+      const hasJugyohenkou = !!cellChg;
       const MY_SUBJECTS = ['理科','学活','総合','道徳'];
       const henkouToMine = hasJugyohenkou && MY_SUBJECTS.includes(entry?.room);
       let cls = 'cell';
-      if (entry && !isCancelledCell) cls += ' has-entry';
-      if (isCancelledCell) cls += ' cell-cancelled';
+      if (entry) cls += ' has-entry';
       if (entry && (entry.content || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
@@ -2278,7 +2272,7 @@ function _renderTimetableInner() {
         const toText = _tRoom || _tName;
         chgSubjectText = { from: fromText, to: toText };
         const badgeLabel = cellChg.legacy ? '授業変更' : CHG_TYPE_LABEL[cellChg.type];
-        chgBadge = `<span class="cell-chg-badge${isCancelledCell ? ' cell-chg-cancel' : ''}">${badgeLabel}</span>`;
+        chgBadge = `<span class="cell-chg-badge">${badgeLabel}</span>`;
       }
 
       const absHolEntry = getHolidayEntry(dateStr);
@@ -2294,15 +2288,7 @@ function _renderTimetableInner() {
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
-      if (isCancelledCell) {
-        cell.innerHTML = `
-          <div class="c-text-wrap">
-            <div class="c-cancel-from">${esc(chgSubjectText ? chgSubjectText.from : '授業')}</div>
-            <div class="c-cancel-label">なし</div>
-          </div>
-          ${chgBadge}${absenceBadge}
-        `;
-      } else if (entry) {
+      if (entry) {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
@@ -2336,7 +2322,7 @@ function _renderTimetableInner() {
       const _d = parseDateStr(dateStr);
       const _ariaLabel = [
         `${_d.getMonth()+1}月${_d.getDate()}日(${DAY_JP[_d.getDay()]}) ${p}限`,
-        isCancelledCell ? '授業中止' : entry ? `${entry.name}${entry.room ? ' ' + entry.room : ''}` : '空き',
+        entry ? `${entry.name}${entry.room ? ' ' + entry.room : ''}` : '空き',
         isToday ? '今日' : isPast ? '過去' : '',
       ].filter(Boolean).join(' ');
       cell.setAttribute('aria-label', _ariaLabel);
@@ -2542,9 +2528,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const isBlanked = selKey && overrides[selKey] === null;
   const currentClass   = entry?.name    || '';
   const chgInfo       = getChgInfo(selKey ? overrides[selKey] : null);
-  const isCancelled   = chgInfo?.type === 'cancel';
   const chgFromLabel  = chgInfo ? [chgInfo.fromName, chgInfo.fromRoom].filter(Boolean).join(' ') || '空き' : '';
-  const chgToLabel    = chgInfo ? (isCancelled ? 'なし' : [currentClass, entry?.room].filter(Boolean).join(' ') || '(未入力)') : '';
+  const chgToLabel    = chgInfo ? [currentClass, entry?.room].filter(Boolean).join(' ') || '(未入力)' : '';
   const isGrade3Class = PROG_CLASSES.includes(currentClass);
   const isGrade2Class = PROG2_CLASSES.includes(currentClass);
   const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
@@ -2592,8 +2577,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
 
   document.getElementById('editBody').innerHTML = `
     ${isBlanked ? `<div style="padding:10px 12px 4px;font-size:.82rem;color:#718096;display:flex;align-items:center;gap:6px"><span style="font-size:1rem">🚫</span>このコマは空欄に設定されています。「元に戻す」で参照元の授業が入ります。</div>` : ''}
-    ${isCancelled ? `<div style="padding:10px 12px 4px;font-size:.82rem;color:#718096;display:flex;align-items:center;gap:6px"><span style="font-size:1rem">🚫</span>このコマの授業（${esc(chgFromLabel)}）は中止になっています。</div>` : ''}
-    <div class="edit-form" style="${(isBlanked || isCancelled) ? 'display:none' : ''}">
+    <div class="edit-form" style="${isBlanked ? 'display:none' : ''}">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
         ${buildCdd('eClass', classNames, currentClass, '例: 3-1、行事')}
@@ -3373,7 +3357,7 @@ function renderChanges() {
     const origEntry = (chg.fromName || chg.fromRoom)
       ? { name: chg.fromName, room: chg.fromRoom, color: getColor(chg.fromName, chg.fromRoom) }
       : (chg.type === 'add' ? null : baseEntry);
-    const toEntry = (chg.type === 'cancel' || !newEntry.name) ? null : newEntry;
+    const toEntry = newEntry.name ? newEntry : null;
 
     changes.push({ dateStr, date, period, from: origEntry, to: toEntry });
   });
@@ -4665,9 +4649,11 @@ function applyChgCancelState() {
   updateChgPreview();
 }
 
-/* 入力内容から変更の種類を自動判定（「空き」は授業なし扱い） */
+/* 入力内容から変更の種類を自動判定（授業なし＝「空き」クラス） */
 function detectChgType() {
   if (document.getElementById('chgCancelCheck').checked) return 'cancel';
+  const toClass = document.getElementById('chgToClass').value.trim();
+  if (toClass === '空き') return 'cancel';
   const fromClass = document.getElementById('chgFromClass').value.trim();
   const fromSubject = document.getElementById('chgFromSubject').value.trim();
   return ((fromClass && fromClass !== '空き') || fromSubject) ? 'replace' : 'add';
@@ -4698,9 +4684,10 @@ function updateChgPreview() {
   document.getElementById('chgPreviewFrom').textContent = fromText;
   const toBadge = document.getElementById('chgPreviewTo');
   if (type === 'cancel') {
-    toBadge.textContent = 'なし';
-    toBadge.style.background = '#f7fafc';
-    toBadge.style.border = '1.5px dashed #cbd5e0';
+    const akiColor = getColor('空き', '') || '#B07D4E';
+    toBadge.textContent = '空き';
+    toBadge.style.background = pastelizeColor(akiColor);
+    toBadge.style.border = `1.5px solid ${akiColor}`;
   } else {
     toBadge.textContent = toText || '（未入力）';
     toBadge.style.background = pastelizeColor(toColor);
@@ -4738,7 +4725,8 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
 
   if (type === 'cancel') {
     if (!fromClass && !fromSubject) return; // 中止対象の授業が未入力
-    overrides[ok] = { name: '', room: '', content: '', chgType: 'cancel', fromName: fromClass, fromRoom: fromSubject };
+    // 授業なし＝「空き」クラスとして保存
+    overrides[ok] = { name: '空き', room: '', content: '', color: getColor('空き', ''), chgType: 'cancel', fromName: fromClass, fromRoom: fromSubject };
   } else {
     if (!toClass) return;
     overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), chgType: type, fromName: fromClass, fromRoom: fromSubject };
