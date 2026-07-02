@@ -152,6 +152,10 @@
     /* ── 今日列のハイライト ── */
     .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
+    .cell-chg-badge.cell-chg-cancel { color:#9aa5b1; border-color:#c3ccd6; }
+    .cell-cancelled { background:#fafbfc !important; border:1.5px dashed #d5dbe4 !important; }
+    .c-cancel-from { font-size:clamp(.42rem,1.05vw,.62rem); font-weight:700; color:#9aa5b1; text-decoration:line-through; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .c-cancel-label { font-size:clamp(.4rem,1vw,.58rem); font-weight:700; color:#c0c8d2; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
     .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
     .cell-absence-shuccho { color:#2E7D32; border:1.5px solid #388E3C; }
@@ -562,6 +566,11 @@
     .chgmod-label { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
     .chgmod-from { font-size:.88rem; font-weight:700; padding:7px 12px; background:#f7fafc; border:1.5px solid var(--border); border-radius:8px; min-width:130px; line-height:1.4; }
     .chgmod-preview { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; flex-wrap:wrap; min-height:42px; }
+    .chgmod-cancel-check { display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:#8a4a00; cursor:pointer; user-select:none; }
+    .chgmod-cancel-check input { accent-color:#c05c00; width:14px; height:14px; }
+    .chgmod-preview .chg-type-badge { padding:2px 8px; border-radius:5px; font-size:.72rem; font-weight:800; background:#e2e8f0; color:#4a5568; }
+    .chgmod-preview .chg-type-badge.chg-type-cancel { background:#fde8e8; color:#c53030; }
+    .chgmod-preview .chg-type-badge.chg-type-add { background:#e3f2fd; color:#1565c0; }
     .chgmod-preview .chg-from-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; background:#f7fafc; border:1.5px solid var(--border); }
     .chgmod-preview .chg-to-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; }
     .chgmod-actions { display:flex; gap:8px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--border); }
@@ -1086,20 +1095,20 @@
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
-      <p style="font-size:.83rem;line-height:1.7;margin-bottom:10px">特定の日・時限のクラスを別のクラスに替える機能です。右ペインの「授業変更一覧」に記録されます。</p>
+      <p style="font-size:.83rem;line-height:1.7;margin-bottom:10px">特定の日・時限のコマの変更を記録する機能です。<b>差し替え</b>（別の授業に変更）・<b>中止</b>（コマが潰れた）・<b>追加</b>（空きコマに授業が入った）の3種類を、入力内容から自動判定して記録します。右ペインの「授業変更一覧」にも表示されます。</p>
       <div class="help-step">
         <div class="help-step-num">1</div>
-        <div class="help-step-txt">変更したいセルを開き、編集パネルの「<b>授業変更を入力</b>」ボタンをタップします。</div>
+        <div class="help-step-txt">変更したいセルを開き、編集パネルの「<b>授業変更</b>」ボタンをタップします。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
-        <div class="help-step-txt">変更前のクラス・教科と、変更後のクラス・教科を入力して保存します。</div>
+        <div class="help-step-txt">変更前・変更後のクラスと教科を入力して保存します。コマが潰れた場合は「<b>変更後は授業なし</b>」にチェックを入れます。空きコマに授業が入った場合は変更前を空欄のままにします。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">3</div>
-        <div class="help-step-txt">変更されたコマには <span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">授業変更</span> バッジが表示され、教科名に「変更前→変更後」が出ます。</div>
+        <div class="help-step-txt">変更されたコマには <span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">変更</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">中止</span>／<span class="help-badge help-badge-chg" style="font-size:.65rem;padding:1px 5px">追加</span> バッジが表示されます。中止コマは元の授業が取り消し線で残ります。</div>
       </div>
-      <div class="help-note">授業変更コマは自動割り当てで使用されません。</div>
+      <div class="help-note">授業変更コマは自動割り当てで使用されません。授業進捗は変更後の姿でカウントされます。</div>
     </div>
   </div>
 
@@ -1361,7 +1370,10 @@
           <datalist id="chgFromSubjectList"></datalist>
         </div>
       </div>
-      <div class="chgmod-row">
+      <label class="chgmod-cancel-check">
+        <input type="checkbox" id="chgCancelCheck">変更後は授業なし（コマが潰れた）
+      </label>
+      <div class="chgmod-row" id="chgToRow">
         <div class="chgmod-field" style="flex:1">
           <span class="chgmod-label">変更後　クラス</span>
           <input class="form-input" id="chgToClass" type="text" list="chgToClassList" placeholder="例: 3-1、行事">
@@ -1373,13 +1385,14 @@
           <datalist id="chgToSubjectList"></datalist>
         </div>
       </div>
-      <div class="chgmod-row">
+      <div class="chgmod-row" id="chgContentRow">
         <div class="chgmod-field" style="flex:1">
           <span class="chgmod-label">授業内容（任意）</span>
           <input class="form-input" id="chgToContent" type="text" placeholder="例: 光合成のまとめ">
         </div>
       </div>
       <div class="chgmod-preview" id="chgPreview">
+        <span id="chgPreviewType" class="chg-type-badge"></span>
         <span id="chgPreviewFrom" class="chg-from-badge"></span>
         <span class="chg-arrow">→</span>
         <span id="chgPreviewTo" class="chg-to-badge"></span>
@@ -2012,6 +2025,22 @@ function isOverride(dateStr, period) {
   return overrideKey(dateStr, period) in overrides;
 }
 
+/* ── 授業変更（新形式 chgType: replace/cancel/add、旧形式 jugyohenkou は表示のみ） ── */
+const CHG_TYPE_LABEL = { replace: '変更', cancel: '中止', add: '追加' };
+function getChgInfo(entry) {
+  if (!entry) return null;
+  if (entry.chgType) return { type: entry.chgType, legacy: false, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  if (entry.jugyohenkou) return { type: 'replace', legacy: true, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  return null;
+}
+/* 編集時に既存の変更情報を失わないための引き継ぎ用プロパティ */
+function chgPropsOf(entry) {
+  if (!entry) return {};
+  if (entry.chgType)     return { chgType: entry.chgType, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  if (entry.jugyohenkou) return { jugyohenkou: true, fromName: entry.fromName || '', fromRoom: entry.fromRoom || '' };
+  return {};
+}
+
 
 /* ── 色・クラス ── */
 const DARK_CLASSES  = new Set(['裁量']);
@@ -2201,11 +2230,14 @@ function _renderTimetableInner() {
       const isDark  = entry && DARK_CLASSES.has(entry.name);
       const isLight = entry && LIGHT_CLASSES.has(entry.name);
       const isTaninOwn = !!(entry && CLASSES.find(c => c.name === entry.name)?.tanin && ['学活','総合','道徳'].includes(entry.room));
-      const hasJugyohenkou = overrides[key]?.jugyohenkou;
+      const cellChg = getChgInfo(overrides[key]);
+      const isCancelledCell = cellChg?.type === 'cancel';
+      const hasJugyohenkou = !!cellChg && !isCancelledCell;
       const MY_SUBJECTS = ['理科','学活','総合','道徳'];
       const henkouToMine = hasJugyohenkou && MY_SUBJECTS.includes(entry?.room);
       let cls = 'cell';
-      if (entry) cls += ' has-entry';
+      if (entry && !isCancelledCell) cls += ' has-entry';
+      if (isCancelledCell) cls += ' cell-cancelled';
       if (entry && (entry.content || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
@@ -2213,7 +2245,7 @@ function _renderTimetableInner() {
       if (isNarrowCol)  cls += ' narrow';
       if (ovr) {
         const ovrEntry = overrides[key];
-        if (ovrEntry !== null && ovrEntry?.name && ovrEntry?.jugyohenkou) cls += ' modified';
+        if (ovrEntry !== null && ovrEntry?.name && (ovrEntry?.jugyohenkou || ovrEntry?.chgType)) cls += ' modified';
         if (ovrEntry?.rinji) cls += ' rinji';
       }
       if (isSel)    cls += ' selected';
@@ -2232,20 +2264,21 @@ function _renderTimetableInner() {
       // 授業変更の変更前→変更後テキスト
       let chgBadge = '';
       let chgSubjectText = null;
-      if (hasJugyohenkou) {
+      if (cellChg) {
         const ovrEntry = overrides[ok2];
         const baseE  = BASE[`${naturalDi}-${p}`];
         const _tName = ovrEntry.name || '';
         const _tRoom = ovrEntry.room || '';
-        const _fName = ovrEntry.fromName || '';
-        const _fRoom = ovrEntry.fromRoom || '';
+        const _fName = cellChg.fromName;
+        const _fRoom = cellChg.fromRoom;
         // セル上部（_tName）と同じクラスは省略
         const fromText = (_fName || _fRoom)
           ? [(_fName !== _tName ? _fName : ''), _fRoom].filter(Boolean).join(' ')
           : (baseE ? (baseE.room || baseE.name) : '空き');
         const toText = _tRoom || _tName;
         chgSubjectText = { from: fromText, to: toText };
-        chgBadge = `<span class="cell-chg-badge">授業変更</span>`;
+        const badgeLabel = cellChg.legacy ? '授業変更' : CHG_TYPE_LABEL[cellChg.type];
+        chgBadge = `<span class="cell-chg-badge${isCancelledCell ? ' cell-chg-cancel' : ''}">${badgeLabel}</span>`;
       }
 
       const absHolEntry = getHolidayEntry(dateStr);
@@ -2253,7 +2286,7 @@ function _renderTimetableInner() {
         ? `<span class="cell-absence-badge cell-absence-${absHolEntry.type}">${absHolEntry.type === 'nenkyuu' ? '年休' : '出張'}</span>`
         : '';
 
-      const hasTopBadge = !!(ovr && overrides[key]?.rinji) || hasJugyohenkou;
+      const hasTopBadge = !!(ovr && overrides[key]?.rinji) || !!cellChg;
       const hasBtmBadge = !!(srcBadge || absenceBadge || (entry && entry.name === '行事'));
       if (hasTopBadge) cls += ' has-top-badge';
       if (hasBtmBadge) cls += ' has-btm-badge';
@@ -2261,7 +2294,15 @@ function _renderTimetableInner() {
       const cell = el('div', cls);
       cell.style.cssText = `grid-column:${col};grid-row:${periodRow}`;
 
-      if (entry) {
+      if (isCancelledCell) {
+        cell.innerHTML = `
+          <div class="c-text-wrap">
+            <div class="c-cancel-from">${esc(chgSubjectText ? chgSubjectText.from : '授業')}</div>
+            <div class="c-cancel-label">なし</div>
+          </div>
+          ${chgBadge}${absenceBadge}
+        `;
+      } else if (entry) {
         const color = getColor(entry.name, entry.room) || entry.color || '#667eea';
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
@@ -2295,7 +2336,7 @@ function _renderTimetableInner() {
       const _d = parseDateStr(dateStr);
       const _ariaLabel = [
         `${_d.getMonth()+1}月${_d.getDate()}日(${DAY_JP[_d.getDay()]}) ${p}限`,
-        entry ? `${entry.name}${entry.room ? ' ' + entry.room : ''}` : '空き',
+        isCancelledCell ? '授業中止' : entry ? `${entry.name}${entry.room ? ' ' + entry.room : ''}` : '空き',
         isToday ? '今日' : isPast ? '過去' : '',
       ].filter(Boolean).join(' ');
       cell.setAttribute('aria-label', _ariaLabel);
@@ -2500,9 +2541,10 @@ function refreshEditForm() {
 function renderEditForm(entry, isOvr, baseEntry) {
   const isBlanked = selKey && overrides[selKey] === null;
   const currentClass   = entry?.name    || '';
-  const isJugyoHenkou = !!(entry?.jugyohenkou);
-  const chgFromLabel  = isJugyoHenkou ? [entry.fromName, entry.fromRoom].filter(Boolean).join(' ') || '(不明)' : '';
-  const chgToLabel    = isJugyoHenkou ? [currentClass, entry?.room].filter(Boolean).join(' ') : '';
+  const chgInfo       = getChgInfo(selKey ? overrides[selKey] : null);
+  const isCancelled   = chgInfo?.type === 'cancel';
+  const chgFromLabel  = chgInfo ? [chgInfo.fromName, chgInfo.fromRoom].filter(Boolean).join(' ') || '空き' : '';
+  const chgToLabel    = chgInfo ? (isCancelled ? 'なし' : [currentClass, entry?.room].filter(Boolean).join(' ') || '(未入力)') : '';
   const isGrade3Class = PROG_CLASSES.includes(currentClass);
   const isGrade2Class = PROG2_CLASSES.includes(currentClass);
   const targetClasses = isGrade3Class ? PROG_CLASSES : isGrade2Class ? PROG2_CLASSES : null;
@@ -2548,14 +2590,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
     return `<div class="src-gp">${pp}</div>${cells}`;
   }).join('');
 
-  const fromClass   = entry?.fromName || (baseEntry?.name || '');
-  const fromSubject = entry?.fromRoom  || (baseEntry?.room || '');
-  const fromClassDatalist = CLASSES.map(c => `<option value="${esc(c.name)}">`).join('');
-  const fromSubjectDatalist = getSubjects(fromClass).map(s => `<option value="${esc(s.name)}">`).join('');
-
   document.getElementById('editBody').innerHTML = `
     ${isBlanked ? `<div style="padding:10px 12px 4px;font-size:.82rem;color:#718096;display:flex;align-items:center;gap:6px"><span style="font-size:1rem">🚫</span>このコマは空欄に設定されています。「元に戻す」で参照元の授業が入ります。</div>` : ''}
-    <div class="edit-form" style="${isBlanked ? 'display:none' : ''}">
+    ${isCancelled ? `<div style="padding:10px 12px 4px;font-size:.82rem;color:#718096;display:flex;align-items:center;gap:6px"><span style="font-size:1rem">🚫</span>このコマの授業（${esc(chgFromLabel)}）は中止になっています。</div>` : ''}
+    <div class="edit-form" style="${(isBlanked || isCancelled) ? 'display:none' : ''}">
       <div class="form-group fg-class">
         <label class="form-label">クラス</label>
         ${buildCdd('eClass', classNames, currentClass, '例: 3-1、行事')}
@@ -2581,21 +2619,12 @@ function renderEditForm(entry, isOvr, baseEntry) {
         <datalist id="eContentList">${datalistHtml}</datalist>
       </div>` : ''}
     </div>
-    <div id="eChgWrap" style="display:${isJugyoHenkou ? 'flex' : 'none'};flex-direction:column;gap:6px;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1.5px solid #93c5fd;margin-top:2px">
-      <div style="font-size:.72rem;font-weight:700;color:#1d4ed8;margin-bottom:2px">変更前の授業</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <div class="form-group" style="flex:1;min-width:100px;margin:0">
-          <label class="form-label">クラス</label>
-          <input class="form-input" id="eFromClass" type="text" list="eFromClassList" value="${esc(fromClass)}">
-          <datalist id="eFromClassList">${fromClassDatalist}</datalist>
-        </div>
-        <div class="form-group" style="flex:1;min-width:100px;margin:0">
-          <label class="form-label">教科</label>
-          <input class="form-input" id="eFromSubject" type="text" list="eFromSubjectList" value="${esc(fromSubject)}">
-          <datalist id="eFromSubjectList">${fromSubjectDatalist}</datalist>
-        </div>
-      </div>
-    </div>
+    ${chgInfo ? `
+    <div id="eChgWrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1.5px solid #93c5fd;margin-top:2px">
+      <span style="font-size:.7rem;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:4px;padding:1px 7px">${chgInfo.legacy ? '授業変更' : CHG_TYPE_LABEL[chgInfo.type]}</span>
+      <span style="font-size:.82rem;font-weight:700;color:#334155">${esc(chgFromLabel)} <span style="color:#94a3b8">→</span> ${esc(chgToLabel)}</span>
+      <button class="btn btn-secondary" id="eBtnChgClear" style="font-size:.72rem;padding:4px 10px;margin-left:auto">変更を解除</button>
+    </div>` : ''}
     <div class="edit-actions">
       <div class="src-grid-wrap">
         <div class="src-grid-label">参照元</div>
@@ -2608,7 +2637,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
       </div>
       <div style="display:flex;gap:6px;margin-left:auto;align-self:flex-end;flex-wrap:wrap">
         <button class="btn btn-secondary" id="eBtnJishu" style="font-size:.8rem;padding:6px 12px">自習</button>
-        <button class="btn btn-secondary${isJugyoHenkou ? ' btn-chg-active' : ''}" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">${isJugyoHenkou ? '✓ 授業変更' : '授業変更'}</button>
+        <button class="btn btn-secondary${chgInfo ? ' btn-chg-active' : ''}" id="eBtnChg" style="font-size:.8rem;padding:6px 12px">${chgInfo ? '✓ 授業変更' : '授業変更'}</button>
         ${isBlanked
           ? `<button class="btn btn-secondary" id="eBtnRestore" style="font-size:.8rem;padding:6px 12px">↩ 元に戻す</button>`
           : `<button class="btn btn-clear" id="eBtnClear">空欄にする</button>`
@@ -2651,31 +2680,13 @@ function renderEditForm(entry, isOvr, baseEntry) {
     autoSave(false); schedulePush();
   });
 
-  document.getElementById('eBtnChg')?.addEventListener('click', () => {
-    const wrap = document.getElementById('eChgWrap');
-    const btn  = document.getElementById('eBtnChg');
-    const isOn = wrap.style.display !== 'none';
-    if (isOn) {
-      wrap.style.display = 'none';
-      btn.textContent = '授業変更';
-      btn.classList.remove('btn-chg-active');
-    } else {
-      wrap.style.display = 'flex';
-      btn.textContent = '✓ 授業変更';
-      btn.classList.add('btn-chg-active');
-      if (!document.getElementById('eFromClass').value) {
-        const [ds, pStr] = selKeyParts();
-        const d = parseDateStr(ds);
-        const base = BASE[`${dayIdx(d)}-${+pStr}`];
-        document.getElementById('eFromClass').value   = base?.name || '';
-        document.getElementById('eFromSubject').value = base?.room || '';
-      }
-    }
-    autoSave(false); schedulePush();
+  document.getElementById('eBtnChgClear')?.addEventListener('click', () => {
+    // 変更を解除して参照元（基本時間割）の状態に戻す
+    delete overrides[selKey];
+    save();
+    schedulePush();
+    rerender();
   });
-
-  document.getElementById('eFromClass')?.addEventListener('blur', _as);
-  document.getElementById('eFromSubject')?.addEventListener('blur', _as);
 
   document.querySelectorAll('.src-gc').forEach(gc => {
     gc.addEventListener('click', () => {
@@ -2787,11 +2798,7 @@ function autoSave(doRerender = true) {
   // UIのチェックボックスも同期
   const rinjCb = document.getElementById('eRinji');
   if (rinjCb && rinjiForcedByProg) rinjCb.checked = true;
-  const chgWrap = document.getElementById('eChgWrap');
-  const isChgOn = chgWrap && chgWrap.style.display !== 'none';
-  const fromName = isChgOn ? (document.getElementById('eFromClass')?.value.trim() || '') : '';
-  const fromRoom = isChgOn ? (document.getElementById('eFromSubject')?.value.trim() || '') : '';
-  const chgProps = isChgOn ? { jugyohenkou:true, fromName, fromRoom } : {};
+  const chgProps = chgPropsOf(overrides[selKey]);
   overrides[selKey] = { name:klass, room:subject, content:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
   save();
   if (!doRerender) return;
@@ -3100,7 +3107,7 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
       if (ovr === null) continue; // 空欄化済みは除外
       if (ovr && ovr.rinji) continue; // 臨時は絶対に動かさない
       // 授業変更で理科以外に変更されたコマは割り当て不可
-      if (ovr && ovr.jugyohenkou && ovr.room !== '理科') continue;
+      if (ovr && (ovr.jugyohenkou || ovr.chgType) && ovr.room !== '理科') continue;
       // 手動入力でも進捗リスト内の授業なら再割り当て可。進捗リスト外の手動入力は固定。
       if (ovr && ovr.content && !ovr.autoAssigned && !lessonList.includes(ovr.content)) continue;
       slots.push({ dateStr, period: p, entry, date: new Date(d) });
@@ -3284,7 +3291,7 @@ function applyAutoAssign() {
     Object.keys(overrides).forEach(key => {
       const e = overrides[key];
       if (!e || !classes.includes(e.name)) return;
-      if (e.jugyohenkou) return;
+      if (e.jugyohenkou || e.chgType) return;
       if (e.autoAssigned || planLessons.has(e.content)) {
         const parts = key.split('-');
         const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
@@ -3302,9 +3309,7 @@ function applyAutoAssign() {
         const currentEntry = slot.entry || getEntry(slot.dateStr, slot.period);
         if (!currentEntry) { missing.push(cls); return; }
         const existingOvr = overrides[ok];
-        const chgProps = (existingOvr && existingOvr.jugyohenkou)
-          ? { jugyohenkou: true, fromName: existingOvr.fromName, fromRoom: existingOvr.fromRoom }
-          : {};
+        const chgProps = chgPropsOf(existingOvr);
         overrides[ok] = { name: currentEntry.name, room: currentEntry.room, content: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
         assigned++;
       });
@@ -3359,16 +3364,18 @@ function renderChanges() {
     const date    = parseDateStr(dateStr);
     if (date < today) return;
 
+    if (newEntry === null) return;
+    const chg = getChgInfo(newEntry);
+    if (!chg) return;
+
     const naturalDi = dayIdx(date);
     const baseEntry = BASE[`${naturalDi}-${period}`] || null;
-    const origEntry = (newEntry?.fromName || newEntry?.fromRoom)
-      ? { name: newEntry.fromName || '', room: newEntry.fromRoom || '', color: getColor(newEntry.fromName||'', newEntry.fromRoom||'') }
-      : baseEntry;
+    const origEntry = (chg.fromName || chg.fromRoom)
+      ? { name: chg.fromName, room: chg.fromRoom, color: getColor(chg.fromName, chg.fromRoom) }
+      : (chg.type === 'add' ? null : baseEntry);
+    const toEntry = (chg.type === 'cancel' || !newEntry.name) ? null : newEntry;
 
-    if (newEntry === null) return;
-    if (!newEntry?.jugyohenkou) return;
-
-    changes.push({ dateStr, date, period, from: origEntry, to: newEntry });
+    changes.push({ dateStr, date, period, from: origEntry, to: toEntry });
   });
 
   changes.sort((a, b) => a.date - b.date || a.period - b.period);
@@ -4624,23 +4631,46 @@ function updateChgFrom() {
   const period = +document.getElementById('chgPeriod').value;
   if (!dateStr || !period) return;
 
-  const d = parseDateStr(dateStr);
   const ok = overrideKey(dateStr, period);
-  const existing = overrides[ok];
+  const existingChg = getChgInfo(overrides[ok]);
 
   // 既存の授業変更があればその変更前を、なければ現在表示されている内容を初期値に
+  // （「空き」クラスは授業なし扱い → 変更前は空欄＝追加として判定される）
   const currentEntry = getEntry(dateStr, period);
-  const fromClass = existing?.fromName ?? (currentEntry?.name || '');
-  const fromRoom  = existing?.fromRoom ?? (currentEntry?.room || '');
+  const curIsAki = !currentEntry || currentEntry.name === '空き';
+  const fromClass = existingChg ? existingChg.fromName : (curIsAki ? '' : currentEntry.name || '');
+  const fromRoom  = existingChg ? existingChg.fromRoom : (curIsAki ? '' : currentEntry.room || '');
   document.getElementById('chgFromClass').value = fromClass;
   document.getElementById('chgFromSubjectList').innerHTML = getSubjects(fromClass).map(s => `<option value="${s.name}">`).join('');
   document.getElementById('chgFromSubject').value = fromRoom;
 
-  // 変更後の初期値
+  // 変更後の初期値（既存の中止変更ならチェックを入れる）
+  const isCancel = existingChg?.type === 'cancel';
+  document.getElementById('chgCancelCheck').checked = isCancel;
   const toClassEl = document.getElementById('chgToClass');
-  toClassEl.value = currentEntry?.name || (CLASSES[0]?.name || '');
-  updateChgToSubjects(currentEntry?.room);
-  document.getElementById('chgToContent').value = currentEntry?.content || '';
+  toClassEl.value = (isCancel || curIsAki) ? '' : (currentEntry?.name || '');
+  updateChgToSubjects((isCancel || curIsAki) ? '' : currentEntry?.room);
+  document.getElementById('chgToContent').value = (isCancel || curIsAki) ? '' : (currentEntry?.content || '');
+  applyChgCancelState();
+}
+
+/* 中止チェックに応じて変更後フィールドの有効/無効を切り替え */
+function applyChgCancelState() {
+  const isCancel = document.getElementById('chgCancelCheck').checked;
+  ['chgToClass', 'chgToSubject', 'chgToContent'].forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = isCancel;
+    el.style.opacity = isCancel ? '.45' : '';
+  });
+  updateChgPreview();
+}
+
+/* 入力内容から変更の種類を自動判定（「空き」は授業なし扱い） */
+function detectChgType() {
+  if (document.getElementById('chgCancelCheck').checked) return 'cancel';
+  const fromClass = document.getElementById('chgFromClass').value.trim();
+  const fromSubject = document.getElementById('chgFromSubject').value.trim();
+  return ((fromClass && fromClass !== '空き') || fromSubject) ? 'replace' : 'add';
 }
 
 function updateChgToSubjects(preselectRoom) {
@@ -4652,19 +4682,30 @@ function updateChgToSubjects(preselectRoom) {
 }
 
 function updateChgPreview() {
+  const type = detectChgType();
   const fromClass = document.getElementById('chgFromClass').value;
   const fromSubject = document.getElementById('chgFromSubject').value || '';
-  const fromText = fromClass + (fromSubject ? ' ' + fromSubject : '');
+  const fromText = (fromClass + (fromSubject ? ' ' + fromSubject : '')) || '空き';
   const toClass = document.getElementById('chgToClass').value;
   const toSubject = document.getElementById('chgToSubject').value || '';
   const toColor = getColor(toClass, toSubject);
   const toText = toClass + (toSubject && toSubject !== '──' ? ' ' + toSubject : '');
 
+  const typeBadge = document.getElementById('chgPreviewType');
+  typeBadge.textContent = CHG_TYPE_LABEL[type];
+  typeBadge.className = `chg-type-badge${type === 'cancel' ? ' chg-type-cancel' : type === 'add' ? ' chg-type-add' : ''}`;
+
   document.getElementById('chgPreviewFrom').textContent = fromText;
   const toBadge = document.getElementById('chgPreviewTo');
-  toBadge.textContent = toText;
-  toBadge.style.background = pastelizeColor(toColor);
-  toBadge.style.border = `1.5px solid ${toColor}`;
+  if (type === 'cancel') {
+    toBadge.textContent = 'なし';
+    toBadge.style.background = '#f7fafc';
+    toBadge.style.border = '1.5px dashed #cbd5e0';
+  } else {
+    toBadge.textContent = toText || '（未入力）';
+    toBadge.style.background = pastelizeColor(toColor);
+    toBadge.style.border = `1.5px solid ${toColor}`;
+  }
 }
 
 document.getElementById('chgModalClose').addEventListener('click', closeChangeModal);
@@ -4682,17 +4723,26 @@ document.getElementById('chgFromClass').addEventListener('input', () => {
 document.getElementById('chgFromSubject').addEventListener('input', updateChgPreview);
 document.getElementById('chgToClass').addEventListener('input', () => updateChgToSubjects());
 document.getElementById('chgToSubject').addEventListener('input', updateChgPreview);
+document.getElementById('chgCancelCheck').addEventListener('change', applyChgCancelState);
 document.getElementById('chgModalSave').addEventListener('click', () => {
   const dateStr = document.getElementById('chgDate').value;
   const period = +document.getElementById('chgPeriod').value;
+  if (!dateStr || !period) return;
+  const type = detectChgType();
   const fromClass = document.getElementById('chgFromClass').value.trim();
   const fromSubject = document.getElementById('chgFromSubject').value.trim() || '';
   const toClass = document.getElementById('chgToClass').value;
   const toSubject = document.getElementById('chgToSubject').value || '';
   const toContent = document.getElementById('chgToContent').value.trim() || '';
-  if (!dateStr || !period || !toClass) return;
   const ok = overrideKey(dateStr, period);
-  overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), jugyohenkou: true, fromName: fromClass, fromRoom: fromSubject };
+
+  if (type === 'cancel') {
+    if (!fromClass && !fromSubject) return; // 中止対象の授業が未入力
+    overrides[ok] = { name: '', room: '', content: '', chgType: 'cancel', fromName: fromClass, fromRoom: fromSubject };
+  } else {
+    if (!toClass) return;
+    overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), chgType: type, fromName: fromClass, fromRoom: fromSubject };
+  }
   save();
   schedulePush();
   rerender();

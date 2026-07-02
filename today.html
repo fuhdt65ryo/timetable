@@ -552,9 +552,12 @@ function renderDay(ds) {
 
     const isAbsent = holEntry && absenceCoversPeriod(holEntry, p);
     const absType  = isAbsent ? holEntry.type : null;
+    const chgLabel = entry?.jugyohenkou ? '変更'
+      : entry?.chgType ? ({ replace:'変更', cancel:'中止', add:'追加' })[entry.chgType] || '変更'
+      : '';
     const badges = [
-      entry?.rinji       ? `<span class="badge badge-rinji">臨</span>` : '',
-      entry?.jugyohenkou ? `<span class="badge badge-chg">変更</span>` : '',
+      entry?.rinji ? `<span class="badge badge-rinji">臨</span>` : '',
+      chgLabel     ? `<span class="badge badge-chg">${chgLabel}</span>` : '',
       isAbsent && absType === 'nenkyuu' ? `<span class="badge badge-nenkyuu">年休</span>` : '',
       isAbsent && absType === 'shuccho' ? `<span class="badge badge-shuccho">出張</span>` : '',
     ].filter(Boolean).join('');
@@ -563,6 +566,16 @@ function renderDay(ds) {
       html += `<div class="period-row" style="${rowStyle}">
         <div class="p-num" style="background:${numBg}"><span class="p-num-label" style="color:${numColor}">${p}</span></div>
         <span class="p-empty">―</span></div>`;
+      continue;
+    }
+
+    if (entry.chgType === 'cancel') {
+      const cancelFrom = [entry.fromName, entry.fromRoom].filter(Boolean).join(' ') || '授業';
+      html += `<div class="period-row" style="border-color:#d5dbe4;border-style:dashed">
+        <div class="p-num" style="background:#f7fafc"><span class="p-num-label" style="color:#a0aec0">${p}</span></div>
+        <div class="p-body"><span class="p-name" style="color:#9aa5b1;text-decoration:line-through">${esc(cancelFrom)}</span><span class="p-empty" style="margin-left:6px">なし</span></div>
+        ${badges ? `<div class="p-badges">${badges}</div>` : ''}
+      </div>`;
       continue;
     }
 
