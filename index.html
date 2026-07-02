@@ -135,7 +135,7 @@
     .period-num  { font-size:clamp(.7rem,1.6vw,1rem); font-weight:800; color:var(--accent); }
     .period-time { font-size:clamp(.38rem,0.8vw,.5rem); color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(55px,10vh); align-self:stretch; }
+    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(70px,12.5vh); align-self:stretch; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
     .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
     .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
@@ -402,7 +402,7 @@
     @media (max-width:640px) {
       .edit-form { grid-template-columns:1fr 1fr; }
       .edit-form .fg-content { grid-column:1/-1; }
-      .cell { min-height:74px; padding:4px; }
+      .cell { min-height:92px; padding:4px; }
       .c-content { display:none; }
       .period-time { display:none; }
       .hol-span-icon { font-size:1.1rem; }
@@ -430,7 +430,7 @@
       .cell-day { font-size:.78rem; padding:4px 3px; scroll-snap-align: start; }
       .day-name { font-size:.7rem; }
       .day-date { font-size:.85rem; }
-      .cell { min-height:76px; scroll-snap-align: start; }
+      .cell { min-height:94px; scroll-snap-align: start; }
       .c-class   { font-size:.78rem; }
       .c-subject { font-size:.64rem; display:block !important; }
       .c-content { display:none; }
