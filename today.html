@@ -552,12 +552,9 @@ function renderDay(ds) {
 
     const isAbsent = holEntry && absenceCoversPeriod(holEntry, p);
     const absType  = isAbsent ? holEntry.type : null;
-    const chgLabel = entry?.jugyohenkou ? '変更'
-      : entry?.chgType ? ({ replace:'変更', cancel:'中止', add:'追加' })[entry.chgType] || '変更'
-      : '';
     const badges = [
       entry?.rinji ? `<span class="badge badge-rinji">臨</span>` : '',
-      chgLabel     ? `<span class="badge badge-chg">${chgLabel}</span>` : '',
+      (entry?.jugyohenkou || entry?.chgType) ? `<span class="badge badge-chg">変更</span>` : '',
       isAbsent && absType === 'nenkyuu' ? `<span class="badge badge-nenkyuu">年休</span>` : '',
       isAbsent && absType === 'shuccho' ? `<span class="badge badge-shuccho">出張</span>` : '',
     ].filter(Boolean).join('');
