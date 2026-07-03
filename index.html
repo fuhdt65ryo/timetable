@@ -1633,9 +1633,10 @@ async function fetchGcalEvents() {
   const url = getGcalUrl();
   if (!url) { showGcalStatus('error', 'URLが設定されていません'); return; }
   const today = new Date(); today.setHours(0,0,0,0);
-  const timeMin = addDays(today, -8*7).toISOString();
-  // 年度末（3月31日）まで取得
-  const yearEnd = new Date(today.getMonth() >= 3 ? today.getFullYear() + 1 : today.getFullYear(), 2, 31, 23, 59, 59);
+  // 今年度全体を取得（年度：4月1日〜翌3月31日）
+  const fyStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  const timeMin = new Date(fyStartYear, 3, 1, 0, 0, 0).toISOString();
+  const yearEnd = new Date(fyStartYear + 1, 2, 31, 23, 59, 59);
   const timeMax = yearEnd.toISOString();
   showGcalStatus('loading', '取得中…');
   try {
