@@ -49,9 +49,10 @@
     .container { max-width:1200px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
     @media (min-width:700px) {
       #pageTimetable { flex-direction:row !important; align-items:flex-start; height:calc(100vh - var(--header-h,140px)); padding:10px !important; overflow:hidden; max-width:none; box-sizing:border-box; }
-      #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; }
-      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; padding:6px 8px 12px; scrollbar-gutter:auto; }
-      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 85px) auto) auto; }
+      #pageTimetable > .tt-wrap { flex:1 1 0; overflow-y:auto; height:100%; box-sizing:border-box; min-width:0; display:flex; flex-direction:column; }
+      #pageTimetable > .tt-wrap > .nav-bar { flex:0 0 auto; }
+      #pageTimetable > .tt-wrap > .tt-scroll { overflow:visible; padding:6px 8px 12px; scrollbar-gutter:auto; flex:1 1 auto; min-height:0; box-sizing:border-box; display:flex; flex-direction:column; }
+      #pageTimetable > .tt-wrap > .tt-scroll > .timetable { grid-template-rows: auto auto auto repeat(6, minmax(60px, 1fr) auto); flex:1 1 auto; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell { min-height:0; }
       #pageTimetable > .tt-wrap > .tt-scroll > .timetable .cell-period { min-height:0; }
       #progressPane { flex:0 0 33.33%; width:33.33%; overflow-y:auto; display:flex; flex-direction:column; gap:14px; height:100%; min-width:240px; padding-bottom:20px; box-sizing:border-box; }
@@ -1187,7 +1188,7 @@
       </div>
       <div class="help-row">
         <span class="help-badge" style="background:#FFF9C4;color:#F57F17;border:1px solid #FFF176;min-width:60px">明日</span>
-        <span class="help-desc">明日実施予定のコマ</span>
+        <span class="help-desc">次に授業がある日（翌日が休みでも次の授業日）のコマ</span>
       </div>
       <div class="help-row">
         <span class="help-badge" style="background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9;min-width:60px">今後</span>
@@ -2433,55 +2434,8 @@ function _renderTimetableInner() {
     if (_ov2) _ov2.style.display = 'none';
   }
 
-  // 部活行（6限の下）
-  const bukatsuRow = PERIODS.length * 2 + 4;
-  const bukatsuLabel = el('div', 'bukatsu-label');
-  bukatsuLabel.style.cssText = `grid-column:1;grid-row:${bukatsuRow}`;
-  bukatsuLabel.textContent = '部活';
-  grid.appendChild(bukatsuLabel);
-  dates.forEach((d, i) => {
-    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    const dateStr = toDateStr(d);
-    if (isActualHoliday(dateStr)) return;
-    if (isCalendarLongVacation(dateStr)) return; // 長期休業日は部活行も非表示
-    // 土日は授業がある日のみ表示
-    if (isWeekend && !weekendClassDays[dateStr] && !PERIODS.some(p => !!getEntry(dateStr, p))) return;
-    const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
-    const calNashi = allEvs.some(ev => ev.title && ev.title.includes('部活動なし'));
-    const autoNashi = d.getDay() === 1 || calNashi;
-    const ovr = bukatsuOverrides[dateStr]; // true=強制あり, false=強制なし, undefined=自動
-    const isNashi = ovr !== undefined ? !ovr : autoNashi;
-    // 強調クラスの決定:
-    // - カレンダー由来のなし（手動操作なし）→ bukatsu-calendar
-    // - 手動設定かつ自動状態と異なる → bukatsu-manual
-    // - 手動で元の状態に戻した場合（2回クリック等）→ 強調なし
-    let emphClass = '';
-    if (ovr === undefined && calNashi) {
-      emphClass = ' bukatsu-calendar';
-    } else if (ovr !== undefined && isNashi !== autoNashi) {
-      emphClass = ' bukatsu-manual';
-    }
-    const bc = el('div', 'bukatsu-cell ' + (isNashi ? 'bukatsu-nashi' : 'bukatsu-ari') + emphClass);
-    bc.style.cssText = `grid-column:${i+2};grid-row:${bukatsuRow};cursor:pointer`;
-    bc.dataset.bukatsuDate = dateStr;
-    bc.title = ovr !== undefined ? '手動設定（クリックで切替/右クリックでリセット）' : calNashi ? 'カレンダーで部活なし指定（クリックで切替）' : 'クリックで切替';
-    bc.textContent = isNashi ? '部活なし' : '部活';
-    bc.addEventListener('click', () => {
-      bukatsuOverrides[dateStr] = isNashi;
-      saveBukatsuOverrides();
-      refreshBukatsuCell(dateStr);
-    });
-    bc.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      delete bukatsuOverrides[dateStr];
-      saveBukatsuOverrides();
-      refreshBukatsuCell(dateStr);
-    });
-    grid.appendChild(bc);
-  });
-
-  // 祝日列ブロック（全時限スパン・部活行は含まない）
-  const holRowEnd = bukatsuRow;
+  // 祝日列ブロック（全時限スパン）
+  const holRowEnd = PERIODS.length * 2 + 4;
   dates.forEach((d, i) => {
     const dateStr = toDateStr(d);
     if (!isActualHoliday(dateStr)) return;
@@ -2977,7 +2931,13 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const tomorrow = addDays(today, 1);
+  // 「明日」バッジ = 次に授業がある日（暦の翌日ではなく、今日より後で最も早い授業日）
+  let nextClassDay = null;
+  Object.values(map).forEach(({ classes: cls }) => {
+    Object.values(cls).forEach(info => {
+      if (info.date > today && (!nextClassDay || info.date < nextClassDay)) nextClassDay = info.date;
+    });
+  });
   const weekEnd = addDays(weekStart, 6);
 
   const rows = Object.values(map).filter(({ classes: cls }) =>
@@ -3018,7 +2978,7 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
       } else if (info && isSameDay(info.date, today)) {
         const d = info.date;
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-today">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
-      } else if (info && isSameDay(info.date, tomorrow)) {
+      } else if (info && nextClassDay && isSameDay(info.date, nextClassDay)) {
         const d = info.date;
         html += `<td><div class="prog-cell-inner"><span class="prog-badge prog-tomorrow">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="prog-p">${info.period}限</span></span></div></td>`;
       } else if (info) {
