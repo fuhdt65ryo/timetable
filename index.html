@@ -571,6 +571,8 @@
     .chg-preview-before { font-size:.82rem; font-weight:600; color:#94a3b8; text-decoration:line-through; padding:2px 8px; border-radius:5px; background:#f1f5f9; border:1.5px solid #e2e8f0; }
     .chg-preview-after { font-size:.85rem; font-weight:800; color:#1d4ed8; padding:2px 8px; border-radius:5px; background:#eef3ff; border:1.5px solid #b9c9f2; }
     .chgmod-preview .chg-arrow { color:#3b82f6; font-weight:800; margin:0 3px; }
+    /* 変更後クラス（実際にやる先）＝青ラベル／変更前クラス（元）＝灰ラベルで2クラス案件を区別 */
+    #chgPreviewToClassRow .chg-preview-label { color:#1d4ed8; background:#dbe6fb; }
     .chgmod-fromto { display:flex; gap:8px; align-items:stretch; }
     .chgmod-fromto .chgmod-section { flex:1; min-width:0; }
     .chgmod-arrow-mid { align-self:center; flex-shrink:0; display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fff; font-weight:800; font-size:1rem; box-shadow:0 2px 5px rgba(29,78,216,.25); }
