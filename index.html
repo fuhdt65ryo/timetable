@@ -568,20 +568,23 @@
     .chgmod-preview { display:flex; flex-direction:column; align-items:stretch; gap:7px; padding:10px 14px; background:#f0f4ff; border:1.5px solid #c8d4ee; border-radius:10px; font-size:.88rem; font-weight:700; min-height:42px; }
     .chgmod-preview-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .chg-preview-label { font-size:.7rem; font-weight:800; color:#475569; background:#e2e8f0; border-radius:4px; padding:2px 8px; min-width:3.2em; text-align:center; flex-shrink:0; }
-    .chg-preview-before { font-size:.85rem; font-weight:600; color:#94a3b8; text-decoration:line-through; }
-    .chg-preview-after { font-size:.85rem; font-weight:800; color:#334155; }
-    .chgmod-fromto { display:flex; gap:6px; align-items:stretch; }
+    .chg-preview-before { font-size:.82rem; font-weight:600; color:#94a3b8; text-decoration:line-through; padding:2px 8px; border-radius:5px; background:#f1f5f9; border:1.5px solid #e2e8f0; }
+    .chg-preview-after { font-size:.85rem; font-weight:800; color:#1d4ed8; padding:2px 8px; border-radius:5px; background:#eef3ff; border:1.5px solid #b9c9f2; }
+    .chgmod-preview .chg-arrow { color:#3b82f6; font-weight:800; margin:0 3px; }
+    .chgmod-fromto { display:flex; gap:8px; align-items:stretch; }
     .chgmod-fromto .chgmod-section { flex:1; min-width:0; }
-    .chgmod-arrow-mid { align-self:center; color:#94a3b8; font-weight:800; font-size:1.1rem; flex-shrink:0; }
+    .chgmod-arrow-mid { align-self:center; flex-shrink:0; display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fff; font-weight:800; font-size:1rem; box-shadow:0 2px 5px rgba(29,78,216,.25); }
     .chgmod-section { display:flex; flex-direction:column; gap:10px; padding:12px; border-radius:10px; }
     .chgmod-section-from { background:#f8fafc; border:1.5px solid #e2e8f0; }
-    .chgmod-section-to { background:#f0f4ff; border:1.5px solid #c8d4ee; }
-    .chgmod-section-title { font-size:.72rem; font-weight:800; color:#475569; letter-spacing:.04em; }
-    .chgmod-section-to .chgmod-section-title { color:#1d4ed8; }
+    .chgmod-section-to { background:#eef3ff; border:2px solid #b9c9f2; box-shadow:0 2px 8px rgba(29,78,216,.08); }
+    .chgmod-section-title { font-size:.72rem; font-weight:800; color:#64748b; letter-spacing:.04em; display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; background:#e2e8f0; align-self:flex-start; }
+    .chgmod-section-to .chgmod-section-title { color:#fff; background:linear-gradient(135deg,#3b82f6,#1d4ed8); }
     .chgmod { max-height:92vh; overflow-y:auto; }
     @media (max-width:560px) {
-      .chgmod-fromto { flex-direction:column; }
-      .chgmod-arrow-mid { transform:rotate(90deg); }
+      .chgmod-fromto { gap:5px; }
+      .chgmod-section { padding:9px; gap:8px; }
+      .chgmod-arrow-mid { width:22px; height:22px; font-size:.85rem; }
+      .chgmod-section-title { padding:2px 8px; font-size:.68rem; }
     }
     .chgmod-preview .chg-from-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; background:#f7fafc; border:1.5px solid var(--border); }
     .chgmod-preview .chg-to-badge { padding:2px 8px; border-radius:5px; font-size:.85rem; }
