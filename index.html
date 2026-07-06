@@ -377,6 +377,7 @@
     .chg-class { opacity: 0.35; }
     .chg-class.chg-class-mine { opacity: 1; }
     .chg-pair-note { font-size:.7rem; color:#8a94a3; margin-top:3px; font-weight:600; }
+    .chg-to-wrap { white-space:nowrap; } /* 矢印と変更後コマをセットで折り返す */
 
     /* ── 祝日管理ページ ── */
     .hol-page-form { padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom:1px solid var(--border); }
@@ -3465,7 +3466,7 @@ function renderChanges() {
       if (chg?.fromNextRoom && from) pairBits.push(`${from.name}: ${from.room || '─'}→${chg.fromNextRoom}`);
       const pairHtml = pairBits.length ? `<div class="chg-pair-note">${esc(pairBits.join('　'))}</div>` : '';
       const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
-      tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-arrow">→</span>${toHtml}${pairHtml}</td>`;
+      tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-to-wrap"><span class="chg-arrow">→</span>${toHtml}</span>${pairHtml}</td>`;
       tbody.appendChild(tr);
     });
   });
