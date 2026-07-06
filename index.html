@@ -21,7 +21,7 @@
     body { font-family: -apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
     /* ── Header ── */
-    header { background:var(--accent); color:var(--on-accent); padding:8px 20px 0; position:sticky; top:0; z-index:100; }
+    header { background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%); color:var(--on-accent); padding:8px 20px 0; position:sticky; top:0; z-index:100; }
     .header-top { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:6px; }
     .reload-btn { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); color:#fff; width:32px; height:32px; border-radius:50%; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .18s; justify-self:end; }
     .reload-btn:hover { background:rgba(255,255,255,.32); transform:rotate(30deg); }
@@ -40,10 +40,10 @@
     .nav-btn.today-btn { background:var(--accent); color:#fff; border-color:transparent; }
 
     /* ── Tab bar ── */
-    .tab-bar { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.2); margin-top:4px; }
-    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.65); padding:7px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-bottom:3px solid transparent; }
-    .tab-btn:hover { color:#fff; background:rgba(255,255,255,.08); }
-    .tab-btn.active { color:#fff; border-bottom:3px solid rgba(255,255,255,.9); background:rgba(255,255,255,.12); }
+    .tab-bar { display:flex; gap:4px; border-top:1px solid rgba(255,255,255,.18); margin-top:4px; padding:6px 0 8px; }
+    .tab-btn { flex:1; background:transparent; border:none; color:rgba(255,255,255,.78); padding:7px 8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all .18s; border-radius:9px; }
+    .tab-btn:hover { color:#fff; background:rgba(255,255,255,.14); }
+    .tab-btn.active { color:var(--accent2); background:#fff; font-weight:700; box-shadow:0 1px 4px rgba(0,0,0,.14); }
 
     /* ── Layout ── */
     .container { max-width:1200px; margin:0 auto; padding:16px 12px 40px; display:flex; flex-direction:column; gap:14px; }
@@ -85,7 +85,7 @@
     .cell.is-weekend-col.narrow { min-height:42px; padding:3px 2px; }
     .cell.is-weekend-col.narrow .add-mark { font-size:1rem; }
 
-    .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:8px; font-weight:700; line-height:1.3; border:1.5px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; z-index:2; }
+    .cell-day { background:#fff; color:var(--text); text-align:center; padding:6px 4px 5px; border-radius:10px 10px 0 0; font-weight:700; line-height:1.3; border:1.5px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; z-index:2; }
     .cell-day.is-today { background:#FFF3B0; color:#1a1a1a; border-color:#E8D060; }
     .cell-day.is-holiday  { background:#f8f0f0 !important; color:#c0392b !important; border-color:#e0c0c0 !important; }
     .cell-day.is-nenkyuu { background:#fff8f0 !important; color:#E65100 !important; border-color:#ffe0b2 !important; }
@@ -123,7 +123,7 @@
     .day-event-add { display:inline-block; margin-top:3px; font-size:.58rem; color:rgba(255,255,255,.4); background:none; border:1px dashed rgba(255,255,255,.2); border-radius:4px; padding:1px 7px; cursor:pointer; font-family:inherit; transition:all .15s; }
     .day-event-add:hover { color:rgba(255,255,255,.85); border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.1); }
 
-    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:#f7fafc; border-radius:8px; border:1px solid var(--border); z-index:3; }
+    .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:transparent; border-radius:10px; border:none; z-index:3; }
     .bukatsu-label { display:flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:700; color:#aaa; z-index:3; background:var(--bg); }
     .bukatsu-cell  { display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:.65rem; font-weight:800; min-height:22px; }
     .bukatsu-ari   { background:#DCEEFB; color:#1565C0; }
@@ -136,10 +136,10 @@
     .period-num  { font-size:clamp(.7rem,1.6vw,1rem); font-weight:800; color:var(--accent); }
     .period-time { font-size:clamp(.38rem,0.8vw,.5rem); color:var(--muted); white-space:nowrap; }
 
-    .cell { border-radius:8px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(70px,12.5vh); align-self:stretch; }
+    .cell { border-radius:10px; border:2px dashed transparent; cursor:pointer; transition:all .18s; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3px,0.8vw,6px); text-align:center; overflow:hidden; user-select:none; position:relative; z-index:1; min-height:max(70px,12.5vh); align-self:stretch; }
     .cell:hover { border-color:var(--accent); transform:translateY(-1px); }
-    .cell.has-entry { border-style:solid; border-width:2.5px; border-color:transparent; }
-    .cell.has-content { border-style:solid; border-width:2.5px; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+    .cell.has-entry { border-style:solid; border-width:2px; border-color:transparent; }
+    .cell.has-content { border-style:solid; border-width:2px; box-shadow:0 1px 5px rgba(0,0,0,.07); }
     .cell.has-entry:not(.has-content) { opacity:.55; }
     .cell.has-entry:not(.has-content):hover { opacity:1; filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
     .cell.has-entry.has-content:hover { filter:brightness(1.05); box-shadow:0 4px 14px rgba(0,0,0,.15); }
@@ -320,14 +320,17 @@
     .list-empty { padding:28px; text-align:center; color:var(--muted); font-size:.88rem; }
 
     /* ── 進捗テーブル ── */
-    .prog-grade-sep { font-size:.72rem; font-weight:700; color:var(--accent); padding:4px 0 2px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+    .prog-grade-sep { display:flex; align-items:center; gap:10px; font-size:.75rem; font-weight:800; color:var(--accent2); padding:8px 6px 4px; }
+    .prog-grade-sep::after { content:''; flex:1; height:1px; background:var(--border); }
     .prog-table-wrap { overflow-x:auto; overflow-y:auto; max-height:280px; }
     .prog-table { width:100%; border-collapse:collapse; font-size:.75rem; }
     .prog-table thead { position:sticky; top:0; z-index:1; }
-    .prog-table th { padding:4px 6px; background:#f7fafc; font-weight:700; text-align:center; border-bottom:2px solid var(--border); color:var(--muted); font-size:.65rem; letter-spacing:.04em; }
+    .prog-table th { padding:5px 6px; background:#fff; font-weight:700; text-align:center; border-bottom:1px solid var(--border); color:var(--muted); font-size:.65rem; letter-spacing:.04em; }
     .prog-table th:first-child { text-align:left; }
     .prog-table tbody tr { height:36px; }
-    .prog-table td { padding:0 4px; border-bottom:1px solid #f0f2f6; vertical-align:middle; text-align:center; overflow:hidden; height:36px; box-sizing:border-box; }
+    .prog-table tbody tr:hover { background:#fafbfc; }
+    .prog-table tbody tr:last-child td { border-bottom:none; }
+    .prog-table td { padding:0 4px; border-bottom:1px solid #f4f6fa; vertical-align:middle; text-align:center; overflow:hidden; height:36px; box-sizing:border-box; }
     .prog-table td > .prog-cell-inner { display:flex; align-items:center; justify-content:center; height:100%; overflow:hidden; }
     .prog-content-cell { text-align:left !important; }
     .prog-sub { font-size:.62rem; color:var(--muted); }
@@ -388,7 +391,7 @@
     .hol-item:last-child { border-bottom:none; }
     .hol-item:hover { background:#fafbfc; }
     .hol-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,80,80,.7); flex-shrink:0; }
-    .hol-date { font-size:.85rem; font-weight:700; color:var(--accent); min-width:110px; white-space:nowrap; }
+    .hol-date { font-size:.85rem; font-weight:700; color:var(--text); min-width:110px; white-space:nowrap; }
     .hol-name-text { font-size:.9rem; flex:1; }
     .hol-del  { background:none; border:none; color:#c8d2e0; font-size:.85rem; cursor:pointer; padding:5px 10px; border-radius:6px; transition:all .15s; }
     .hol-del:hover { color:#e53e3e; background:#fff5f5; }
@@ -398,7 +401,8 @@
     .hol-dot-nenkyuu    { background:#FB8C00 !important; }
     .hol-dot-shuccho    { background:#388E3C !important; }
     .hol-type-sel { padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none; background:#fff; cursor:pointer; -webkit-appearance:none; appearance:none; }
-    .hol-year-group { padding:8px 16px 4px; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); background:#fafbfc; }
+    .hol-year-group { display:flex; align-items:center; gap:10px; padding:12px 16px 5px; font-size:.75rem; font-weight:800; color:var(--accent2); letter-spacing:.04em; }
+    .hol-year-group::after { content:''; flex:1; height:1px; background:var(--border); }
 
     /* ── 祝日カウントバッジ ── */
     .hol-count-badge { display:inline-flex; align-items:center; justify-content:center; background:rgba(255,80,80,.12); color:#c53030; border-radius:12px; padding:2px 8px; font-size:.72rem; font-weight:700; margin-left:auto; }
@@ -422,9 +426,11 @@
       header { padding:6px 10px 0; }
       h1 { font-size:1rem; }
       .nav-bar { padding:5px 4px 4px; gap:2px; }
-      .nav-btn { padding:5px 10px; font-size:.76rem; }
+      .nav-btn { padding:5px 10px; font-size:.76rem; white-space:nowrap; }
       .week-label { font-size:.82rem; min-width:140px; }
-      .tab-btn { font-size:.8rem; padding:6px 4px; }
+      .tab-bar { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .tab-bar::-webkit-scrollbar { display:none; }
+      .tab-btn { font-size:.8rem; padding:6px 12px; white-space:nowrap; flex:0 0 auto; }
 
       .tt-scroll {
         padding:0 0 12px;
@@ -617,9 +623,9 @@
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="timetable">時間割</button>
     <button class="tab-btn" data-tab="holiday">祝日・休校日</button>
-    <button class="tab-btn" data-tab="basechange">📋 参照元変更</button>
-    <button class="tab-btn" data-tab="calendar">⚙️ 設定</button>
-    <button class="tab-btn" data-tab="help">📖 使い方</button>
+    <button class="tab-btn" data-tab="basechange">参照元変更</button>
+    <button class="tab-btn" data-tab="calendar">設定</button>
+    <button class="tab-btn" data-tab="help">使い方</button>
   </div>
 </header>
 
@@ -774,11 +780,11 @@
       <button class="btn btn-save" id="hSave">追加</button>
     </div>
     <!-- URLインポートセクション -->
-    <div id="holImportSection" style="padding:12px 16px;border-bottom:1px solid var(--border);background:#f9fbff;">
+    <div id="holImportSection" style="padding:12px 16px;border-bottom:1px solid var(--border);background:#fafbfc;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:.78rem;font-weight:700;color:#4a6fa5;white-space:nowrap;">🔗 URLから祝日をインポート</span>
+        <span style="font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;">🔗 URLから祝日をインポート</span>
         <input type="text" id="holImportUrl" value="https://holidays-jp.github.io/api/v1/date.json"
-          style="flex:1;min-width:200px;padding:5px 8px;border:1.5px solid #c5dff0;border-radius:7px;font-size:.78rem;font-family:inherit;outline:none;color:#333;">
+          style="flex:1;min-width:200px;padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:.78rem;font-family:inherit;outline:none;color:#333;">
         <button id="holImportBtn" class="btn btn-save" style="white-space:nowrap;padding:5px 14px;font-size:.78rem;">取得・差分登録</button>
         <button id="holImportCleanBtn" style="white-space:nowrap;padding:5px 14px;font-size:.78rem;background:#fff3f3;border:1.5px solid #fca5a5;border-radius:7px;color:#b91c1c;cursor:pointer;font-family:inherit;font-weight:600;">今年度前を削除</button>
       </div>
