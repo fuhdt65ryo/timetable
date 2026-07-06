@@ -150,8 +150,6 @@
     .cell.has-entry.is-past-col:not(.has-content) { opacity:.22; }
     .cell.is-past-col.selected { opacity:1; }
 
-    /* ── 今日列のハイライト ── */
-    .col-today-hl { display:none; }
     .cell-chg-badge { position:absolute; top:3px; right:3px; font-size:.55rem; font-weight:800; background:#fff; color:#546E7A; border:1.5px solid #546E7A; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; max-width:70%; overflow:hidden; text-overflow:ellipsis; }
     .cell-absence-badge { position:absolute; bottom:3px; right:3px; font-size:.55rem; font-weight:800; border-radius:3px; padding:0 4px; line-height:1.6; white-space:nowrap; pointer-events:none; background:#fff; }
     .cell-absence-nenkyuu { color:#E65100; border:1.5px solid #FB8C00; }
@@ -598,34 +596,7 @@
     .chg-add-btn { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; padding:5px 14px; border-radius:14px; font-size:.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
     .chg-add-btn:hover { opacity:.85; }
 
-    /* ── 自動割り当てモーダル ── */
-    .aa-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; align-items:center; justify-content:center; padding:16px; }
-    .aa-modal { background:#fff; border-radius:16px; width:min(660px,96vw); max-height:90vh; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; display:flex; flex-direction:column; }
-    .aa-head { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-    .aa-head h2 { font-size:.95rem; font-weight:800; margin:0; }
-    .aa-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; font-size:.9rem; cursor:pointer; }
-.aa-body { padding:14px 18px; overflow-y:auto; flex:1; }
-    .aa-desc { font-size:.82rem; color:var(--muted); margin-bottom:12px; line-height:1.6; }
-    .aa-grade-label { font-size:.82rem; font-weight:700; color:var(--accent); margin:14px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
-    .aa-empty { padding:24px; text-align:center; color:var(--muted); font-size:.88rem; line-height:1.8; }
-    .aa-table-wrap { overflow-x:auto; }
-    .aa-table { width:100%; border-collapse:collapse; font-size:.8rem; }
-    .aa-table th { padding:7px 10px; background:#f7fafc; font-weight:700; text-align:center; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; white-space:nowrap; }
-    .aa-table th:first-child { text-align:left; }
-    .aa-table td { padding:7px 8px; border-bottom:1px solid #f0f2f6; text-align:center; }
-    .aa-lesson { text-align:left !important; font-weight:600; max-width:160px; word-break:break-all; }
-    .aa-new { color:#1565C0; font-weight:700; background:#E3F2FD; border-radius:4px; white-space:nowrap; }
-    .aa-existing { color:#9E9E9E; font-weight:500; background:#F5F5F5; border-radius:4px; white-space:nowrap; }
-    .aa-moved { color:#E65100; font-weight:700; background:#FFF3E0; border-radius:4px; white-space:nowrap; }
-    .aa-orig { color:#9E9E9E; font-weight:400; text-decoration:line-through; font-size:.8em; }
-    .aa-arrow { margin:0 3px; color:#E65100; }
-    .aa-leg-moved { color:#E65100; }
-    .aa-none { color:#d1d9e6; }
-    .aa-period { font-size:.68rem; display:block; opacity:.8; }
-    .aa-legend { font-size:.72rem; color:var(--muted); margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; }
-    .aa-leg-new { color:#1565C0; font-weight:700; }
-    .aa-leg-existing { color:#9E9E9E; font-weight:700; }
-    .aa-actions { display:flex; gap:8px; justify-content:flex-end; padding:12px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+    /* ── 自動割り当てトースト ── */
     .aa-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px); background:rgba(30,40,60,.92); color:#fff; padding:12px 20px; border-radius:12px; font-size:.85rem; font-weight:600; opacity:0; transition:opacity .3s,transform .3s; pointer-events:none; z-index:300; max-width:min(480px,90vw); width:max-content; line-height:1.7; }
     .aa-toast.aa-toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
@@ -656,7 +627,7 @@
         <button class="nav-btn" id="btnPrev">◀</button>
       </div>
       <div class="nav-center">
-        <div class="week-label" id="weekLabel" title="クリックで日付を選択"><input type="date" id="weekDatePicker"></div>
+        <div class="week-label" id="weekLabel" title="クリックで日付を選択"><span id="weekLabelText"></span><input type="date" id="weekDatePicker"></div>
         <button class="nav-btn today-btn" id="btnToday">今週</button>
       </div>
       <div class="nav-right">
@@ -1183,11 +1154,7 @@
       <p class="help-sub" style="margin-top:14px">自動割り当て</p>
       <div class="help-step">
         <div class="help-step-num">1</div>
-        <div class="help-step-txt">「🔄 自動割り当て」をタップすると、今後の授業スロットに進捗リストの授業を順番に割り当てるプレビューが表示されます。</div>
-      </div>
-      <div class="help-step">
-        <div class="help-step-num">2</div>
-        <div class="help-step-txt">プレビューを確認し「確定する」を押すと一括登録されます。<b>臨時・授業変更コマは割り当て対象外</b>です。</div>
+        <div class="help-step-txt">「🔄 自動割り当て」をタップすると、今後の授業スロットに進捗リストの授業が順番に一括登録されます。<b>臨時・授業変更コマは割り当て対象外</b>です。</div>
       </div>
 
       <p class="help-sub" style="margin-top:14px">バッジの色の意味</p>
@@ -1450,21 +1417,6 @@
   </div>
 </div>
 
-<!-- 自動割り当てモーダル -->
-<div class="aa-overlay" id="aaModal">
-  <div class="aa-modal">
-    <div class="aa-head">
-      <h2>🔄 授業の自動割り当て</h2>
-      <button class="aa-close" id="aaClose">✕</button>
-    </div>
-    <div class="aa-body" id="aaBody"></div>
-    <div class="aa-actions">
-      <button class="btn btn-secondary" id="aaCancelBtn">キャンセル</button>
-      <button class="btn btn-save" id="aaConfirmBtn">確定する</button>
-    </div>
-  </div>
-</div>
-
 <!-- 同期設定モーダル -->
 <div class="sync-overlay" id="syncModal">
   <div class="sync-modal">
@@ -1477,7 +1429,6 @@
       <button class="btn" id="syncModalForcePush" style="background:#e53e3e;color:#fff;border:none;">強制アップロード</button>
     </div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-secondary" id="syncModalReconfig" style="font-size:12px;padding:6px 12px;">⚙ Firebase設定を変更</button>
       <button class="btn btn-secondary" id="syncModalExportConfig" style="font-size:12px;padding:6px 12px;">⬇ 設定をバックアップ</button>
     </div>
   </div>
@@ -1618,11 +1569,7 @@ function loadGcalCache() {
         const hidden = new Set([...names].filter(n => !isMyCalendar(n)));
         saveHiddenCalendars(hidden);
       }
-      // 24時間以上経過していたらバックグラウンドで自動更新
-      const age = cached.updatedAt ? Date.now() - new Date(cached.updatedAt).getTime() : Infinity;
-      if (age > 24 * 60 * 60 * 1000 && getGcalUrl()) {
-        setTimeout(() => fetchGcalEvents(), 1500);
-      }
+      // 最新データは起動時に _initFirebaseWithConfig() が毎回フェッチする
     }
   } catch { gcalEvents = {}; }
 }
@@ -1717,7 +1664,7 @@ function renderCalendarPage() {
             const mine = isMyCalendar(n);
             const color = checked ? (mine ? '#2C6B3F' : '#2C3E6B') : '#999';
             return `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid #f0f0f0;font-size:.85rem;cursor:pointer;color:${color}">
-              <input type="checkbox" data-cal="${n}" ${checked ? 'checked' : ''} style="accent-color:var(--accent);cursor:pointer;flex-shrink:0">${n}
+              <input type="checkbox" data-cal="${esc(n)}" ${checked ? 'checked' : ''} style="accent-color:var(--accent);cursor:pointer;flex-shrink:0">${esc(n)}
             </label>`;
           }).join('');
           listEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
@@ -1777,7 +1724,7 @@ let holidays     = {};
 let calEvents    = {};  // { "YYYY-MM-DD": [{ title, time }] }
 let dayMemos     = {};  // { "YYYY-MM-DD": "メモ文字列" }
 function loadDayMemos() { try { dayMemos = JSON.parse(localStorage.getItem('tt_day_memo_v1') || '{}'); } catch { dayMemos = {}; } }
-function saveDayMemos() { localStorage.setItem('tt_day_memo_v1', JSON.stringify(dayMemos)); localDirty = true; }
+function saveDayMemos() { safeSave('tt_day_memo_v1', dayMemos); schedulePush('tt_day_memo_v1'); }
 loadDayMemos();
 let progManual   = [];  // 3年生 手動追加授業名
 let prog2Manual  = [];  // 2年生 手動追加授業名
@@ -1918,7 +1865,7 @@ function save() { safeSave('tt_overrides_v1', overrides); }
 function loadCellSources() {
   try { cellSources = JSON.parse(localStorage.getItem('tt_cellsrc_v1') || '{}'); } catch { cellSources = {}; }
 }
-function saveCellSources() { safeSave('tt_cellsrc_v1', cellSources); schedulePush(); }
+function saveCellSources() { safeSave('tt_cellsrc_v1', cellSources); schedulePush('tt_cellsrc_v1'); }
 function loadHolidays() {
   try { holidays = JSON.parse(localStorage.getItem('tt_holidays_v1') || '{}'); } catch { holidays = {}; }
   // 未登録の祝日のみ追加（ユーザーが削除したものは復活させない）
@@ -1937,21 +1884,21 @@ function loadHolidays() {
     safeSave('tt_holidays_seen', seen);
   }
 }
-function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush(); }
+function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush('tt_holidays_v1'); }
 function loadExtraJpHolidays() { try { Object.assign(JP_HOLIDAYS, JSON.parse(localStorage.getItem('tt_jp_holidays_extra') || '{}')); } catch {} }
 function loadLongVacations()  { try { longVacations = JSON.parse(localStorage.getItem('tt_long_vac_v1') || '[]'); } catch { longVacations = []; } }
-function saveLongVacations()  { safeSave('tt_long_vac_v1', longVacations); schedulePush(); }
+function saveLongVacations()  { safeSave('tt_long_vac_v1', longVacations); schedulePush('tt_long_vac_v1'); }
 function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
-function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush(); }
+function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush('tt_bukatsu_v1'); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
-function saveWeekendClassDays() { safeSave('tt_weekend_classes_v1', weekendClassDays); schedulePush(); }
+function saveWeekendClassDays() { safeSave('tt_weekend_classes_v1', weekendClassDays); schedulePush('tt_weekend_classes_v1'); }
 function loadBaseCurrent() {
   try {
     const raw = localStorage.getItem('tt_base_current_v1');
     baseCurrent = raw ? JSON.parse(raw) : null;
   } catch { baseCurrent = null; }
 }
-function saveBaseCurrent() { safeSave('tt_base_current_v1', baseCurrent || BASE); schedulePush(); }
+function saveBaseCurrent() { safeSave('tt_base_current_v1', baseCurrent || BASE); schedulePush('tt_base_current_v1'); }
 function loadBaseNext() {
   try {
     const raw = localStorage.getItem('tt_base_next_v1');
@@ -1960,7 +1907,7 @@ function loadBaseNext() {
 }
 function saveBaseNext() {
   if (baseNext) { safeSave('tt_base_next_v1', baseNext); } else { localStorage.removeItem('tt_base_next_v1'); }
-  schedulePush();
+  schedulePush('tt_base_next_v1');
 }
 function getEffectiveBase(dateStr) {
   if (baseNext && dateStr >= baseNext.fromDate) return baseNext.base;
@@ -1993,15 +1940,15 @@ function getLongVacationName(dateStr) {
 function loadCalEvents() {
   try { calEvents = JSON.parse(localStorage.getItem('tt_calevents_v1') || '{}'); } catch { calEvents = {}; }
 }
-function saveCalEvents() { safeSave('tt_calevents_v1', calEvents); }
+function saveCalEvents() { safeSave('tt_calevents_v1', calEvents); schedulePush('tt_calevents_v1'); }
 function loadProgManual()  { try { progManual  = JSON.parse(localStorage.getItem('tt_prog_manual')  || '[]'); } catch { progManual  = []; } }
-function saveProgManual()  { safeSave('tt_prog_manual',  progManual);  }
+function saveProgManual()  { safeSave('tt_prog_manual',  progManual);  schedulePush('tt_prog_manual'); }
 function loadProg2Manual() { try { prog2Manual = JSON.parse(localStorage.getItem('tt_prog2_manual') || '[]'); } catch { prog2Manual = []; } }
-function saveProg2Manual() { safeSave('tt_prog2_manual', prog2Manual); }
+function saveProg2Manual() { safeSave('tt_prog2_manual', prog2Manual); schedulePush('tt_prog2_manual'); }
 function loadProgOrder()   { try { progOrder  = JSON.parse(localStorage.getItem('tt_prog_order')  || '[]'); } catch { progOrder  = []; } }
-function saveProgOrder()   { safeSave('tt_prog_order',  progOrder);  }
+function saveProgOrder()   { safeSave('tt_prog_order',  progOrder);  schedulePush('tt_prog_order'); }
 function loadProg2Order()  { try { prog2Order = JSON.parse(localStorage.getItem('tt_prog2_order') || '[]'); } catch { prog2Order = []; } }
-function saveProg2Order()  { safeSave('tt_prog2_order', prog2Order); }
+function saveProg2Order()  { safeSave('tt_prog2_order', prog2Order); schedulePush('tt_prog2_order'); }
 
 /* ── 日付ユーティリティ ── */
 function getWeekStart(d) {
@@ -2040,7 +1987,7 @@ function initTTRange() {
 function scrollToDate(dateStr) {
   const d = parseDateStr(dateStr);
   weekStart = getWeekStart(d);
-  document.getElementById('weekLabel').textContent = formatWeekLabel();
+  document.getElementById('weekLabelText').textContent = formatWeekLabel();
   renderTimetable();
 }
 
@@ -2175,7 +2122,7 @@ function renderTimetable() {
 function _renderTimetableInner() {
   const today = new Date(); today.setHours(0,0,0,0);
   const dates = getWeekDates();
-  document.getElementById('weekLabel').textContent = formatWeekLabel();
+  document.getElementById('weekLabelText').textContent = formatWeekLabel();
 
   const ttScroll = document.getElementById('ttScroll');
 
@@ -2344,7 +2291,7 @@ function _renderTimetableInner() {
       let chgPairHtml = '';
       if (cellChg) {
         const ovrEntry = overrides[ok2];
-        const baseE  = BASE[`${naturalDi}-${p}`];
+        const baseE  = getEffectiveBase(dateStr)[`${naturalDi}-${p}`];
         const _tName = ovrEntry.name || '';
         const _tRoom = ovrEntry.room || '';
         const _fName = cellChg.fromName;
@@ -2441,7 +2388,7 @@ function _renderTimetableInner() {
     const selD = parseDateStr(selDs);
     const selOvr   = isOverride(selDs, selP);
     const selLabel = `${selD.getMonth()+1}月${selD.getDate()}日(${DAY_JP[selD.getDay()]}) ${selP}限`;
-    const selSub   = selOvr ? '変更中' : (BASE[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
+    const selSub   = selOvr ? '変更中' : (getEffectiveBase(selDs)[`${dayIdx(selD)}-${selP}`] ? '基本時間割' : '');
     editPanel.style.display = '';
     const _ov = document.getElementById('editPanelOverlay');
     if (_ov) _ov.style.display = '';
@@ -2493,27 +2440,10 @@ function _renderTimetableInner() {
     grid.appendChild(block);
   });
 
-  // 今日列ハイライト枠（レンダリング後に座標取得して配置）、スクロール復元
+  // 編集パネルをグリッド内に再配置して位置を更新（レンダリング後に実行）
   requestAnimationFrame(() => {
-    // editPanelをグリッド内に再配置して位置を更新（今日列の有無に関わらず実行）
     const ep2 = document.getElementById('editPanel');
     if (ep2) { grid.appendChild(ep2); positionEditPanel(); }
-
-    grid.querySelectorAll('.col-today-hl').forEach(e => e.remove());
-    const todayHeader = grid.querySelector('.cell-day.is-today');
-    const todayCells  = [...grid.querySelectorAll('.cell.is-today-col, .cell-day.is-today')];
-    if (!todayHeader || !todayCells.length) return;
-    const gRect = grid.getBoundingClientRect();
-    const topEl = todayHeader;
-    const botEl = todayCells[todayCells.length - 1];
-    const t = topEl.getBoundingClientRect();
-    const b = botEl.getBoundingClientRect();
-    const hl = el('div', 'col-today-hl');
-    hl.style.left   = (t.left - gRect.left) + 'px';
-    hl.style.top    = (t.top  - gRect.top)  + 'px';
-    hl.style.width  = t.width + 'px';
-    hl.style.height = (b.bottom - t.top) + 'px';
-    grid.appendChild(hl);
   });
 }
 
@@ -2548,13 +2478,13 @@ function rerender() {
 }
 
 function selectCell(dateStr, period) {
-  autoSave(false); schedulePush();
+  autoSave(false); schedulePush('tt_overrides_v1');
   selKey = overrideKey(dateStr, period);
   rerender();
 }
 
 function clearSelect() {
-  autoSave(false); schedulePush();
+  autoSave(false); schedulePush('tt_overrides_v1');
   selKey = null;
   renderTimetable();
   renderProgress();
@@ -2569,7 +2499,7 @@ function refreshEditForm() {
   const entry     = getEntry(ds, p);
   const ovr       = isOverride(ds, p);
   const d         = parseDateStr(ds);
-  const baseEntry = BASE[`${dayIdx(d)}-${p}`];
+  const baseEntry = getEffectiveBase(ds)[`${dayIdx(d)}-${p}`];
   renderEditForm(entry, ovr, baseEntry);
 }
 
@@ -2616,9 +2546,10 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const curSrcP  = existSrc ? existSrc.p  : srcPeriod;
   const srcChanged = !!existSrc;
 
+  const effBase = getEffectiveBase(srcDateStr);
   const srcGridCells = PERIODS.map(pp => {
     const cells = DAY_NAMES.map((_, di) => {
-      const e2 = BASE[`${di}-${pp}`];
+      const e2 = effBase[`${di}-${pp}`];
       const name = e2?.name || '';
       const subj = e2?.room || '';
       const isSel = curSrcDi === di && curSrcP === pp;
@@ -2691,7 +2622,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     srcLabel.addEventListener('click', () => srcWrap.classList.toggle('src-grid-open'));
   }
 
-  const _as = () => { autoSave(true); schedulePush(); };
+  const _as = () => { autoSave(true); schedulePush('tt_overrides_v1'); };
 
   initCdd('eClass', classNames, (val) => {
     // クラスが変わったら教科ドロップダウンを作り直す
@@ -2714,14 +2645,14 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eBtnJishu')?.addEventListener('click', () => {
     const cont = document.getElementById('eContent');
     if (cont) cont.value = '自習';
-    autoSave(false); schedulePush();
+    autoSave(false); schedulePush('tt_overrides_v1');
   });
 
   document.getElementById('eBtnChgClear')?.addEventListener('click', () => {
     // 変更を解除して参照元（基本時間割）の状態に戻す
     delete overrides[selKey];
     save();
-    schedulePush();
+    schedulePush('tt_overrides_v1');
     rerender();
   });
 
@@ -2737,7 +2668,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
         delete cellSources[selKey];
       } else {
         cellSources[selKey] = { di, p };
-        if (overrides[selKey] === null) { delete overrides[selKey]; save(); }
+        if (overrides[selKey] === null) { delete overrides[selKey]; save(); schedulePush('tt_overrides_v1'); }
       }
       saveCellSources();
       rerender();
@@ -2747,7 +2678,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
     overrides[selKey] = null;
     delete cellSources[selKey];
     save(); saveCellSources();
-    schedulePush();
+    schedulePush('tt_overrides_v1');
     rerender();
   });
   document.getElementById('eBtnChg')?.addEventListener('click', () => {
@@ -2757,7 +2688,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eBtnRestore')?.addEventListener('click', () => {
     delete overrides[selKey];
     save();
-    schedulePush();
+    schedulePush('tt_overrides_v1');
     rerender();
   });
   document.getElementById('eBtnSrcClear')?.addEventListener('click', () => {
@@ -2852,7 +2783,7 @@ function restoreBase() {
     if (base) overrides[selKey] = { ...base, content: '' };
   }
   save();
-  schedulePush();
+  schedulePush('tt_overrides_v1');
   selectCell(ds, +pStr);
 }
 
@@ -3043,7 +2974,7 @@ function _renderProgress(manualArr, saveFn, classes, orderArr, saveOrderFn, list
         if (oi !== -1) { orderArr[oi] = newVal; saveOrderFn(); }
         // 時間割のoverridesも更新（manual/非manual共通）
         Object.values(overrides).forEach(ov => { if (ov && ov.content === oldVal) ov.content = newVal; });
-        save(); schedulePush();
+        save(); schedulePush('tt_overrides_v1');
         renderTimetable();
         renderProgress(); renderProgress2();
       } else { renderSelf(); }
@@ -3080,7 +3011,6 @@ function _renderProgManualInput(container, manualArr, saveFn, listKey, renderSel
     if (val && !manualArr.includes(val)) {
       manualArr.push(val);
       saveFn();
-      schedulePush();
       renderSelf();
     }
     inp.value = '';
@@ -3250,78 +3180,6 @@ function buildGradePlan(grade) {
   return { lessonList, classes, plan };
 }
 
-function openAutoAssignModal() {
-  const grade3 = buildGradePlan(3);
-  const grade2 = buildGradePlan(2);
-  autoAssignPlan = { grade3, grade2 };
-
-  const body = document.getElementById('aaBody');
-  body.innerHTML = '';
-
-  if (!grade3.plan.length && !grade2.plan.length) {
-    body.innerHTML = '<div class="aa-empty">授業名が登録されていません。<br>「＋ 授業名を追加」から授業を追加してください。</div>';
-    document.getElementById('aaConfirmBtn').disabled = true;
-    document.getElementById('aaModal').style.display = 'flex';
-    return;
-  }
-
-  const desc = document.createElement('p');
-  desc.className = 'aa-desc';
-  desc.textContent = '進捗リストの授業を、空いているコマに順番に割り当てます。確定すると授業内容が自動入力されます。';
-  body.appendChild(desc);
-
-  if (grade3.plan.length) {
-    const h3 = document.createElement('p');
-    h3.className = 'aa-grade-label';
-    h3.textContent = '3年生';
-    body.appendChild(h3);
-    renderAutoAssignPreview(grade3.plan, grade3.classes, body);
-  }
-  if (grade2.plan.length) {
-    const h2 = document.createElement('p');
-    h2.className = 'aa-grade-label';
-    h2.textContent = '2年生';
-    body.appendChild(h2);
-    renderAutoAssignPreview(grade2.plan, grade2.classes, body);
-  }
-
-  document.getElementById('aaConfirmBtn').disabled = false;
-  document.getElementById('aaModal').style.display = 'flex';
-}
-
-function renderAutoAssignPreview(plan, classes, container) {
-  const wrap = document.createElement('div');
-  wrap.className = 'aa-table-wrap';
-  let html = `<table class="aa-table"><thead><tr><th>授業内容</th>${classes.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>`;
-  plan.forEach(({ lesson, slots }) => {
-    html += `<tr><td class="aa-lesson">${esc(lesson)}</td>`;
-    classes.forEach(cls => {
-      const slot = slots[cls];
-      if (!slot) {
-        html += '<td class="aa-none">─</td>';
-      } else if (slot.unchanged) {
-        const d = slot.date;
-        html += `<td class="aa-existing">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
-      } else if (slot.originalSlot) {
-        const od = slot.originalSlot.date, nd = slot.date;
-        html += `<td class="aa-moved"><span class="aa-orig">${od.getMonth()+1}/${od.getDate()}(${DAY_JP[od.getDay()]})${slot.originalSlot.period}限</span><span class="aa-arrow">→</span>${nd.getMonth()+1}/${nd.getDate()}(${DAY_JP[nd.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
-      } else {
-        const d = slot.date;
-        html += `<td class="aa-new">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})<span class="aa-period">${slot.period}限</span></td>`;
-      }
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
-  container.appendChild(wrap);
-
-  const legend = document.createElement('div');
-  legend.className = 'aa-legend';
-  legend.innerHTML = '<span class="aa-leg-new">■</span>新規割り当て　<span class="aa-leg-moved">■</span>移動　<span class="aa-leg-existing">■</span>変更なし';
-  container.appendChild(legend);
-}
-
 function applyAutoAssign() {
   if (!autoAssignPlan) return;
   const today = new Date(); today.setHours(0,0,0,0);
@@ -3365,17 +3223,13 @@ function applyAutoAssign() {
   applyGrade(autoAssignPlan.grade2);
 
   save();
+  schedulePush('tt_overrides_v1');
   renderTimetable();
   renderProgress();
   renderProgress2();
   renderChanges();
-  closeAutoAssignModal();
-  showAutoAssignToast('✅ 自動割り当てを実行しました');
-}
-
-function closeAutoAssignModal() {
-  document.getElementById('aaModal').style.display = 'none';
   autoAssignPlan = null;
+  showAutoAssignToast('✅ 自動割り当てを実行しました');
 }
 
 let aaToastTimer = null;
@@ -3412,7 +3266,7 @@ function renderChanges() {
     if (!chg) return;
 
     const naturalDi = dayIdx(date);
-    const baseEntry = BASE[`${naturalDi}-${period}`] || null;
+    const baseEntry = getEffectiveBase(dateStr)[`${naturalDi}-${period}`] || null;
     const origEntry = (chg.fromName || chg.fromRoom)
       ? { name: chg.fromName, room: chg.fromRoom, color: getColor(chg.fromName, chg.fromRoom) }
       : (chg.type === 'add' ? null : baseEntry);
@@ -3455,10 +3309,10 @@ function renderChanges() {
       const fromMine = from && MY_SUBJECTS.includes(from.room);
       const toMine   = to   && MY_SUBJECTS.includes(to.room);
       const fromHtml = from
-        ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${from.name}${from.room ? ' '+from.room : ''}</span>`
+        ? `<span class="chg-class${fromMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(from.color||'#999')};border:1.5px solid ${from.color||'#999'}">${esc(from.name)}${from.room ? ' '+esc(from.room) : ''}</span>`
         : '<span style="color:#aaa">なし</span>';
       const toHtml = to
-        ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${to.name}${to.room ? ' '+to.room : (to.content ? ' '+to.content : '')}</span>`
+        ? `<span class="chg-class${toMine ? ' chg-class-mine' : ''}" style="background:${pastelizeColor(to.color||'#999')};border:1.5px solid ${to.color||'#999'}">${esc(to.name)}${to.room ? ' '+esc(to.room) : (to.content ? ' '+esc(to.content) : '')}</span>`
         : '<span style="color:#aaa">なし</span>';
       // クラス側の動きの併記（例: 3-2: 社会→理科 ／ 3-4: 理科→国語）
       const pairBits = [];
@@ -3709,6 +3563,7 @@ async function importHolidaysFromUrl() {
     if (addCount > 0) {
       saveHolidays();
       safeSave('tt_holidays_seen', seen);
+      schedulePush('tt_holidays_seen');
       localStorage.setItem('tt_jp_holidays_extra', JSON.stringify(extraNational));
       renderHolidayPage();
       renderTimetable();
@@ -4200,6 +4055,7 @@ function saveDaySetting() {
       const seen = JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}');
       seen[daySettingDateStr] = true;
       safeSave('tt_holidays_seen', seen);
+      schedulePush('tt_holidays_seen');
     }
     saveHolidays();
   }
@@ -4264,7 +4120,7 @@ function navScrollWeek(delta) {
   } else {
     weekStart = getWeekStart(addDays(weekStart, delta));
   }
-  document.getElementById('weekLabel').textContent = formatWeekLabel();
+  document.getElementById('weekLabelText').textContent = formatWeekLabel();
   renderTimetable();
   renderProgress(); renderProgress2();
 }
@@ -4294,11 +4150,15 @@ document.getElementById('weekLabel').addEventListener('click', () => {
   weekPicker.focus();
 });
 weekPicker.addEventListener('change', function() {
-  if (this.value) { navScrollWeek(Math.round((getWeekStart(new Date(this.value)) - weekStart) / 86400000)); }
+  if (this.value) {
+    weekStart = getWeekStart(parseDateStr(this.value));
+    renderTimetable();
+    renderProgress(); renderProgress2();
+  }
   this.style.pointerEvents = 'none';
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { clearSelect(); closeEventModal(); closeAutoAssignModal(); closeDaySetting(); return; }
+  if (e.key === 'Escape') { clearSelect(); closeEventModal(); closeChangeModal(); closeDaySetting(); return; }
   if (e.target.matches('input,textarea,select')) return;
   if (e.key === 'ArrowLeft')  { e.preventDefault(); navScrollWeek(-7); return; }
   if (e.key === 'ArrowRight') { e.preventDefault(); navScrollWeek(7);  return; }
@@ -4454,8 +4314,8 @@ function _applyFbData(data) {
   if (data.tt_prog2_manual !== undefined)       { prog2Manual     = data.tt_prog2_manual         || []; safeSave('tt_prog2_manual',         prog2Manual);     changed = true; }
   if (data.tt_prog_order   !== undefined)       { progOrder       = data.tt_prog_order           || []; safeSave('tt_prog_order',           progOrder);       changed = true; }
   if (data.tt_prog2_order  !== undefined)       { prog2Order      = data.tt_prog2_order          || []; safeSave('tt_prog2_order',          prog2Order);      changed = true; }
+  if (data.tt_day_memo_v1 !== undefined)        { dayMemos        = data.tt_day_memo_v1         || {}; safeSave('tt_day_memo_v1',          dayMemos);        changed = true; }
   if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
-  if (data.tt_memo_v1 !== undefined) { localStorage.setItem('tt_memo_v1', data.tt_memo_v1 || ''); const area = document.getElementById('memoArea'); if (area) area.value = data.tt_memo_v1 || ''; }
   if (changed) { _syncProgManuals(); renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
@@ -4465,30 +4325,52 @@ function _encodeOverrides(ovr) {
   return out;
 }
 
-async function syncPush() {
+/* 同期対象キーの一覧（差分push用） */
+const SYNC_KEYS = [
+  'tt_overrides_v1', 'tt_cellsrc_v1', 'tt_holidays_v1', 'tt_long_vac_v1',
+  'tt_holidays_seen', 'tt_bukatsu_v1', 'tt_weekend_classes_v1',
+  'tt_base_current_v1', 'tt_base_next_v1', 'tt_calevents_v1',
+  'tt_prog_manual', 'tt_prog2_manual', 'tt_prog_order', 'tt_prog2_order',
+  'tt_day_memo_v1',
+];
+let dirtyKeys = new Set();
+
+function _syncValueOf(key) {
+  switch (key) {
+    case 'tt_overrides_v1':       return _encodeOverrides(overrides);
+    case 'tt_cellsrc_v1':         return cellSources;
+    case 'tt_holidays_v1':        return holidays;
+    case 'tt_long_vac_v1':        return longVacations;
+    case 'tt_holidays_seen':      try { return JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'); } catch { return {}; }
+    case 'tt_bukatsu_v1':         return bukatsuOverrides;
+    case 'tt_weekend_classes_v1': return weekendClassDays;
+    case 'tt_base_current_v1':    return baseCurrent || null;
+    case 'tt_base_next_v1':       return baseNext || null;
+    case 'tt_calevents_v1':       return calEvents;
+    case 'tt_prog_manual':        return progManual;
+    case 'tt_prog2_manual':       return prog2Manual;
+    case 'tt_prog_order':         return progOrder;
+    case 'tt_prog2_order':        return prog2Order;
+    case 'tt_day_memo_v1':        return dayMemos;
+  }
+  return null;
+}
+
+/* force=true で全キーをset()（強制アップロード・初回push用）、通常は変更キーのみupdate() */
+async function syncPush(force = false) {
+  if (!_fbRef) return; // Firebase未設定時はpushしない（localDirtyが残るため設定後にpushされる）
+  const keys = force ? SYNC_KEYS : [...dirtyKeys];
+  if (!keys.length) { updateSyncBtn('ok'); return; }
   updateSyncBtn('syncing');
-  const payload = {
-    tt_overrides_v1:       _encodeOverrides(overrides),
-    tt_cellsrc_v1:         cellSources,
-    tt_holidays_v1:        holidays,
-    tt_long_vac_v1:        longVacations,
-    tt_holidays_seen:      JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'),
-    tt_bukatsu_v1:         bukatsuOverrides,
-    tt_weekend_classes_v1: weekendClassDays,
-    tt_base_current_v1:    baseCurrent || null,
-    tt_base_next_v1:       baseNext || null,
-    tt_calevents_v1:       calEvents,
-    tt_prog_manual:        progManual,
-    tt_prog2_manual:       prog2Manual,
-    tt_prog_order:         progOrder,
-    tt_prog2_order:        prog2Order,
-    tt_memo_v1:            localStorage.getItem('tt_memo_v1') || '',
-    _updated: new Date().toISOString()
-  };
+  const payload = {};
+  keys.forEach(k => { payload[k] = _syncValueOf(k); });
+  payload._updated = new Date().toISOString();
   try {
     fbPushing = true;
-    await _fbRef.set(payload);
-    localDirty = false;
+    if (force) await _fbRef.set(payload);
+    else       await _fbRef.update(payload);
+    keys.forEach(k => dirtyKeys.delete(k));
+    localDirty = dirtyKeys.size > 0;
     pushRetryCount = 0;
     const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
     localStorage.setItem(SYNC_TIME_KEY, now);
@@ -4499,7 +4381,7 @@ async function syncPush() {
       pushRetryCount++;
       const delay = PUSH_RETRY_BASE_MS * Math.pow(2, pushRetryCount - 1); // 3s, 6s, 12s, 24s
       console.warn(`sync push retry ${pushRetryCount}/${PUSH_MAX_RETRY} in ${delay}ms`);
-      syncTimer = setTimeout(syncPush, delay);
+      syncTimer = setTimeout(() => syncPush(force), delay);
     } else {
       pushRetryCount = 0;
       updateSyncBtn('error');
@@ -4509,17 +4391,19 @@ async function syncPush() {
   }
 }
 
-const APP_VERSION = 'v2026.06.12 17:30';
+const APP_VERSION = 'v2026.07.06 18:00';
 (function() {
   const el = document.getElementById('lastUpdatedLabel');
   if (el) el.textContent = APP_VERSION;
 })();
 
-function schedulePush() {
+/* 変更したキーを指定して差分pushを予約。キー省略時は全キーを対象にする（安全側） */
+function schedulePush(...keys) {
+  (keys.length ? keys : SYNC_KEYS).forEach(k => dirtyKeys.add(k));
   localDirty = true;
   localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(syncPush, 1500);
+  syncTimer = setTimeout(() => syncPush(), 1500);
 }
 
 function initFirebaseSync() {
@@ -4542,8 +4426,8 @@ function initFirebaseSync() {
         localDirty = false;
         _applyFbData(data);
       } else if (localDirty || localUpdated > fbUpdated) {
-        // ローカルが新しい→ ローカルをpush
-        syncPush();
+        // ローカルが新しい→ ローカル全体をpush（起動直後はdirtyキー情報がないため全キー）
+        syncPush(true);
       } else {
         updateSyncBtn('ok');
       }
@@ -4602,13 +4486,7 @@ document.getElementById('syncModalForcePush').addEventListener('click', () => {
   if (!confirm('ローカルのデータをFirebaseに強制アップロードします。\n他の端末のデータは上書きされます。よろしいですか？')) return;
   closeSyncModal();
   clearTimeout(syncTimer);
-  syncPush();
-});
-
-document.getElementById('syncModalReconfig').addEventListener('click', () => {
-  closeSyncModal();
-  const btn = document.querySelector('.tab-btn[data-tab="firebase"]');
-  if (btn) btn.click();
+  syncPush(true);
 });
 
 document.getElementById('syncModalExportConfig').addEventListener('click', () => {
@@ -4641,7 +4519,7 @@ document.addEventListener('click', function(e) {
     } else {
       prog2Manual = prog2Manual.filter(n => n !== key); saveProg2Manual(); renderProgress2();
     }
-    save(); schedulePush();
+    save(); schedulePush('tt_overrides_v1');
     renderTimetable();
   }
 });
@@ -4836,19 +4714,19 @@ document.getElementById('chgModalSave').addEventListener('click', () => {
     overrides[ok] = { name: toClass, room: toSubject, content: toContent, color: getColor(toClass, toSubject), chgType: type, fromName: fromClass, fromRoom: fromSubject, ...pairProps };
   }
   save();
-  schedulePush();
+  schedulePush('tt_overrides_v1');
   rerender();
   closeChangeModal();
 });
 
-/* ── 自動割り当てモーダル イベント ── */
-document.getElementById('aaClose').addEventListener('click', closeAutoAssignModal);
-document.getElementById('aaCancelBtn').addEventListener('click', closeAutoAssignModal);
-document.getElementById('aaConfirmBtn').addEventListener('click', applyAutoAssign);
-document.getElementById('aaModal').addEventListener('click', e => { if (e.target === document.getElementById('aaModal')) closeAutoAssignModal(); });
+/* ── 自動割り当て ── */
 document.getElementById('btnAutoAssign').addEventListener('click', () => {
   const grade3 = buildGradePlan(3);
   const grade2 = buildGradePlan(2);
+  if (!grade3.plan.length && !grade2.plan.length) {
+    showAutoAssignToast('進捗リストに授業名が登録されていません', true);
+    return;
+  }
   autoAssignPlan = { grade3, grade2 };
   applyAutoAssign();
 });
@@ -4886,22 +4764,6 @@ renderProgress2(); renderChanges();
   });
 })();
 // Firebase初期化は _initFirebaseWithConfig() で行われる（上部参照）
-
-// ── メモ ──
-(function() {
-  const KEY = 'tt_memo_v1';
-  const area = document.getElementById('memoArea');
-  if (!area) return;
-  area.value = localStorage.getItem(KEY) || '';
-  let _timer = null;
-  area.addEventListener('input', () => {
-    clearTimeout(_timer);
-    _timer = setTimeout(() => {
-      localStorage.setItem(KEY, area.value);
-      localDirty = true;
-    }, 400);
-  });
-})();
 </script>
 </body>
 </html>
