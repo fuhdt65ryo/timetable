@@ -2387,14 +2387,21 @@ function _renderTimetableInner() {
           ? (isTaninOwn
               ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(chgSubjectText.from)}→${esc(chgSubjectText.to)}</div>`
               : `<div class="c-subject-chg"><span class="c-subject-chg-from">${esc(chgSubjectText.from)}</span><span class="c-subject-chg-arrow">→</span><span class="c-subject-chg-to">${esc(chgSubjectText.to)}</span></div>`)
+          : isJikojiCell
+            // 行事は教科欄がないため、真ん中に行事名を表示（空なら「未入力」）
+            ? (entry.content
+                ? `<div class="c-subject">${esc(entry.content)}</div>`
+                : `<div class="c-subject-empty">未入力</div>`)
           : entry.room ? `<div class="c-subject"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>${esc(entry.room)}</div>`
           : `<div class="c-subject-empty"${(!isDark && !isLight) ? ` style="color:${color}"` : ''}>未入力</div>`;
+        // 行事名は subjectHtml 側で出すので、下段の内容行では重複表示しない
+        const showContentLine = entry.content && !(isJikojiCell && !chgSubjectText);
         cell.innerHTML = `
           <div class="c-text-wrap">
             <div class="c-class">${esc(entry.name)}</div>
             ${subjectHtml}
             ${chgPairHtml}
-            ${(chgSubjectText && entry.content) ? `<div class="c-content">${esc(entry.content)}</div>` : (!chgSubjectText && entry.content) ? `<div class="c-content">${esc(entry.content)}</div>` : ''}
+            ${showContentLine ? `<div class="c-content">${esc(entry.content)}</div>` : ''}
           </div>
           ${bottomLeft}${chgBadge}${absenceBadge}
         `;
