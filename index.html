@@ -362,19 +362,20 @@
     .prog-del-btn:hover { color:#E53935; }
 
     /* ── 授業変更一覧 ── */
-    .chg-table { width:100%; border-collapse:collapse; font-size:.82rem; }
-    .chg-table th { padding:8px 10px; background:#f7fafc; font-weight:700; text-align:left; border-bottom:2px solid var(--border); color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
-    .chg-table td { padding:8px 10px; border-bottom:1px solid #f0f2f6; vertical-align:middle; }
-    .chg-table td.chg-date-cell { font-weight:700; white-space:nowrap; text-align:center; vertical-align:top; padding-top:12px; background:#f7fafc; border-right:1px solid var(--border); font-size:.8rem; width:80px; }
-    /* 日付グループの区切りを明確にする濃い上罫線 */
-    .chg-table tr.chg-group-start td { border-top:2px solid #9aa8bd; }
-    .chg-table tbody tr:first-child td { border-top:none; }
-    .chg-period { text-align:center; color:var(--accent); font-weight:800; width:3em; white-space:nowrap; border-right:1px solid #f0f2f6; }
+    .chg-list { padding:2px 0 10px; font-size:.82rem; }
+    .chg-day-head { display:flex; align-items:center; gap:10px; padding:12px 16px 5px; }
+    .chg-day + .chg-day .chg-day-head { padding-top:16px; }
+    .chg-day-head::after { content:''; flex:1; height:1px; background:var(--border); }
+    .chg-day-label { font-size:.82rem; font-weight:800; color:var(--text); }
+    .chg-day-label.chg-day-today { background:#FFCDD2; color:#C62828; border-radius:6px; padding:2px 9px; }
+    .chg-row { display:flex; align-items:flex-start; gap:10px; padding:5px 16px; border-radius:8px; }
+    .chg-row:hover { background:#fafbfc; }
+    .chg-period-badge { flex-shrink:0; font-size:.72rem; font-weight:800; color:var(--accent2); background:#FDF1E7; border-radius:6px; padding:3px 0; width:3.2em; text-align:center; margin-top:1px; }
+    .chg-flow { flex:1; min-width:0; line-height:1.9; }
     .chg-arrow { color:#aaa; margin:0 6px; }
     .chg-class { display:inline-block; border-radius:5px; padding:1px 7px; font-weight:700; font-size:.8rem; }
-    .chg-class { opacity: 0.35; }
-    .chg-class.chg-class-mine { opacity: 1; }
-    .chg-pair-note { font-size:.7rem; color:#8a94a3; margin-top:3px; font-weight:600; }
+    .chg-class:not(.chg-class-mine) { opacity:.55; filter:grayscale(.4); }
+    .chg-pair-note { font-size:.7rem; color:#8a94a3; margin-top:1px; font-weight:600; line-height:1.5; }
     .chg-to-wrap { white-space:nowrap; } /* 矢印と変更後コマをセットで折り返す */
 
     /* ── 祝日管理ページ ── */
@@ -401,6 +402,12 @@
 
     /* ── 祝日カウントバッジ ── */
     .hol-count-badge { display:inline-flex; align-items:center; justify-content:center; background:rgba(255,80,80,.12); color:#c53030; border-radius:12px; padding:2px 8px; font-size:.72rem; font-weight:700; margin-left:auto; }
+
+    /* モバイル用の上書き（display:block）より前に置くこと */
+    .edit-panel-overlay {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 199;
+    }
 
     @media (max-width:640px) {
       .edit-form { grid-template-columns:1fr 1fr; }
@@ -457,13 +464,11 @@
         z-index: 200;
         box-shadow: 0 -4px 24px rgba(0,0,0,.2) !important;
       }
+      /* 開いている間はJSがインラインstyleを''にするのでこの規則が効き、
+         閉じている間はインラインのdisplay:noneが勝つ（!important禁止） */
       .edit-panel-overlay {
-        display: block !important;
+        display: block;
       }
-    }
-    .edit-panel-overlay {
-      display: none;
-      position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 199;
     }
 
     /* ── 参照元変更ページ ── */
@@ -3290,22 +3295,19 @@ function renderChanges() {
     else byDate.push({ dateStr: c.dateStr, date: c.date, items: [c] });
   });
 
-  const table = document.createElement('table');
-  table.className = 'chg-table';
-  table.innerHTML = '<thead><tr><th style="width:80px">日付</th><th style="width:3em">時</th><th>変更内容</th></tr></thead>';
-  const tbody = document.createElement('tbody');
+  const list = document.createElement('div');
+  list.className = 'chg-list';
 
   byDate.forEach(({ date, items }) => {
     const dayLabel = `${date.getMonth()+1}/${date.getDate()}(${DAY_JP[date.getDay()]})`;
     const isToday  = isSameDay(date, today);
-    const dateCellHtml = isToday
-      ? `<span class="prog-today" style="font-size:.78rem;padding:2px 7px">${dayLabel}</span>`
-      : dayLabel;
+
+    const day = document.createElement('div');
+    day.className = 'chg-day';
+    day.innerHTML = `<div class="chg-day-head"><span class="chg-day-label${isToday ? ' chg-day-today' : ''}">${dayLabel}</span></div>`;
 
     const MY_SUBJECTS = ['理科', '総合', '学活', '道徳'];
-    items.forEach(({ period, from, to, chg }, i) => {
-      const tr = document.createElement('tr');
-      if (i === 0) tr.className = 'chg-group-start';
+    items.forEach(({ period, from, to, chg }) => {
       const fromMine = from && MY_SUBJECTS.includes(from.room);
       const toMine   = to   && MY_SUBJECTS.includes(to.room);
       const fromHtml = from
@@ -3319,15 +3321,16 @@ function renderChanges() {
       if (chg?.toOrigRoom && to) pairBits.push(`${to.name}: ${chg.toOrigRoom}→${to.room || '─'}`);
       if (chg?.fromNextRoom && from) pairBits.push(`${from.name}: ${from.room || '─'}→${chg.fromNextRoom}`);
       const pairHtml = pairBits.length ? `<div class="chg-pair-note">${esc(pairBits.join('　'))}</div>` : '';
-      const dateCell = i === 0 ? `<td class="chg-date-cell" rowspan="${items.length}">${dateCellHtml}</td>` : '';
-      tr.innerHTML = `${dateCell}<td class="chg-period">${period}限</td><td>${fromHtml}<span class="chg-to-wrap"><span class="chg-arrow">→</span>${toHtml}</span>${pairHtml}</td>`;
-      tbody.appendChild(tr);
+      const row = document.createElement('div');
+      row.className = 'chg-row';
+      row.innerHTML = `<span class="chg-period-badge">${period}限</span><div class="chg-flow">${fromHtml}<span class="chg-to-wrap"><span class="chg-arrow">→</span>${toHtml}</span>${pairHtml}</div>`;
+      day.appendChild(row);
     });
+    list.appendChild(day);
   });
 
-  table.appendChild(tbody);
   container.innerHTML = '';
-  container.appendChild(table);
+  container.appendChild(list);
 }
 
 /* ── 祝日管理ページ ── */
