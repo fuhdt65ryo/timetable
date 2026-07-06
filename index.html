@@ -2118,13 +2118,24 @@ function pastelizeColor(hex) {
   return `rgb(${Math.round(r*.42+255*.58)},${Math.round(g*.42+255*.58)},${Math.round(b*.42+255*.58)})`;
 }
 
+/* 授業内容を持たない教科（テスト＝テスト監督）。空きコマとは区別する */
+const NO_CONTENT_SUBJECTS = new Set(['テスト']);
+const NO_CONTENT_COLOR = '#78909C';
+function isNoContentSubject(room) { return NO_CONTENT_SUBJECTS.has(room); }
+
 function getColor(name, subject) {
+  if (isNoContentSubject(subject)) return NO_CONTENT_COLOR; // どのクラスでも一定
   const c = CLASSES.find(c=>c.name===name);
   if (!c) return '#B0BEC5';
   return c.subjects.find(s=>s.name===subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
 }
 function getSubjects(name) {
   return CLASSES.find(c=>c.name===name)?.subjects || [];
+}
+/* 教科ドロップダウン用：どのクラスでも「テスト」を選べるようにする */
+function subjectOptionsFor(name) {
+  const base = getSubjects(name).map(s => s.name);
+  return base.includes('テスト') ? base : [...base, 'テスト'];
 }
 
 /* 部活セルのみ差分更新（全体再描画を避ける） */
@@ -2300,7 +2311,7 @@ function _renderTimetableInner() {
       const henkouToMine = hasJugyohenkou && MY_SUBJECTS.includes(entry?.room);
       let cls = 'cell';
       if (entry) cls += ' has-entry';
-      if (entry && (entry.content || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn)) cls += ' has-content';
+      if (entry && (entry.content || isLight || (hasJugyohenkou && !henkouToMine) || isTaninOwn || isNoContentSubject(entry.room))) cls += ' has-content';
       if (isToday)  cls += ' is-today-col';
       if (isPast)   cls += ' is-past-col';
       if (isWeekendCol) cls += ' is-weekend-col';
@@ -2366,7 +2377,7 @@ function _renderTimetableInner() {
         const bg = isDark ? (getColor(entry.name, entry.room) || entry.color || '#37474F') : pastelizeColor(color);
         cell.style.background = bg;
         if (!isDark) cell.style.borderColor = color;
-        if (!isDark && !isLight && !entry.content && !isTaninOwn && (!hasJugyohenkou || henkouToMine)) { cell.style.borderStyle = 'dashed'; }
+        if (!isDark && !isLight && !entry.content && !isTaninOwn && !isNoContentSubject(entry.room) && (!hasJugyohenkou || henkouToMine)) { cell.style.borderStyle = 'dashed'; }
         if (hasJugyohenkou && !henkouToMine && !isDark && !isLight) { cell.style.borderStyle = 'dashed'; cell.style.borderWidth = '2px'; cell.style.opacity = '0.75'; }
         const isJikojiCell = entry.name === '行事';
         const bottomLeft = srcBadge
@@ -2570,7 +2581,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   const currentContent = entry?.content || '';
 
   const classNames = CLASSES.map(c => c.name);
-  const subjectNames = getSubjects(currentClass).map(s => s.name);
+  const subjectNames = subjectOptionsFor(currentClass);
   const datalistHtml = ['自習', ...pastContents.filter(v => v !== '自習')].map(v=>`<option value="${esc(v)}">`).join('');
 
   const isJikoji   = currentClass === '行事';
@@ -2673,7 +2684,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
 
   initCdd('eClass', classNames, (val) => {
     // クラスが変わったら教科ドロップダウンを作り直す
-    const newSubs = getSubjects(val).map(s => s.name);
+    const newSubs = subjectOptionsFor(val);
     const subjWrap = document.getElementById('eSubject_wrap');
     if (subjWrap) {
       const subjInput = document.getElementById('eSubject');
