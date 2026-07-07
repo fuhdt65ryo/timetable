@@ -4,24 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>時間割</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23F0A870'/><rect x='4' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.6'/><rect x='4' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/><rect x='17' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #f0f2f8; --surface: #fff; --border: #e2e8f0;
+      --text: #1a202c; --muted: #718096;
+      --accent: #F0A870; --accent2: #D87840;
+      --on-accent: #fff;
+      --today: #FFF3B0; --today-b: #E8D060;
+      --shadow: 0 4px 16px rgba(0,0,0,.10);
+    }
+
+    html, body { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-      background: #fff;
-      color: #1a202c;
+      background: var(--bg);
+      color: var(--text);
       font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
     }
 
     /* ── ヘッダー ── */
     header {
-      background: #F0A870;
-      color: #fff;
-      padding: 5px 8px 0;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: var(--on-accent);
+      padding: 6px 8px 5px;
       position: sticky;
       top: 0;
       z-index: 10;
+      flex: 0 0 auto;
     }
 
     .header-top {
@@ -32,9 +48,9 @@
     }
 
     .header-title {
-      font-size: .78rem;
+      font-size: .8rem;
       font-weight: 800;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
     }
 
     .header-sub {
@@ -64,8 +80,11 @@
     /* ── 曜日タブ ── */
     .day-tabs {
       display: flex;
+      gap: 3px;
       overflow-x: auto;
       scrollbar-width: none;
+      border-top: 1px solid rgba(255,255,255,.18);
+      padding: 4px 0 5px;
     }
     .day-tabs::-webkit-scrollbar { display: none; }
 
@@ -74,70 +93,98 @@
       min-width: 36px;
       background: transparent;
       border: none;
-      color: rgba(255,255,255,.6);
-      padding: 4px 2px 5px;
+      color: rgba(255,255,255,.78);
+      padding: 3px 2px 4px;
       font-size: .68rem;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      border-bottom: 2px solid transparent;
-      transition: all .12s;
+      border-radius: 8px;
+      transition: all .18s;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 1px;
       line-height: 1.2;
     }
-    .day-tab:hover { color: rgba(255,255,255,.85); }
+    .day-tab:hover { color: #fff; background: rgba(255,255,255,.14); }
     .day-tab.active {
-      color: #fff;
-      border-bottom-color: rgba(255,255,255,.9);
-      background: rgba(255,255,255,.12);
+      color: var(--accent2);
+      background: #fff;
+      font-weight: 800;
+      box-shadow: 0 1px 4px rgba(0,0,0,.14);
     }
-    .day-tab.is-today .tab-dn {
-      background: rgba(255,255,255,.28);
-      border-radius: 3px;
-      padding: 0 3px;
+    .day-tab.is-today .tab-dd {
+      background: var(--today);
+      color: #7a5c00;
+      border-radius: 4px;
+      padding: 0 4px;
+      opacity: 1;
+      font-weight: 800;
     }
-    .day-tab.is-holiday { color: rgba(255,180,180,.85); }
+    .day-tab.is-sat { color: rgba(200,225,255,.9); }
+    .day-tab.is-sun { color: rgba(255,190,190,.9); }
+    .day-tab.is-holiday { color: rgba(255,180,180,.9); }
+    .day-tab.active.is-sat { color: #1d4ed8; }
+    .day-tab.active.is-sun,
+    .day-tab.active.is-holiday { color: #c0392b; }
     .tab-dn { font-size: .72rem; font-weight: 800; }
     .tab-dd { font-size: .58rem; opacity: .85; }
 
     /* ── メイン ── */
-    main { padding: 5px 6px 6px; }
+    main {
+      padding: 8px 8px 14px;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+    }
 
     /* ── バナー系 ── */
     .banner {
-      border-radius: 7px;
-      padding: 8px 10px;
+      border-radius: 10px;
+      padding: 10px 12px;
       text-align: center;
       font-size: .75rem;
       font-weight: 700;
       margin-top: 4px;
+      box-shadow: var(--shadow);
     }
-    .banner-holiday  { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; }
-    .banner-no-class { background: #f7fafc; border: 1px dashed #e2e8f0; color: #a0aec0; }
-    .banner-event    { background: #fffbeb; border: 1px solid #f6e05e; color: #744210; }
-    .banner-absence  { border-radius: 6px; padding: 4px 8px; margin-bottom: 4px; font-size: .7rem; font-weight: 700; }
+    .banner-holiday  { background: #f8f0f0; border: 1px solid #e0c0c0; color: #c0392b; }
+    .banner-no-class { background: var(--surface); border: 1px dashed var(--border); color: #a0aec0; box-shadow: none; }
+    .banner-event    { background: #FFF8E0; border: 1px solid #D4A017; color: #7A5A00; }
+    .banner-absence  { border-radius: 8px; padding: 4px 8px; margin-bottom: 6px; font-size: .7rem; font-weight: 700; }
     .banner-absence.nenkyuu { background:#fff8f0; border:1px solid #fb8c00; color:#e65100; }
     .banner-absence.shuccho { background:#f0f8f0; border:1px solid #388e3c; color:#2e7d32; }
 
     /* ── コマリスト ── */
-    .period-list { display: flex; flex-direction: column; gap: 3px; }
+    .period-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 6px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
 
     .period-row {
       display: flex;
       align-items: stretch;
-      border-radius: 6px;
-      border: 1px dashed #e2e8f0;
+      border-radius: 8px;
+      border: 1.5px dashed var(--border);
       overflow: hidden;
       min-height: 28px;
       background: #f7fafc;
+      flex: 1 1 0;
     }
     .period-row.has-content {
       border-style: solid;
       background: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+      box-shadow: 0 1px 5px rgba(0,0,0,.07);
     }
     .period-row.is-dark { border-style: solid; }
 
@@ -186,11 +233,11 @@
       flex-shrink: 0;
     }
     .badge {
-      font-size: .45rem; font-weight: 800; border-radius: 2px;
+      font-size: .45rem; font-weight: 800; border-radius: 3px;
       padding: 0 3px; line-height: 1.5; white-space: nowrap;
     }
     .badge-rinji   { background:#fff; color:#1565C0; border:1px solid #1565C0; }
-    .badge-chg     { background:linear-gradient(135deg,#4A6DB5,#2c47a0); color:#fff; }
+    .badge-chg     { background:#fff; color:#546E7A; border:1px solid #546E7A; }
     .badge-nenkyuu { background:#fff; color:#E65100; border:1px solid #FB8C00; }
     .badge-shuccho { background:#fff; color:#2E7D32; border:1px solid #388E3C; }
 
@@ -219,7 +266,7 @@
       font-size: .75rem; font-weight: 700; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer;
     }
     .fb-modal-cancel { background: #e2e8f0; color: #4a5568; }
-    .fb-modal-save   { background: #F0A870; color: #fff; }
+    .fb-modal-save   { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
   </style>
 </head>
 <body>
@@ -478,6 +525,8 @@ function renderTabs() {
     btn.className = 'day-tab'
       + (ds === _selectedDs ? ' active' : '')
       + (ds === todayStr ? ' is-today' : '')
+      + (d.getDay() === 6 ? ' is-sat' : '')
+      + (d.getDay() === 0 ? ' is-sun' : '')
       + (isHol ? ' is-holiday' : '');
     btn.innerHTML = `<span class="tab-dn">${DAY_JP[d.getDay()]}</span><span class="tab-dd">${d.getDate()}</span>`;
     btn.addEventListener('click', () => { _selectedDs = ds; render(); });
