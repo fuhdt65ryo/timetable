@@ -1778,12 +1778,17 @@ let ttEnd          = null; // レンダリング範囲の終了日
 let ttRendering    = false; // 再レンダリング中フラグ（スクロール多重起動防止）
 let ttScrollReady  = false; // スクロールリスナー登録済み
 let selKey         = null;
-// 別のセル（または編集パネルのオーバーレイ）を押した瞬間だけ立つフラグ。
-// 立っている間は入力欄のblurで再描画しない＝押した要素がDOMから消えず、1クリックで選択できる。
+// 入力欄からフォーカスが外れて別の場所を押した瞬間だけ立つフラグ。
+// renderTimetable() は grid.innerHTML='' でグリッドを作り直すため、グリッド内の要素
+// （セルだけでなく日付ヘッダーや空きエリアも）を押すと、blurでの再描画でその要素がDOMから
+// 消え、clickイベントが発火せず2回押しになる。編集パネル自体は再描画で消えない（先に退避される）
+// ので対象外。立っている間はblurでの再描画を抑止し、直後のselectCell/clearSelectに再描画を任せる。
 let cellPointerDown = false;
 document.addEventListener('pointerdown', e => {
   const t = e.target;
-  cellPointerDown = !!(t.closest && (t.closest('.cell') || t.id === 'editPanelOverlay'));
+  if (!t || !t.closest) { cellPointerDown = false; return; }
+  const inGridButNotPanel = !!t.closest('.timetable') && !t.closest('#editPanel');
+  cellPointerDown = inGridButNotPanel || t.id === 'editPanelOverlay' || !!t.closest('#editPanelOverlay');
 }, true);
 document.addEventListener('pointerup', () => { cellPointerDown = false; }, true);
 let longVacations    = []; // [{ name:'夏季休業', from:'YYYY-MM-DD', to:'YYYY-MM-DD' }, ...]
