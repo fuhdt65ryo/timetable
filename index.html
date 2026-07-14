@@ -607,6 +607,23 @@
     .chg-add-btn { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; padding:5px 14px; border-radius:14px; font-size:.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
     .chg-add-btn:hover { opacity:.85; }
 
+    /* ── 自動割り当て結果モーダル ── */
+    .aa-summary { font-size:.85rem; font-weight:700; color:var(--text); }
+    .aa-summary .aa-count { color:var(--accent2); }
+    .aa-empty { font-size:.85rem; color:var(--muted); background:#f7fafc; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+    .aa-group { border:1.5px solid var(--border); border-radius:10px; overflow:hidden; }
+    .aa-group-head { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f0f4ff; border-bottom:1px solid var(--border); }
+    .aa-group-name { font-size:.85rem; font-weight:800; color:#1d4ed8; }
+    .aa-group-count { font-size:.7rem; font-weight:700; color:#64748b; margin-left:auto; }
+    .aa-row { display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid #f3f5f9; flex-wrap:wrap; }
+    .aa-row:last-child { border-bottom:none; }
+    .aa-lesson { font-size:.8rem; font-weight:700; flex:1 1 40%; min-width:100px; }
+    .aa-slot-from { font-size:.76rem; color:#94a3b8; text-decoration:line-through; }
+    .aa-slot-new { font-size:.76rem; font-weight:800; color:#1d4ed8; background:#eef3ff; border:1.5px solid #b9c9f2; border-radius:5px; padding:1px 7px; }
+    .aa-slot-none { font-size:.76rem; color:#aaa; }
+    .aa-arrow { color:#3b82f6; font-weight:800; }
+    .aa-warn { background:#fff5f5; border:1px solid #fed7d7; color:#c53030; border-radius:10px; padding:10px 12px; font-size:.78rem; line-height:1.7; }
+
     /* ── 自動割り当てトースト ── */
     .aa-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px); background:rgba(30,40,60,.92); color:#fff; padding:12px 20px; border-radius:12px; font-size:.85rem; font-weight:600; opacity:0; transition:opacity .3s,transform .3s; pointer-events:none; z-index:300; max-width:min(480px,90vw); width:max-content; line-height:1.7; }
     .aa-toast.aa-toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -1428,6 +1445,20 @@
   </div>
 </div>
 
+<!-- 自動割り当て結果モーダル -->
+<div class="chgmod-overlay" id="aaResultModal">
+  <div class="chgmod">
+    <div class="chgmod-head">
+      <h2>🔄 自動割り当ての結果</h2>
+      <button class="chgmod-close" id="aaResultClose">✕</button>
+    </div>
+    <div class="chgmod-body" id="aaResultBody"></div>
+    <div class="chgmod-actions">
+      <button class="btn btn-save" id="aaResultOk">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 同期設定モーダル -->
 <div class="sync-overlay" id="syncModal">
   <div class="sync-modal">
@@ -1747,6 +1778,14 @@ let ttEnd          = null; // レンダリング範囲の終了日
 let ttRendering    = false; // 再レンダリング中フラグ（スクロール多重起動防止）
 let ttScrollReady  = false; // スクロールリスナー登録済み
 let selKey         = null;
+// 別のセル（または編集パネルのオーバーレイ）を押した瞬間だけ立つフラグ。
+// 立っている間は入力欄のblurで再描画しない＝押した要素がDOMから消えず、1クリックで選択できる。
+let cellPointerDown = false;
+document.addEventListener('pointerdown', e => {
+  const t = e.target;
+  cellPointerDown = !!(t.closest && (t.closest('.cell') || t.id === 'editPanelOverlay'));
+}, true);
+document.addEventListener('pointerup', () => { cellPointerDown = false; }, true);
 let longVacations    = []; // [{ name:'夏季休業', from:'YYYY-MM-DD', to:'YYYY-MM-DD' }, ...]
 let bukatsuOverrides = {}; // { "YYYY-MM-DD": true(あり)/false(なし)/undefined(自動) }
 let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業ありにした日
@@ -2373,6 +2412,8 @@ function _renderTimetableInner() {
 
       cell.setAttribute('tabindex', '0');
       cell.setAttribute('role', 'button');
+      cell.dataset.date   = dateStr;
+      cell.dataset.period = p;
       const _d = parseDateStr(dateStr);
       const _ariaLabel = [
         `${_d.getMonth()+1}月${_d.getDate()}日(${DAY_JP[_d.getDay()]}) ${p}限`,
@@ -2633,7 +2674,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
     srcLabel.addEventListener('click', () => srcWrap.classList.toggle('src-grid-open'));
   }
 
-  const _as = () => { autoSave(true); schedulePush('tt_overrides_v1'); };
+  // セルを押して抜けた場合は再描画しない（直後の selectCell が描画する）
+  const _as = () => { autoSave(!cellPointerDown); schedulePush('tt_overrides_v1'); };
 
   initCdd('eClass', classNames, (val) => {
     // クラスが変わったら教科ドロップダウンを作り直す
@@ -3196,6 +3238,7 @@ function applyAutoAssign() {
   const today = new Date(); today.setHours(0,0,0,0);
   const assignedLessons = [];
   const unassignedLessons = [];
+  const changeRows = []; // { cls, lesson, from, to } 実際に中身が動いたコマだけ
 
   function applyGrade({ plan, classes }) {
     if (!plan.length) return;
@@ -3224,6 +3267,13 @@ function applyAutoAssign() {
         const chgProps = chgPropsOf(existingOvr);
         overrides[ok] = { name: currentEntry.name, room: currentEntry.room, content: lesson, color: currentEntry.color, autoAssigned: true, ...chgProps };
         assigned++;
+        if (!slot.unchanged) {
+          changeRows.push({
+            cls, lesson,
+            from: slot.originalSlot || null,
+            to: { dateStr: slot.dateStr, period: slot.period },
+          });
+        }
       });
       if (assigned > 0) assignedLessons.push(lesson);
       if (missing.length > 0) unassignedLessons.push({ lesson, missing });
@@ -3240,7 +3290,57 @@ function applyAutoAssign() {
   renderProgress2();
   renderChanges();
   autoAssignPlan = null;
-  showAutoAssignToast('✅ 自動割り当てを実行しました');
+  showAutoAssignResult(changeRows, unassignedLessons);
+}
+
+/* ── 自動割り当て結果モーダル ── */
+function aaSlotLabel(slot) {
+  const d = parseDateStr(slot.dateStr);
+  return `${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]}) ${slot.period}限`;
+}
+
+function showAutoAssignResult(changeRows, unassignedLessons) {
+  const body = document.getElementById('aaResultBody');
+  const parts = [];
+
+  if (!changeRows.length) {
+    parts.push('<div class="aa-empty">割り当ての変更はありませんでした</div>');
+  } else {
+    const classSet = [...new Set(changeRows.map(r => r.cls))];
+    parts.push(`<div class="aa-summary"><span class="aa-count">${classSet.length}</span> クラス／<span class="aa-count">${changeRows.length}</span> コマが変わりました</div>`);
+    classSet.forEach(cls => {
+      const rows = changeRows.filter(r => r.cls === cls);
+      const rowsHtml = rows.map(r => `
+        <div class="aa-row">
+          <span class="aa-lesson">${esc(r.lesson)}</span>
+          ${r.from ? `<span class="aa-slot-from">${esc(aaSlotLabel(r.from))}</span>` : '<span class="aa-slot-none">新規</span>'}
+          <span class="aa-arrow">→</span>
+          <span class="aa-slot-new">${esc(aaSlotLabel(r.to))}</span>
+        </div>`).join('');
+      parts.push(`
+        <div class="aa-group">
+          <div class="aa-group-head">
+            <span class="aa-group-name">${esc(cls)}</span>
+            <span class="aa-group-count">${rows.length}件</span>
+          </div>
+          ${rowsHtml}
+        </div>`);
+    });
+  }
+
+  if (unassignedLessons.length) {
+    const lines = unassignedLessons
+      .map(u => `・${esc(u.lesson)}（${esc(u.missing.join('、'))}）`)
+      .join('<br>');
+    parts.push(`<div class="aa-warn"><b>⚠ 割り当てできなかった授業</b><br>${lines}</div>`);
+  }
+
+  body.innerHTML = parts.join('');
+  document.getElementById('aaResultModal').style.display = 'flex';
+}
+
+function closeAutoAssignResult() {
+  document.getElementById('aaResultModal').style.display = 'none';
 }
 
 let aaToastTimer = null;
@@ -4167,7 +4267,7 @@ weekPicker.addEventListener('change', function() {
   this.style.pointerEvents = 'none';
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { clearSelect(); closeEventModal(); closeChangeModal(); closeDaySetting(); return; }
+  if (e.key === 'Escape') { clearSelect(); closeEventModal(); closeChangeModal(); closeDaySetting(); closeAutoAssignResult(); return; }
   if (e.target.matches('input,textarea,select')) return;
   if (e.key === 'ArrowLeft')  { e.preventDefault(); navScrollWeek(-7); return; }
   if (e.key === 'ArrowRight') { e.preventDefault(); navScrollWeek(7);  return; }
@@ -4535,7 +4635,14 @@ document.addEventListener('click', function(e) {
 
 /* ── カレンダー設定ページ イベント ── */
 document.getElementById('btnGcalRefresh').addEventListener('click', fetchGcalEvents);
-document.getElementById('editPanelOverlay').addEventListener('click', clearSelect);
+// オーバーレイは時間割の上にも被さるため、真下にセルがあればそのセルを選択する
+// （被さっていなければ従来どおり選択解除）。これで1タップで別のコマに移れる。
+document.getElementById('editPanelOverlay').addEventListener('click', e => {
+  const under = document.elementsFromPoint(e.clientX, e.clientY)
+    .find(el => el.classList?.contains('cell') && el.dataset.date);
+  if (under) { selectCell(under.dataset.date, +under.dataset.period); return; }
+  clearSelect();
+});
 document.getElementById('btnGcalSaveUrl').addEventListener('click', () => {
   const val = document.getElementById('gcalUrlInput').value.trim();
   if (!val) return;
@@ -4738,6 +4845,11 @@ document.getElementById('btnAutoAssign').addEventListener('click', () => {
   }
   autoAssignPlan = { grade3, grade2 };
   applyAutoAssign();
+});
+document.getElementById('aaResultClose').addEventListener('click', closeAutoAssignResult);
+document.getElementById('aaResultOk').addEventListener('click', closeAutoAssignResult);
+document.getElementById('aaResultModal').addEventListener('click', e => {
+  if (e.target.id === 'aaResultModal') closeAutoAssignResult();
 });
 
 /* ── 起動 ── */
