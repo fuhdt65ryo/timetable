@@ -124,15 +124,6 @@
     .day-event-add:hover { color:rgba(255,255,255,.85); border-color:rgba(255,255,255,.5); background:rgba(255,255,255,.1); }
 
     .cell-period { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 2px; background:transparent; border-radius:10px; border:none; z-index:3; }
-    .bukatsu-label { display:flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:700; color:#aaa; z-index:3; background:var(--bg); }
-    .bukatsu-cell  { display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:.65rem; font-weight:800; min-height:22px; }
-    .bukatsu-ari   { background:#DCEEFB; color:#1565C0; }
-    .bukatsu-nashi { background:#EEEEEE; color:#9E9E9E; letter-spacing:.02em; }
-    /* ルールと違う（手動設定）場合は強調 */
-    .bukatsu-ari.bukatsu-manual  { background:#E8F5E9; color:#2E7D32; outline:2px solid #43A047; outline-offset:-2px; font-weight:900; }
-    .bukatsu-nashi.bukatsu-manual { background:#FFF3E0; color:#E65100; outline:2px solid #FB8C00; outline-offset:-2px; font-weight:900; }
-    /* カレンダーで部活なしが指定されている場合は強調 */
-    .bukatsu-nashi.bukatsu-calendar { background:#FCE4EC; color:#C62828; outline:2px solid #E53935; outline-offset:-2px; font-weight:900; }
     .period-num  { font-size:clamp(.7rem,1.6vw,1rem); font-weight:800; color:var(--accent); }
     .period-time { font-size:clamp(.38rem,0.8vw,.5rem); color:var(--muted); white-space:nowrap; }
 
@@ -332,11 +323,10 @@
     .prog-table tbody tr:last-child td { border-bottom:none; }
     .prog-table td { padding:0 4px; border-bottom:1px solid #f4f6fa; vertical-align:middle; text-align:center; overflow:hidden; height:36px; box-sizing:border-box; }
     .prog-table td > .prog-cell-inner { display:flex; align-items:center; justify-content:center; height:100%; overflow:hidden; }
-    .prog-content-cell { text-align:left !important; }
+    .prog-content-cell { text-align:left !important; display:flex; align-items:center; min-width:0; height:22px; box-sizing:border-box; }
     .prog-sub { font-size:.62rem; color:var(--muted); }
     .prog-drag-handle { cursor:grab; color:#ccc; font-size:.8rem; padding:0 3px 0 0; user-select:none; flex-shrink:0; }
     .prog-drag-handle:active { cursor:grabbing; }
-    .prog-content-cell { display:flex; align-items:center; min-width:0; height:22px; box-sizing:border-box; }
     .prog-cnt { font-weight:600; cursor:pointer; border-radius:4px; padding:1px 3px; transition:background .12s; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:100%; }
     .prog-cnt:hover { background:rgba(0,0,0,.06); }
     tr.drag-over td { border-top:2px solid var(--accent); }
@@ -1010,13 +1000,12 @@
       <a class="help-toc-item" href="#" data-help-sec="sec-cell">① 時間割の見方</a>
       <a class="help-toc-item" href="#" data-help-sec="sec-edit">② 授業の入力・編集</a>
       <a class="help-toc-item" href="#" data-help-sec="sec-chg">③ 授業変更</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-bukatsu">④ 部活の設定</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-prog">⑤ 授業進捗</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-hol">⑥ 祝日・休校日</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-gcal">⑦ カレンダー連携</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-sync">⑧ データ同期</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-keys">⑨ キーボード操作</a>
-      <a class="help-toc-item" href="#" data-help-sec="sec-daymemo">⑩ 日付メモ欄</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-prog">④ 授業進捗</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-hol">⑤ 祝日・休校日</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-gcal">⑥ カレンダー連携</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-sync">⑦ データ同期</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-keys">⑧ キーボード操作</a>
+      <a class="help-toc-item" href="#" data-help-sec="sec-daymemo">⑨ 日付メモ欄</a>
     </nav>
   </div>
 
@@ -1068,27 +1057,6 @@
         <span class="help-color-desc">薄い緑</span>
       </div>
 
-      <p class="help-sub" style="margin-top:16px">部活行の色</p>
-      <div class="help-color-row">
-        <div class="help-swatch" style="background:#DCEEFB;border-color:#90CAF9"></div>
-        <span class="help-color-label">部活あり</span>
-        <span class="help-color-desc">水色</span>
-      </div>
-      <div class="help-color-row">
-        <div class="help-swatch" style="background:#EEEEEE;border-color:#CCC"></div>
-        <span class="help-color-label">部活なし（自動）</span>
-        <span class="help-color-desc">グレー（月曜・長期休業中）</span>
-      </div>
-      <div class="help-color-row">
-        <div class="help-swatch" style="background:#FFF3E0;border-color:#FB8C00"></div>
-        <span class="help-color-label">部活なし（手動変更）</span>
-        <span class="help-color-desc">オレンジ枠・強調</span>
-      </div>
-      <div class="help-color-row">
-        <div class="help-swatch" style="background:#FCE4EC;border-color:#E53935"></div>
-        <span class="help-color-label">部活なし（カレンダー指定）</span>
-        <span class="help-color-desc">赤枠・強調（カレンダーに「部活動なし」と記載）</span>
-      </div>
     </div>
   </div>
 
@@ -1114,7 +1082,7 @@
       </div>
       <div class="help-step">
         <div class="help-step-num">4</div>
-        <div class="help-step-txt">「削除」ボタンで入力内容を消去できます。「空欄化」は予定表のコマを一時的に使用不可にします。</div>
+        <div class="help-step-txt">「<b>空欄にする</b>」ボタンでそのコマを空きコマにできます。空欄にしたコマは「<b>↩ 元に戻す</b>」で復元できます。</div>
       </div>
       <div class="help-note">コマのソース（どの時間割パターンか）はセル左下の小さなバッジで確認できます。</div>
     </div>
@@ -1145,35 +1113,11 @@
     </div>
   </div>
 
-  <!-- ④ 部活の設定 -->
-  <div class="help-section card" id="sec-bukatsu">
-    <div class="help-sec-head">
-      <span class="help-sec-icon">⚽</span>
-      <span class="help-sec-title">④ 部活の設定</span>
-      <span class="help-sec-arrow">▶</span>
-    </div>
-    <div class="help-sec-body">
-      <p style="font-size:.83rem;line-height:1.7;margin-bottom:10px">時間割表の一番下の行で、日ごとの部活あり／なしを管理します。</p>
-      <div class="help-row">
-        <span class="help-desc">• <b>月曜日</b>は自動で「部活なし」になります。</span>
-      </div>
-      <div class="help-row">
-        <span class="help-desc">• Googleカレンダーに「<b>部活動なし</b>」と書かれた予定があると、その日が自動で「部活なし（赤枠）」になります。</span>
-      </div>
-      <div class="help-row">
-        <span class="help-desc">• 部活セルを<b>タップ</b>すると手動で切り替えられます。自動判定と異なる場合はオレンジ枠で強調されます。</span>
-      </div>
-      <div class="help-row">
-        <span class="help-desc">• もう一度タップして元のルールに戻すと、強調は消えます。</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⑤ 授業進捗 -->
+  <!-- ④ 授業進捗 -->
   <div class="help-section card" id="sec-prog">
     <div class="help-sec-head">
       <span class="help-sec-icon">📊</span>
-      <span class="help-sec-title">⑤ 授業進捗</span>
+      <span class="help-sec-title">④ 授業進捗</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
@@ -1222,7 +1166,7 @@
   <div class="help-section card" id="sec-hol">
     <div class="help-sec-head">
       <span class="help-sec-icon">🗾</span>
-      <span class="help-sec-title">⑥ 祝日・休校日</span>
+      <span class="help-sec-title">⑤ 祝日・休校日</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
@@ -1247,21 +1191,20 @@
   <div class="help-section card" id="sec-gcal">
     <div class="help-sec-head">
       <span class="help-sec-icon">📅</span>
-      <span class="help-sec-title">⑦ Googleカレンダー連携</span>
+      <span class="help-sec-title">⑥ Googleカレンダー連携</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
       <p style="font-size:.83rem;line-height:1.7;margin-bottom:10px">Googleカレンダーの予定を時間割表の日付ヘッダー下に表示できます。</p>
       <div class="help-step">
         <div class="help-step-num">1</div>
-        <div class="help-step-txt">「📅 カレンダー設定」タブを開き、GoogleカレンダーのICS URL（公開URL）を入力します。</div>
+        <div class="help-step-txt">「📅 カレンダー設定」タブを開き、Apps ScriptのURL（https://script.google.com/macros/s/...）を入力します。</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
         <div class="help-step-txt">「今すぐ更新」を押すと予定が取得され、時間割表の日付下に小さく表示されます。</div>
       </div>
       <div class="help-row" style="margin-top:8px">
-        <span class="help-desc">• <b>部活動なし</b>と書かれた予定 → 部活なし（赤枠強調）に自動設定</span>
       </div>
       <div class="help-row">
         <span class="help-desc">• 「祝日・休校日」→「長期休業の設定」で登録した期間 → 時間割上で🏫授業なし表示</span>
@@ -1281,7 +1224,7 @@
         <span class="help-badge" style="background:#F5F5F5;color:#333;border:1.5px solid #CCC;min-width:36px">個人</span>
         <span class="help-desc">上記以外の個人カレンダーの予定</span>
       </div>
-      <div class="help-note">ICS URLはGoogleカレンダーの「設定と共有」→「カレンダーの統合」から「公開URL（ICS）」をコピーしてください。</div>
+      <div class="help-note">URLは、カレンダー取得用のGoogle Apps ScriptをWebアプリとしてデプロイしたときに表示されるものを使います。</div>
     </div>
   </div>
 
@@ -1289,7 +1232,7 @@
   <div class="help-section card" id="sec-sync">
     <div class="help-sec-head">
       <span class="help-sec-icon">☁️</span>
-      <span class="help-sec-title">⑧ データ同期（複数端末）</span>
+      <span class="help-sec-title">⑦ データ同期（複数端末）</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
@@ -1314,7 +1257,7 @@
   <div class="help-section card" id="sec-keys">
     <div class="help-sec-head">
       <span class="help-sec-icon">⌨️</span>
-      <span class="help-sec-title">⑨ キーボード操作（PC）</span>
+      <span class="help-sec-title">⑧ キーボード操作（PC）</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
@@ -1342,7 +1285,7 @@
   <div class="help-section card" id="sec-daymemo">
     <div class="help-sec-head">
       <span class="help-sec-icon">📝</span>
-      <span class="help-sec-title">⑩ 日付メモ欄</span>
+      <span class="help-sec-title">⑨ 日付メモ欄</span>
       <span class="help-sec-arrow">▶</span>
     </div>
     <div class="help-sec-body">
@@ -1534,7 +1477,6 @@ const DAY_NAMES  = ['月','火','水','木','金'];       // 平日のみ（src-
 const DAY_JP     = ['日','月','火','水','木','金','土']; // getDay()のインデックスと対応
 const DI_TO_NAME = ['月','火','水','木','金','土','日']; // dayIdx()のインデックスと対応（0=月…4=金,5=土,6=日）
 const PERIODS    = [1,2,3,4,5,6];
-const TIMES      = ['8:50〜9:40','9:50〜10:40','10:50〜11:40','13:00〜13:50','14:00〜14:50','15:00〜15:50'];
 
 /* ── 日本の祝日（2026〜2028年3月） ── */
 const JP_HOLIDAYS = {
@@ -1644,6 +1586,7 @@ async function fetchGcalEvents() {
   showGcalStatus('loading', '取得中…');
   try {
     const res  = await fetch(`${url}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     gcalEvents = {};
     data.forEach(ev => {
@@ -1674,6 +1617,8 @@ async function fetchGcalEvents() {
   } catch (e) {
     console.error('GCal fetch error:', e);
     showGcalStatus('error', '取得に失敗しました。URLを確認してください。');
+    // 設定ページ以外にいても失敗（予定が古いまま）に気づけるようにトーストでも通知
+    showAutoAssignToast('カレンダーの取得に失敗しました。予定が最新でない可能性があります。', true);
   }
 }
 
@@ -1754,8 +1699,7 @@ const GCAL_EV_COLORS = {
 
 function gcalEventClass(cal) {
   const c = cal || '';
-  const isMine = /\d/.test(c) || c.includes('ファミリー');
-  if (!isMine)           return 'gcal-ev-other';
+  if (!isMyCalendar(c))  return 'gcal-ev-other';
   if (c.includes('学校')) return 'gcal-ev-school';
   if (c.includes('部活')) return 'gcal-ev-sports';
   if (c.includes('出張')) return 'gcal-ev-trip';
@@ -1778,10 +1722,7 @@ let prog2Manual  = [];  // 2年生 手動追加授業名
 let progOrder    = [];  // 3年生 手動並び順
 let prog2Order   = [];  // 2年生 手動並び順
 let weekStart      = getTodayStart();
-let ttStart        = null; // レンダリング範囲の開始日
-let ttEnd          = null; // レンダリング範囲の終了日
 let ttRendering    = false; // 再レンダリング中フラグ（スクロール多重起動防止）
-let ttScrollReady  = false; // スクロールリスナー登録済み
 let selKey         = null;
 // 入力欄からフォーカスが外れて別の場所を押した瞬間だけ立つフラグ。
 // renderTimetable() は grid.innerHTML='' でグリッドを作り直すため、グリッド内の要素
@@ -1797,7 +1738,6 @@ document.addEventListener('pointerdown', e => {
 }, true);
 document.addEventListener('pointerup', () => { cellPointerDown = false; }, true);
 let longVacations    = []; // [{ name:'夏季休業', from:'YYYY-MM-DD', to:'YYYY-MM-DD' }, ...]
-let bukatsuOverrides = {}; // { "YYYY-MM-DD": true(あり)/false(なし)/undefined(自動) }
 let weekendClassDays = {}; // { "YYYY-MM-DD": true } 土日で明示的に授業ありにした日
 let baseCurrent = null; // 現在の基本時間割（null のとき hardcoded BASE を使う）
 let baseNext = null;    // { fromDate: "YYYY-MM-DD", base: {...} } 次の基本時間割
@@ -1948,8 +1888,6 @@ function saveHolidays() { safeSave('tt_holidays_v1', holidays); schedulePush('tt
 function loadExtraJpHolidays() { try { Object.assign(JP_HOLIDAYS, JSON.parse(localStorage.getItem('tt_jp_holidays_extra') || '{}')); } catch {} }
 function loadLongVacations()  { try { longVacations = JSON.parse(localStorage.getItem('tt_long_vac_v1') || '[]'); } catch { longVacations = []; } }
 function saveLongVacations()  { safeSave('tt_long_vac_v1', longVacations); schedulePush('tt_long_vac_v1'); }
-function loadBukatsuOverrides() { try { bukatsuOverrides = JSON.parse(localStorage.getItem('tt_bukatsu_v1') || '{}'); } catch { bukatsuOverrides = {}; } }
-function saveBukatsuOverrides() { safeSave('tt_bukatsu_v1', bukatsuOverrides); schedulePush('tt_bukatsu_v1'); }
 function loadWeekendClassDays() { try { weekendClassDays = JSON.parse(localStorage.getItem('tt_weekend_classes_v1') || '{}'); } catch { weekendClassDays = {}; } }
 function saveWeekendClassDays() { safeSave('tt_weekend_classes_v1', weekendClassDays); schedulePush('tt_weekend_classes_v1'); }
 function loadBaseCurrent() {
@@ -2034,38 +1972,7 @@ function formatWeekLabel() {
   return `${s.getFullYear()}年 ${fmt(s)}〜${fmt(e)}`;
 }
 
-/* ── 無限スクロール ── */
-const TT_CHUNK = 7 * 8; // 8週ずつ延長
-const TT_MAX   = 7 * 156; // 最大3年（≒1092日）
-
-function initTTRange() {
-  const today = getTodayStart();
-  ttStart = addDays(today, -7 * 4);   // 4週前
-  ttEnd   = addDays(today,  7 * 14);  // 14週後
-}
-
-function scrollToDate(dateStr) {
-  const d = parseDateStr(dateStr);
-  weekStart = getWeekStart(d);
-  document.getElementById('weekLabelText').textContent = formatWeekLabel();
-  renderTimetable();
-}
-
-function getVisibleLeftDate() {
-  const wrap = document.getElementById('ttScroll');
-  if (!wrap) return null;
-  const sl = wrap.scrollLeft;
-  const headers = [...wrap.querySelectorAll('.cell-day[data-date]')];
-  let best = null;
-  for (const h of headers) {
-    if (h.offsetLeft <= sl + 56) best = h.dataset.date;
-    else if (best) break;
-  }
-  return best;
-}
-
 /* ── スケジュールロジック ── */
-function baseKey(date, period)     { return `${dayIdx(date)}-${period}`; }
 function overrideKey(dateStr, p)   { return `${dateStr}-${p}`; }
 
 function getEntry(dateStr, period) {
@@ -2149,24 +2056,6 @@ function subjectOptionsFor(name) {
   return base.includes('テスト') ? base : [...base, 'テスト'];
 }
 
-/* 部活セルのみ差分更新（全体再描画を避ける） */
-function refreshBukatsuCell(dateStr) {
-  const bc = document.querySelector(`[data-bukatsu-date="${dateStr}"]`);
-  if (!bc) return;
-  const d = parseDateStr(dateStr);
-  const allEvs = [...(gcalEvents[dateStr] || []), ...(calEvents[dateStr] || [])];
-  const calNashi  = allEvs.some(ev => ev.title && ev.title.includes('部活動なし'));
-  const autoNashi = d.getDay() === 1 || calNashi;
-  const ovr       = bukatsuOverrides[dateStr];
-  const isNashi   = ovr !== undefined ? !ovr : autoNashi;
-  let emphClass = '';
-  if (ovr === undefined && calNashi)          emphClass = ' bukatsu-calendar';
-  else if (ovr !== undefined && isNashi !== autoNashi) emphClass = ' bukatsu-manual';
-  bc.className   = 'bukatsu-cell ' + (isNashi ? 'bukatsu-nashi' : 'bukatsu-ari') + emphClass;
-  bc.textContent = isNashi ? '部活なし' : '部活';
-  bc.title       = ovr !== undefined ? '手動設定（クリックで切替/右クリックでリセット）'
-                 : calNashi ? 'カレンダーで部活なし指定（クリックで切替）' : 'クリックで切替';
-}
 
 /* ── 時間割グリッド ── */
 function renderTimetable() {
@@ -2465,6 +2354,8 @@ function _renderTimetableInner() {
       <div id="editBody"></div>
     `;
     editPanel.querySelector('#editClose').addEventListener('click', clearSelect);
+    // renderTimetable単独呼び出し（同期受信・リサイズ等）でもフォームの中身を復元する
+    refreshEditForm();
   } else {
     editPanel.style.display = 'none';
     const _ov2 = document.getElementById('editPanelOverlay');
@@ -2532,21 +2423,20 @@ function positionEditPanel() {
 
 /* ── セル選択・インライン編集 ── */
 function rerender() {
-  renderTimetable();
-  refreshEditForm();
+  renderTimetable(); // 編集フォームの復元はrenderTimetable内で行う
   renderProgress();
   renderProgress2();
   renderChanges();
 }
 
 function selectCell(dateStr, period) {
-  autoSave(false); schedulePush('tt_overrides_v1');
+  autoSave(false);
   selKey = overrideKey(dateStr, period);
   rerender();
 }
 
 function clearSelect() {
-  autoSave(false); schedulePush('tt_overrides_v1');
+  autoSave(false);
   selKey = null;
   renderTimetable();
   renderProgress();
@@ -2685,7 +2575,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   }
 
   // セルを押して抜けた場合は再描画しない（直後の selectCell が描画する）
-  const _as = () => { autoSave(!cellPointerDown); schedulePush('tt_overrides_v1'); };
+  const _as = () => { autoSave(!cellPointerDown); };
 
   initCdd('eClass', classNames, (val) => {
     // クラスが変わったら教科ドロップダウンを作り直す
@@ -2694,7 +2584,8 @@ function renderEditForm(entry, isOvr, baseEntry) {
     if (subjWrap) {
       const subjInput = document.getElementById('eSubject');
       const currentVal = subjInput ? subjInput.value : '';
-      subjWrap.outerHTML = buildCdd('eSubject', newSubs, '', subjectPlaceholder);
+      // 変更後のクラスにも同じ教科があれば引き継ぐ（なければクリア）
+      subjWrap.outerHTML = buildCdd('eSubject', newSubs, newSubs.includes(currentVal) ? currentVal : '', subjectPlaceholder);
       initCdd('eSubject', newSubs, _as);
     }
     _as();
@@ -2708,7 +2599,7 @@ function renderEditForm(entry, isOvr, baseEntry) {
   document.getElementById('eBtnJishu')?.addEventListener('click', () => {
     const cont = document.getElementById('eContent');
     if (cont) cont.value = '自習';
-    autoSave(false); schedulePush('tt_overrides_v1');
+    autoSave(false);
   });
 
   document.getElementById('eBtnChgClear')?.addEventListener('click', () => {
@@ -2807,12 +2698,16 @@ function initCdd(id, allOptions, onSelect) {
   });
 }
 
-function getSubjectOptions(className, currentSubject) {
-  const subs = getSubjects(className);
-  if (!subs.length) return '<option value="">選択</option>';
-  return subs.map(s=>`<option value="${s.name}"${s.name===currentSubject?' selected':''}>${s.name}</option>`).join('');
+/* 保存要否の比較用シグネチャ（colorは派生値、autoAssignedは編集時のみ剥がすため除外） */
+function _entrySig(e) {
+  if (!e) return null;
+  return JSON.stringify({
+    name: e.name || '', room: e.room || '', content: e.content || '',
+    rinji: !!e.rinji, chgType: e.chgType || '', jugyohenkou: !!e.jugyohenkou,
+    fromName: e.fromName || '', fromRoom: e.fromRoom || '',
+    toOrigRoom: e.toOrigRoom || '', fromNextRoom: e.fromNextRoom || '',
+  });
 }
-
 
 function autoSave(doRerender = true) {
   if (!selKey) return;
@@ -2830,24 +2725,17 @@ function autoSave(doRerender = true) {
   const rinjCb = document.getElementById('eRinji');
   if (rinjCb && rinjiForcedByProg) rinjCb.checked = true;
   const chgProps = chgPropsOf(overrides[selKey]);
-  overrides[selKey] = { name:klass, room:subject, content:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
-  save();
-  if (!doRerender) return;
-  rerender();
-}
-
-function restoreBase() {
+  const entry = { name:klass, room:subject, content:content, color:getColor(klass,subject), ...(rinji ? { rinji:true } : {}), ...chgProps };
+  // 実効値（既存override、なければ基本時間割）と同じなら書き込まない
+  // （セルを選択しただけで基本時間割のコマがoverride化するのを防ぐ）
   const [ds, pStr] = selKeyParts();
-  const prev = overrides[selKey];
-  if (prev) {
-    overrides[selKey] = { ...prev, content: '' };
-  } else {
-    const base = getEntry(ds, +pStr);
-    if (base) overrides[selKey] = { ...base, content: '' };
-  }
+  const cur = (selKey in overrides) ? overrides[selKey] : getEntry(ds, +pStr);
+  if (_entrySig(entry) === _entrySig(cur)) return;
+  overrides[selKey] = entry;
   save();
   schedulePush('tt_overrides_v1');
-  selectCell(ds, +pStr);
+  if (!doRerender) return;
+  rerender();
 }
 
 function selKeyParts() {
@@ -2858,7 +2746,7 @@ function selKeyParts() {
 /* ── 今日の予定 ── */
 function calGroupLabel(cal) {
   const c = cal || '';
-  if (!(/\d/.test(c) || c.includes('ファミリー'))) return '妻の予定';
+  if (!isMyCalendar(c)) return '妻の予定';
   if (c.includes('学校'))  return '学校';
   if (c.includes('部活'))  return '部活';
   if (c.includes('出張'))  return '出張';
@@ -3083,10 +2971,6 @@ function _renderProgManualInput(container, manualArr, saveFn, listKey, renderSel
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
 }
 
-function _syncProgManuals() {
-  // 自動追加は行わない（進捗リストは手動入力のみ）
-}
-
 function attachProgDrag(tbody, orderArr, saveFn, renderFn) {
   let dragSrc = null;
   tbody.addEventListener('dragstart', e => {
@@ -3150,20 +3034,6 @@ function getClassFutureSlots(className, isTanin, lessonList = []) {
     }
   }
   return slots;
-}
-
-function getExistingFutureAssignment(lessonName, className) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  let found = null;
-  Object.entries(overrides).forEach(([key, entry]) => {
-    if (!entry || entry.content !== lessonName || entry.name !== className || entry.autoAssigned) return;
-    const parts = key.split('-');
-    const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
-    const date = parseDateStr(dateStr);
-    if (date < today) return;
-    if (!found || date < found.date) found = { dateStr, period: +parts[3], date };
-  });
-  return found;
 }
 
 let autoAssignPlan = null;
@@ -3257,6 +3127,7 @@ function applyAutoAssign() {
       const e = overrides[key];
       if (!e || !classes.includes(e.name)) return;
       if (e.jugyohenkou || e.chgType) return;
+      if (e.rinji) return; // 臨時コマは自動割り当ての対象外（消さない）
       if (e.autoAssigned || planLessons.has(e.content)) {
         const parts = key.split('-');
         const date = parseDateStr(`${parts[0]}-${parts[1]}-${parts[2]}`);
@@ -3371,7 +3242,7 @@ function showAutoAssignToast(msg, hasWarn = false) {
     toast.className = 'aa-toast';
     document.body.appendChild(toast);
   }
-  toast.innerHTML = msg.split('\n').map(l => `<div>${l}</div>`).join('');
+  toast.innerHTML = msg.split('\n').map(l => `<div>${esc(l)}</div>`).join('');
   toast.style.background = hasWarn ? 'rgba(180,60,20,.92)' : 'rgba(30,40,60,.92)';
   toast.classList.add('aa-toast-show');
   clearTimeout(aaToastTimer);
@@ -3649,7 +3520,9 @@ async function importHolidaysFromUrl() {
       // CSV形式: 「YYYY/M/D,名称」または「YYYY-MM-DD,名称」(Shift-JIS or UTF-8)
       const buf = await res.arrayBuffer();
       let text;
-      try { text = new TextDecoder('shift-jis').decode(buf); } catch { text = new TextDecoder('utf-8').decode(buf); }
+      // UTF-8として正しく読めるならUTF-8、読めなければShift-JIS
+      // （fatal指定なしのTextDecoderは例外を投げず文字化けするため、fatal:trueで判定する）
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch { text = new TextDecoder('shift-jis').decode(buf); }
       text.split('\n').forEach(line => {
         const cols = line.trim().split(',');
         if (cols.length < 2) return;
@@ -4300,8 +4173,8 @@ document.addEventListener('click', e => {
 
 /* ── Firebase リアルタイム同期 ── */
 const SYNC_TIME_KEY = 'tt_sync_last_v1';
-const LOCAL_UPDATED_KEY = 'tt_local_updated_v1';
 let syncTimer = null;
+let pushRetryTimer = null; // 失敗リトライ用（通常pushのsyncTimerと分離。schedulePushに潰されないように）
 let fbPushing = false;
 let localDirty = false;
 let pushRetryCount = 0;
@@ -4423,17 +4296,18 @@ function updateSyncBtn(state) {
   btn.style.opacity = state === 'syncing' ? '.6' : '1';
 }
 
-function _applyFbData(data) {
+function _applyFbData(raw) {
   const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
   localStorage.setItem(SYNC_TIME_KEY, now);
   updateSyncBtn('ok');
-  if (!data) return;
+  if (!raw) return;
+  const data = {};
+  for (const [k, v] of Object.entries(raw)) data[k] = _decodeSyncValue(v);
   let changed = false;
   if (data.tt_overrides_v1 !== undefined)       { const raw = data.tt_overrides_v1 || {}; overrides = {}; for (const [k,v] of Object.entries(raw)) overrides[k] = (v && v.__deleted__ === true && Object.keys(v).length === 1) ? null : v; _migrateJikojiRoomToTeacher(); _normalizeCancelEntries(); safeSave('tt_overrides_v1', overrides); changed = true; }
   if (data.tt_cellsrc_v1   !== undefined)       { cellSources     = data.tt_cellsrc_v1           || {}; safeSave('tt_cellsrc_v1',           cellSources);     changed = true; }
   if (data.tt_holidays_v1  !== undefined)       { holidays        = data.tt_holidays_v1          || {}; safeSave('tt_holidays_v1',          holidays);        changed = true; }
   if (data.tt_long_vac_v1  !== undefined)       { longVacations   = data.tt_long_vac_v1          || []; safeSave('tt_long_vac_v1',          longVacations);   changed = true; }
-  if (data.tt_bukatsu_v1   !== undefined)       { bukatsuOverrides   = data.tt_bukatsu_v1        || {}; safeSave('tt_bukatsu_v1',           bukatsuOverrides);   changed = true; }
   if (data.tt_weekend_classes_v1 !== undefined) { weekendClassDays   = data.tt_weekend_classes_v1 || {}; safeSave('tt_weekend_classes_v1',  weekendClassDays);   changed = true; }
   if (data.tt_base_current_v1 !== undefined) { baseCurrent = data.tt_base_current_v1 || null; safeSave('tt_base_current_v1', baseCurrent); changed = true; }
   if (data.tt_base_next_v1 !== undefined) { baseNext = data.tt_base_next_v1 || null; if (baseNext) safeSave('tt_base_next_v1', baseNext); else localStorage.removeItem('tt_base_next_v1'); changed = true; }
@@ -4444,7 +4318,7 @@ function _applyFbData(data) {
   if (data.tt_prog2_order  !== undefined)       { prog2Order      = data.tt_prog2_order          || []; safeSave('tt_prog2_order',          prog2Order);      changed = true; }
   if (data.tt_day_memo_v1 !== undefined)        { dayMemos        = data.tt_day_memo_v1         || {}; safeSave('tt_day_memo_v1',          dayMemos);        changed = true; }
   if (data.tt_holidays_seen) safeSave('tt_holidays_seen', data.tt_holidays_seen);
-  if (changed) { _syncProgManuals(); renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
+  if (changed) { renderTimetable(); renderProgress(); renderProgress2(); renderChanges(); }
 }
 
 function _encodeOverrides(ovr) {
@@ -4453,15 +4327,38 @@ function _encodeOverrides(ovr) {
   return out;
 }
 
+/* RTDBは値がnull・空オブジェクト・空配列のキーをDBから削除してしまい、
+   受信側が「削除された」ことを検知できない（undefinedスキップされる）。
+   番兵値に変換して送り、受信時に復元する。 */
+function _encodeSyncValue(v) {
+  if (v === null || v === undefined) return { __deleted__: true };
+  if (Array.isArray(v)) return v.length ? v : { __emptyArr__: true };
+  if (typeof v === 'object' && !Object.keys(v).length) return { __emptyObj__: true };
+  return v;
+}
+function _decodeSyncValue(v) {
+  if (v && typeof v === 'object') {
+    if (v.__deleted__ === true) return null;
+    if (v.__emptyArr__ === true) return [];
+    if (v.__emptyObj__ === true) return {};
+  }
+  return v;
+}
+
 /* 同期対象キーの一覧（差分push用） */
 const SYNC_KEYS = [
   'tt_overrides_v1', 'tt_cellsrc_v1', 'tt_holidays_v1', 'tt_long_vac_v1',
-  'tt_holidays_seen', 'tt_bukatsu_v1', 'tt_weekend_classes_v1',
+  'tt_holidays_seen', 'tt_weekend_classes_v1',
   'tt_base_current_v1', 'tt_base_next_v1', 'tt_calevents_v1',
   'tt_prog_manual', 'tt_prog2_manual', 'tt_prog_order', 'tt_prog2_order',
   'tt_day_memo_v1',
 ];
+/* 未送信の変更キーはlocalStorageに永続化し、リロード後も差分pushできるようにする */
+const DIRTY_KEYS_KEY = 'tt_dirty_keys_v1';
 let dirtyKeys = new Set();
+try { dirtyKeys = new Set(JSON.parse(localStorage.getItem(DIRTY_KEYS_KEY) || '[]')); } catch {}
+if (dirtyKeys.size) localDirty = true;
+function _saveDirtyKeys() { try { localStorage.setItem(DIRTY_KEYS_KEY, JSON.stringify([...dirtyKeys])); } catch {} }
 
 function _syncValueOf(key) {
   switch (key) {
@@ -4470,7 +4367,6 @@ function _syncValueOf(key) {
     case 'tt_holidays_v1':        return holidays;
     case 'tt_long_vac_v1':        return longVacations;
     case 'tt_holidays_seen':      try { return JSON.parse(localStorage.getItem('tt_holidays_seen') || '{}'); } catch { return {}; }
-    case 'tt_bukatsu_v1':         return bukatsuOverrides;
     case 'tt_weekend_classes_v1': return weekendClassDays;
     case 'tt_base_current_v1':    return baseCurrent || null;
     case 'tt_base_next_v1':       return baseNext || null;
@@ -4484,20 +4380,23 @@ function _syncValueOf(key) {
   return null;
 }
 
-/* force=true で全キーをset()（強制アップロード・初回push用）、通常は変更キーのみupdate() */
+/* force=true で全キーを送信（強制アップロード・初回push用）、通常は変更キーのみ。
+   いずれもupdate()で送る（set()はDB全置換になり、送信内容に含まれないキーを消すため使わない） */
 async function syncPush(force = false) {
   if (!_fbRef) return; // Firebase未設定時はpushしない（localDirtyが残るため設定後にpushされる）
   const keys = force ? SYNC_KEYS : [...dirtyKeys];
   if (!keys.length) { updateSyncBtn('ok'); return; }
   updateSyncBtn('syncing');
+  clearTimeout(pushRetryTimer);
   const payload = {};
-  keys.forEach(k => { payload[k] = _syncValueOf(k); });
-  payload._updated = new Date().toISOString();
+  keys.forEach(k => { payload[k] = _encodeSyncValue(_syncValueOf(k)); });
+  // クライアント時計は端末間でずれるため、サーバー時刻を使う
+  payload._updated = firebase.database.ServerValue.TIMESTAMP;
   try {
     fbPushing = true;
-    if (force) await _fbRef.set(payload);
-    else       await _fbRef.update(payload);
+    await _fbRef.update(payload);
     keys.forEach(k => dirtyKeys.delete(k));
+    _saveDirtyKeys();
     localDirty = dirtyKeys.size > 0;
     pushRetryCount = 0;
     const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
@@ -4509,7 +4408,7 @@ async function syncPush(force = false) {
       pushRetryCount++;
       const delay = PUSH_RETRY_BASE_MS * Math.pow(2, pushRetryCount - 1); // 3s, 6s, 12s, 24s
       console.warn(`sync push retry ${pushRetryCount}/${PUSH_MAX_RETRY} in ${delay}ms`);
-      syncTimer = setTimeout(() => syncPush(force), delay);
+      pushRetryTimer = setTimeout(() => syncPush(force), delay);
     } else {
       pushRetryCount = 0;
       updateSyncBtn('error');
@@ -4528,8 +4427,8 @@ const APP_VERSION = 'v2026.07.06 18:00';
 /* 変更したキーを指定して差分pushを予約。キー省略時は全キーを対象にする（安全側） */
 function schedulePush(...keys) {
   (keys.length ? keys : SYNC_KEYS).forEach(k => dirtyKeys.add(k));
+  _saveDirtyKeys();
   localDirty = true;
-  localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => syncPush(), 1500);
 }
@@ -4542,32 +4441,44 @@ function initFirebaseSync() {
   }
   updateSyncBtn('syncing');
   try {
-    // 起動時：タイムスタンプを比較してFirebaseとローカルのどちらが新しいか判断する
+    // 起動時：Firebaseのデータを適用（未送信の変更があるキーだけはローカルを優先）し、
+    // 未送信キーがあれば差分push。時計比較で新旧を推測しない（端末間の時計ずれで
+    // 全データ上書き事故が起きるため）。
     _fbRef.once('value').then(snap => {
       const data = snap.val();
-      const fbUpdated   = data && data._updated ? new Date(data._updated).getTime() : 0;
-      const localUpdated = new Date(localStorage.getItem(LOCAL_UPDATED_KEY) || 0).getTime();
+      if (data) {
+        const filtered = { ...data };
+        dirtyKeys.forEach(k => delete filtered[k]);
+        _applyFbData(filtered);
+      }
 
-      if (data && fbUpdated >= localUpdated) {
-        // Firebaseが新しい（または同じ）→ Firebaseを適用
-        clearTimeout(syncTimer);
-        localDirty = false;
-        _applyFbData(data);
-      } else if (localDirty || localUpdated > fbUpdated) {
-        // ローカルが新しい→ ローカル全体をpush（起動直後はdirtyキー情報がないため全キー）
-        syncPush(true);
+      // 表示用定数（クラス・色など）をtoday.htmlと共有する。index.htmlが正。
+      // JSON文字列で保存（RTDBは空配列等を削除するため、オブジェクトのままだと比較が狂う）
+      const sharedCfgJson = JSON.stringify({
+        classes: CLASSES,
+        darkClasses: [...DARK_CLASSES],
+        lightClasses: [...LIGHT_CLASSES],
+        periods: PERIODS,
+      });
+      if ((data && data.tt_shared_config_v1) !== sharedCfgJson) {
+        _fbRef.child('tt_shared_config_v1').set(sharedCfgJson)
+          .catch(e => console.error('shared config push:', e));
+      }
+      if (dirtyKeys.size) {
+        syncPush(); // 未送信の変更だけ差分push
+      } else if (!data) {
+        syncPush(true); // DBが空 → 初回アップロード（全キー）
       } else {
+        localDirty = false;
         updateSyncBtn('ok');
       }
 
       // 以降はリアルタイムリスナー（自分の編集中・push中は無視）
       _fbRef.on('value', snapshot => {
-        if (fbPushing || localDirty) return;
+        if (fbPushing || dirtyKeys.size) return;
         const fbData = snapshot.val();
         if (!fbData) return;
-        const fbTs    = fbData._updated ? new Date(fbData._updated).getTime() : 0;
-        const localTs = new Date(localStorage.getItem(LOCAL_UPDATED_KEY) || 0).getTime();
-        if (fbTs >= localTs) _applyFbData(fbData);
+        _applyFbData(fbData);
       }, err => {
         console.error('firebase sync error:', err.code, err.message);
         updateSyncBtn('error');
@@ -4875,7 +4786,6 @@ loadCellSources();
 loadHolidays();
 loadExtraJpHolidays();
 loadLongVacations();
-loadBukatsuOverrides();
 loadWeekendClassDays();
 loadCalEvents();
 loadProgManual();

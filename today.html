@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23F0A870'/><rect x='4' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='4' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='11' width='11' height='5' rx='1.5' fill='white' opacity='.6'/><rect x='4' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='17' y='18' width='11' height='5' rx='1.5' fill='white' opacity='.9'/><rect x='4' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/><rect x='17' y='25' width='11' height='3' rx='1.5' fill='white' opacity='.5'/></svg>">
   <style>
@@ -333,24 +333,41 @@ const BASE = {
   '4-6':{ name:'3-1',  room:'総合', color:'#9C6ADE' },
 };
 
-const CLASSES = [
-  { name:'2-4',  subjects:[{name:'理科',color:'#E06010'}] },
-  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'学活',color:'#9C6ADE'},{name:'道徳',color:'#9C6ADE'},{name:'総合',color:'#9C6ADE'}] },
-  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'}] },
-  { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'}] },
-  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'}] },
+/* 以下の表示用定数はindex.htmlが正。Firebaseのtt_shared_config_v1で同期され、
+   ここの定義は初回・オフライン時のフォールバック。 */
+let CLASSES = [
+  { name:'2-4',  subjects:[{name:'理科',color:'#E06010'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
+  { name:'3-1',  tanin:true, subjects:[{name:'理科',color:'#D44545'},{name:'テスト',color:'#78909C'},{name:'学活',color:'#9C6ADE'},{name:'道徳',color:'#9C6ADE'},{name:'総合',color:'#9C6ADE'},{name:'自習',color:'#78909C'}] },
+  { name:'3-2',  subjects:[{name:'理科',color:'#4A90D9'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
+  { name:'3-3',  subjects:[{name:'理科',color:'#D4BE00'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
+  { name:'3-4',  subjects:[{name:'理科',color:'#3DAE65'},{name:'テスト',color:'#78909C'},{name:'自習',color:'#78909C'}] },
   { name:'研究部', color:'#3D7A6E', subjects:[] },
   { name:'裁量',   color:'#546E7A', subjects:[] },
-  { name:'行事',   color:'#9E9E9E', subjects:[] },
+  { name:'行事',   color:'#9E9E9E', isEvent:true, subjects:[] },
   { name:'空き',   color:'#B07D4E', subjects:[] },
 ];
 
-const PERIODS     = [1,2,3,4,5,6];
-const DARK_CLASSES  = new Set(['裁量']);
-const LIGHT_CLASSES = new Set(['空き','研究部','行事']);
-const EVENT_CLASSES = new Set(['行事']);
+let PERIODS     = [1,2,3,4,5,6];
+let DARK_CLASSES  = new Set(['裁量']);
+let LIGHT_CLASSES = new Set(['空き','研究部','行事']);
+let EVENT_CLASSES = new Set(['行事']);
 const DI_TO_NAME    = ['月','火','水','木','金','土','日'];
 const DAY_JP        = ['日','月','火','水','木','金','土'];
+
+/* index.htmlがpushする共有設定（tt_shared_config_v1、JSON文字列）を適用する */
+function _applySharedConfig(json) {
+  try {
+    const cfg = JSON.parse(json);
+    if (!cfg || !Array.isArray(cfg.classes) || !cfg.classes.length) return;
+    CLASSES = cfg.classes.map(c => ({ subjects: [], ...c }));
+    if (Array.isArray(cfg.periods) && cfg.periods.length) PERIODS = cfg.periods;
+    if (Array.isArray(cfg.darkClasses))  DARK_CLASSES  = new Set(cfg.darkClasses);
+    if (Array.isArray(cfg.lightClasses)) LIGHT_CLASSES = new Set(cfg.lightClasses);
+    EVENT_CLASSES = new Set(CLASSES.filter(c => c.isEvent).map(c => c.name));
+    localStorage.setItem('tt_shared_config_v1', json);
+  } catch {}
+}
+try { const _cachedCfg = localStorage.getItem('tt_shared_config_v1'); if (_cachedCfg) _applySharedConfig(_cachedCfg); } catch {}
 
 function pad2(n) { return String(n).padStart(2,'0'); }
 function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
@@ -366,7 +383,7 @@ function pastel(hex, s = .4) {
 
 function getColor(name, subject) {
   const c = CLASSES.find(c => c.name === name);
-  if (!c) return '#B0BEC5';
+  if (!c) return null; // 見つからない場合はnullを返し、呼び出し側でentry.color等にフォールバックさせる
   return c.subjects.find(s => s.name === subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
 }
 
@@ -423,6 +440,11 @@ function setSyncBadge(state) {
   else if (state === 'noconfig') el.textContent = '⚙ 未設定';
   else if (state === 'error') el.textContent = '✗ エラー';
   else el.textContent = `✓ ${now.getHours()}:${pad2(now.getMinutes())}`;
+  // 未設定・エラー時はバッジのタップで設定モーダルを開けるようにする（再設定の入口）
+  // onclick代入なのでinitFirebaseを何度呼んでもリスナーは重複しない
+  const clickable = state === 'noconfig' || state === 'error';
+  el.style.cursor = clickable ? 'pointer' : '';
+  el.onclick = clickable ? _showFbSetup : null;
 }
 
 function _closeFbModal() {
@@ -467,8 +489,6 @@ async function initFirebase() {
   const saved = localStorage.getItem('tt_firebase_config');
   if (!saved) {
     setSyncBadge('noconfig');
-    document.getElementById('syncBadge').style.cursor = 'pointer';
-    document.getElementById('syncBadge').addEventListener('click', _showFbSetup);
     return;
   }
   let cfg;
@@ -483,16 +503,31 @@ async function initFirebase() {
     } catch (e) { setSyncBadge('error'); return; }
   }
 
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  const ref = firebase.database().ref('timetable_data');
+  // 不正なconfig（databaseURL欠落など）は同期的にthrowするため捕捉する
+  let ref;
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    ref = firebase.database().ref('timetable_data');
+  } catch (e) { console.error('firebase init error:', e); setSyncBadge('error'); return; }
   setSyncBadge('syncing');
   firebase.auth().signInAnonymously()
     .catch(e => { console.error('auth error:', e); setSyncBadge('error'); })
     .then(cred => {
     if (!cred) return;
     ref.on('value', snap => {
-      const data = snap.val();
+      const raw = snap.val();
+      // index.html側はnull・空オブジェクト・空配列を番兵値に変換して送るため復元する
+      const dec = v => {
+        if (v && typeof v === 'object') {
+          if (v.__deleted__ === true) return null;
+          if (v.__emptyArr__ === true) return [];
+          if (v.__emptyObj__ === true) return {};
+        }
+        return v;
+      };
+      const data = raw ? Object.fromEntries(Object.entries(raw).map(([k,v]) => [k, dec(v)])) : raw;
       if (data) {
+        if (typeof data.tt_shared_config_v1 === 'string') _applySharedConfig(data.tt_shared_config_v1);
         if (data.tt_overrides_v1 !== undefined) {
           _overrides = {};
           for (const [k,v] of Object.entries(data.tt_overrides_v1 || {}))
@@ -563,9 +598,10 @@ function renderDay(ds) {
   const firstEntry = getEntry(ds, 1);
 
   let html = '';
-  if (holEntry && holEntry.type !== 'holiday') {
+  // typeはclass属性にも使うためホワイトリスト検証、時限はエスケープ（同期データ由来のためXSS対策）
+  if (holEntry && (holEntry.type === 'nenkyuu' || holEntry.type === 'shuccho')) {
     const lbl = holEntry.type === 'nenkyuu' ? '年休' : '出張';
-    const range = holEntry.periodFrom ? (holEntry.periodFrom === 'all' ? '終日' : `${holEntry.periodFrom}〜${holEntry.periodTo||6}限`) : '終日';
+    const range = holEntry.periodFrom ? (holEntry.periodFrom === 'all' ? '終日' : `${esc(holEntry.periodFrom)}〜${esc(holEntry.periodTo||6)}限`) : '終日';
     html += `<div class="banner-absence ${holEntry.type}">📋 ${lbl}（${range}）</div>`;
   }
   if (firstEntry && EVENT_CLASSES.has(firstEntry.name) && (firstEntry.content || firstEntry.teacher))
@@ -597,7 +633,7 @@ function renderDay(ds) {
     const ok = `${ds}-${p}`;
     let srcBadge = '';
     if (ok in _cellSources) { const src = _cellSources[ok]; srcBadge = entry ? `${DI_TO_NAME[src.di]}${src.p}` : ''; }
-    else if (ds in _daySchedules) srcBadge = `${DI_TO_NAME[_daySchedules[ds]]}${p}`;
+    else if (ds in _daySchedules && DI_TO_NAME[_daySchedules[ds]] !== undefined) srcBadge = `${DI_TO_NAME[_daySchedules[ds]]}${p}`;
 
     const isAbsent = holEntry && absenceCoversPeriod(holEntry, p);
     const absType  = isAbsent ? holEntry.type : null;
@@ -647,6 +683,20 @@ function render() {
 
 render();
 initFirebase();
+
+// 開きっぱなしの端末でも日付が変わったら「今日」を表示し直す
+let _todayDs = toDateStr(new Date());
+function _checkDateRollover() {
+  const nowDs = toDateStr(new Date());
+  if (nowDs === _todayDs) return;
+  const wasToday = _selectedDs === _todayDs;
+  _todayDs = nowDs;
+  // 今日を見ていた場合、または選択日が週タブから外れた場合は今日に戻す
+  if (wasToday || !getWeek().some(d => toDateStr(d) === _selectedDs)) _selectedDs = nowDs;
+  render();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) _checkDateRollover(); });
+setInterval(_checkDateRollover, 60 * 1000);
 </script>
 </body>
 </html>
