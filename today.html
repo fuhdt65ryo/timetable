@@ -387,7 +387,7 @@ function getColor(name, subject) {
   return c.subjects.find(s => s.name === subject)?.color || c.subjects[0]?.color || c.color || '#B0BEC5';
 }
 
-let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {}, _baseCurrent = null, _baseNext = null;
+let _overrides = {}, _daySchedules = {}, _cellSources = {}, _holidays = {}, _longVacs = [], _baseCurrent = null, _baseNext = null;
 
 function _migrateOverrides(ovr) {
   Object.values(ovr).forEach(e => {
@@ -400,6 +400,7 @@ try { _overrides    = _migrateOverrides(JSON.parse(localStorage.getItem('tt_over
 try { _daySchedules = JSON.parse(localStorage.getItem('tt_daysched_v1')     || '{}'); } catch {}
 try { _cellSources  = JSON.parse(localStorage.getItem('tt_cellsrc_v1')      || '{}'); } catch {}
 try { _holidays     = JSON.parse(localStorage.getItem('tt_holidays_v1')     || '{}'); } catch {}
+try { _longVacs     = JSON.parse(localStorage.getItem('tt_long_vac_v1')     || '[]'); } catch {}
 try { _baseCurrent  = JSON.parse(localStorage.getItem('tt_base_current_v1') || 'null'); } catch {}
 try { _baseNext     = JSON.parse(localStorage.getItem('tt_base_next_v1')    || 'null'); } catch {}
 
@@ -409,6 +410,10 @@ function getBase(ds) {
 }
 
 let _selectedDs = toDateStr(new Date());
+
+function getLongVacation(ds) {
+  return _longVacs.find(v => v.from <= ds && ds <= v.to) || null;
+}
 
 function getWeek() {
   const today = new Date();
@@ -538,6 +543,7 @@ async function initFirebase() {
         if (data.tt_daysched_v1     !== undefined) { _daySchedules = data.tt_daysched_v1 || {};     localStorage.setItem('tt_daysched_v1',     JSON.stringify(_daySchedules)); }
         if (data.tt_cellsrc_v1     !== undefined) { _cellSources  = data.tt_cellsrc_v1  || {};     localStorage.setItem('tt_cellsrc_v1',      JSON.stringify(_cellSources));  }
         if (data.tt_holidays_v1    !== undefined) { _holidays     = data.tt_holidays_v1 || {};     localStorage.setItem('tt_holidays_v1',     JSON.stringify(_holidays));     }
+        if (data.tt_long_vac_v1    !== undefined) { _longVacs     = data.tt_long_vac_v1 || [];     localStorage.setItem('tt_long_vac_v1',     JSON.stringify(_longVacs));     }
         if (data.tt_base_current_v1 !== undefined) { _baseCurrent = data.tt_base_current_v1 || null; localStorage.setItem('tt_base_current_v1', JSON.stringify(_baseCurrent)); }
         if (data.tt_base_next_v1    !== undefined) { _baseNext    = data.tt_base_next_v1    || null; localStorage.setItem('tt_base_next_v1',    JSON.stringify(_baseNext));    }
       }
@@ -555,7 +561,7 @@ function renderTabs() {
   week.forEach(d => {
     const ds = toDateStr(d);
     const holRaw = _holidays[ds];
-    const isHol = holRaw && (typeof holRaw === 'string' || holRaw.type === 'holiday');
+    const isHol = (holRaw && (typeof holRaw === 'string' || holRaw.type === 'holiday')) || !!getLongVacation(ds);
     const btn = document.createElement('button');
     btn.className = 'day-tab'
       + (ds === _selectedDs ? ' active' : '')
@@ -582,6 +588,10 @@ function renderDay(ds) {
     const holType = typeof holRaw === 'object' ? holRaw.type : 'holiday';
     if (holType === 'holiday') { main.innerHTML = `<div class="banner banner-holiday">🏖️ ${esc(holName)}</div>`; return; }
   }
+
+  // 長期休業（夏季休業など）は祝日に次いで優先し、時間割を表示しない
+  const vac = getLongVacation(ds);
+  if (vac) { main.innerHTML = `<div class="banner banner-holiday">🏫 ${esc(vac.name || '長期休業')}</div>`; return; }
 
   if ((dow === 0 || dow === 6) && !(ds in _daySchedules)) {
     if (!PERIODS.some(p => getEntry(ds, p))) { main.innerHTML = `<div class="banner banner-no-class">📅 授業なし</div>`; return; }
